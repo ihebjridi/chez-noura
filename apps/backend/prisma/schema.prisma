@@ -1,0 +1,185 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  BUSINESS_ADMIN
+  EMPLOYEE
+}
+
+enum EntityStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String?  // Nullable for EMPLOYEE (email-based auth)
+  role      UserRole
+  businessId String?
+  employeeId String? @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business  Business? @relation(fields: [businessId], references: [id])
+  employee  Employee? @relation(fields: [employeeId], references: [id])
+
+  @@index([email])
+  @@index([businessId])
+}
+
+model Business {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  address   String?
+  status    EntityStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  employees Employee[]
+  orders    Order[]
+  invoices  Invoice[]
+
+  @@index([email])
+}
+
+model Employee {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  firstName  String
+  lastName   String
+  businessId String
+  status     EntityStatus @default(ACTIVE)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business   Business @relation(fields: [businessId], references: [id])
+  user       User?
+  orders     Order[]
+
+  @@index([email])
+  @@index([businessId])
+}
+
+model Meal {
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
+  price        Decimal  @db.Decimal(10, 2)
+  availableDate DateTime // Date when meal is available
+  cutoffTime   DateTime // When ordering closes for this meal
+  status       EntityStatus @default(ACTIVE)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orderItems   OrderItem[]
+
+  @@index([availableDate])
+  @@index([cutoffTime])
+}
+
+model Order {
+  id         String      @id @default(uuid())
+  employeeId String
+  businessId String
+  orderDate  DateTime    // Date the order is for (YYYY-MM-DD)
+  status     OrderStatus @default(PENDING)
+  totalAmount Decimal    @db.Decimal(10, 2)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  employee   Employee    @relation(fields: [employeeId], references: [id])
+  business   Business    @relation(fields: [businessId], references: [id])
+  items      OrderItem[]
+
+  @@index([employeeId])
+  @@index([businessId])
+  @@index([orderDate])
+  @@index([status])
+  // Prevent duplicate orders per employee per day
+  @@unique([employeeId, orderDate])
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  mealId    String
+  quantity  Int      @default(1)
+  unitPrice Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  meal      Meal     @relation(fields: [mealId], references: [id])
+
+  @@index([orderId])
+  @@index([mealId])
+}
+
+model Invoice {
+  id           String        @id @default(uuid())
+  businessId   String
+  invoiceNumber String       @unique
+  periodStart  DateTime
+  periodEnd    DateTime
+  status       InvoiceStatus @default(DRAFT)
+  subtotal     Decimal       @db.Decimal(10, 2)
+  tax          Decimal?      @db.Decimal(10, 2)
+  total        Decimal       @db.Decimal(10, 2)
+  dueDate      DateTime
+  paidAt       DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  business     Business      @relation(fields: [businessId], references: [id])
+  items        InvoiceItem[]
+
+  @@index([businessId])
+  @@index([invoiceNumber])
+  @@index([status])
+}
+
+model InvoiceItem {
+  id          String   @id @default(uuid())
+  invoiceId   String
+  orderId     String
+  orderDate   DateTime
+  employeeEmail String
+  employeeName String
+  mealName   String
+  quantity   Int
+  unitPrice  Decimal  @db.Decimal(10, 2)
+  totalPrice Decimal  @db.Decimal(10, 2)
+  createdAt  DateTime @default(now())
+
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([orderId])
+}
