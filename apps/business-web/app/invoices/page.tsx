@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { ProtectedRoute } from '../../components/protected-route';
 import { useAuth } from '../../contexts/auth-context';
 import { apiClient } from '../../lib/api-client';
-import { InvoiceSummaryDto, UserRole } from '@contracts/core';
+import { InvoiceSummaryDto, UserRole, InvoiceStatus } from '@contracts/core';
 import Link from 'next/link';
 
 export default function InvoicesPage() {
@@ -20,10 +20,9 @@ export default function InvoicesPage() {
   const loadInvoices = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual endpoint once backend is implemented
-      // const data = await apiClient.getInvoices();
-      // setInvoices(data);
-      setInvoices([]); // Placeholder
+      setError('');
+      const data = await apiClient.getBusinessInvoices();
+      setInvoices(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load invoices');
     } finally {
@@ -76,9 +75,6 @@ export default function InvoicesPage() {
             backgroundColor: 'white'
           }}>
             <p>No invoices found.</p>
-            <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
-              Note: Backend endpoints for invoices are not yet implemented.
-            </p>
           </div>
         ) : (
           <div style={{ display: 'grid', gap: '1rem' }}>
@@ -109,8 +105,8 @@ export default function InvoicesPage() {
                     <span style={{
                       padding: '0.25rem 0.5rem',
                       borderRadius: '4px',
-                      backgroundColor: invoice.status === 'PAID' ? '#d4edda' : invoice.status === 'SENT' ? '#d1ecf1' : invoice.status === 'OVERDUE' ? '#f8d7da' : '#e2e3e5',
-                      color: invoice.status === 'PAID' ? '#155724' : invoice.status === 'SENT' ? '#0c5460' : invoice.status === 'OVERDUE' ? '#721c24' : '#383d41',
+                      backgroundColor: invoice.status === InvoiceStatus.PAID ? '#d4edda' : invoice.status === InvoiceStatus.ISSUED ? '#d1ecf1' : '#e2e3e5',
+                      color: invoice.status === InvoiceStatus.PAID ? '#155724' : invoice.status === InvoiceStatus.ISSUED ? '#0c5460' : '#383d41',
                       fontSize: '0.9rem'
                     }}>
                       {invoice.status}

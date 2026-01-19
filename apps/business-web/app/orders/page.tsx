@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { ProtectedRoute } from '../../components/protected-route';
 import { useAuth } from '../../contexts/auth-context';
 import { apiClient } from '../../lib/api-client';
-import { OrderSummaryDto, UserRole } from '@contracts/core';
+import { OrderSummaryDto, UserRole, OrderStatus } from '@contracts/core';
 import Link from 'next/link';
 
 export default function OrdersPage() {
@@ -20,6 +20,7 @@ export default function OrdersPage() {
   const loadOrders = async () => {
     try {
       setLoading(true);
+      setError('');
       const data = await apiClient.getBusinessOrders();
       setOrders(data);
     } catch (err: any) {
@@ -101,8 +102,8 @@ export default function OrdersPage() {
                       <span style={{
                         padding: '0.25rem 0.5rem',
                         borderRadius: '4px',
-                        backgroundColor: order.status === 'CONFIRMED' ? '#d4edda' : order.status === 'PENDING' ? '#fff3cd' : '#f8d7da',
-                        color: order.status === 'CONFIRMED' ? '#155724' : order.status === 'PENDING' ? '#856404' : '#721c24',
+                        backgroundColor: order.status === OrderStatus.LOCKED ? '#d4edda' : order.status === OrderStatus.CREATED ? '#fff3cd' : '#f8d7da',
+                        color: order.status === OrderStatus.LOCKED ? '#155724' : order.status === OrderStatus.CREATED ? '#856404' : '#721c24',
                         fontSize: '0.9rem'
                       }}>
                         {order.status}

@@ -27,11 +27,15 @@ function OrdersContent() {
   const loadOrders = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual endpoint once backend is implemented
-      // const data = await apiClient.getMyOrders();
-      // setOrders(data);
-      setOrders([]); // Placeholder
-      setError('Employee orders endpoint not yet implemented in backend');
+      setError('');
+      const data = await apiClient.getMyOrders();
+      // Sort by order date (most recent first)
+      const sorted = data.sort((a, b) => {
+        const dateA = new Date(a.orderDate).getTime();
+        const dateB = new Date(b.orderDate).getTime();
+        return dateB - dateA;
+      });
+      setOrders(sorted);
     } catch (err: any) {
       setError(err.message || 'Failed to load orders');
     } finally {
@@ -41,9 +45,9 @@ function OrdersContent() {
 
   const getStatusColor = (status: OrderStatus) => {
     switch (status) {
-      case OrderStatus.CONFIRMED:
+      case OrderStatus.LOCKED:
         return { bg: '#d4edda', color: '#155724' };
-      case OrderStatus.PENDING:
+      case OrderStatus.CREATED:
         return { bg: '#fff3cd', color: '#856404' };
       case OrderStatus.CANCELLED:
         return { bg: '#f8d7da', color: '#721c24' };

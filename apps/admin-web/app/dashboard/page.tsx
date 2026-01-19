@@ -53,6 +53,32 @@ export default function DashboardPage() {
             <h2>Orders</h2>
             <p>View all orders</p>
           </Link>
+
+          <Link href="/kitchen" style={{
+            padding: '1.5rem',
+            border: '1px solid #ddd',
+            borderRadius: '8px',
+            textDecoration: 'none',
+            color: 'inherit',
+            display: 'block',
+            backgroundColor: 'white'
+          }}>
+            <h2>Kitchen Operations</h2>
+            <p>Daily summaries and day locking</p>
+          </Link>
+
+          <Link href="/invoices" style={{
+            padding: '1.5rem',
+            border: '1px solid #ddd',
+            borderRadius: '8px',
+            textDecoration: 'none',
+            color: 'inherit',
+            display: 'block',
+            backgroundColor: 'white'
+          }}>
+            <h2>Invoices</h2>
+            <p>Manage invoices and billing</p>
+          </Link>
         </div>
       </div>
     </ProtectedRoute>

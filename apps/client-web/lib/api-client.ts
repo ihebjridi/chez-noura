@@ -53,20 +53,25 @@ class ApiClient {
     return this.request<UserDto>('/auth/me');
   }
 
-  // Meal endpoints (to be implemented in backend)
+  // Meal endpoints
   async getMealsForDate(date: string): Promise<MealDto[]> {
     return this.request<MealDto[]>(`/meals?date=${date}`);
   }
 
   // Order endpoints
-  async createOrder(data: CreateOrderDto): Promise<OrderDto> {
+  async createOrder(data: CreateOrderDto, idempotencyKey?: string): Promise<OrderDto> {
+    const headers: Record<string, string> = {};
+    if (idempotencyKey) {
+      headers['x-idempotency-key'] = idempotencyKey;
+    }
     return this.request<OrderDto>('/orders', {
       method: 'POST',
       body: JSON.stringify(data),
+      headers,
     });
   }
 
-  // Get employee's own orders (to be implemented in backend)
+  // Get employee's own orders
   async getMyOrders(): Promise<OrderDto[]> {
     return this.request<OrderDto[]>('/orders/me');
   }

@@ -29,10 +29,22 @@ export default function EmployeesPage() {
   const loadEmployees = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual endpoint once backend is implemented
-      // const data = await apiClient.getEmployees();
-      // setEmployees(data);
-      setEmployees([]); // Placeholder
+      setError('');
+      // Note: Employee endpoints are not yet implemented in backend
+      // This will throw an error until backend endpoints are available
+      try {
+        const data = await apiClient.getEmployees();
+        setEmployees(data);
+      } catch (apiError: any) {
+        // Employee endpoints not implemented yet
+        setEmployees([]);
+        if (apiError.message.includes('not yet implemented')) {
+          // Don't show error for unimplemented endpoints
+          setError('');
+        } else {
+          throw apiError;
+        }
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load employees');
     } finally {
@@ -45,12 +57,11 @@ export default function EmployeesPage() {
     if (!user?.businessId) return;
 
     try {
-      // TODO: Replace with actual endpoint once backend is implemented
-      // await apiClient.createEmployee({ ...formData, businessId: user.businessId });
-      alert('Employee invitation endpoint not yet implemented in backend');
+      setError('');
+      await apiClient.createEmployee({ ...formData, businessId: user.businessId });
       setShowInviteForm(false);
       setFormData({ email: '', firstName: '', lastName: '', businessId: user.businessId });
-      loadEmployees();
+      await loadEmployees();
     } catch (err: any) {
       setError(err.message || 'Failed to invite employee');
     }
@@ -60,10 +71,9 @@ export default function EmployeesPage() {
     if (!confirm('Are you sure you want to disable this employee?')) return;
 
     try {
-      // TODO: Replace with actual endpoint once backend is implemented
-      // await apiClient.updateEmployee(employeeId, { status: EntityStatus.INACTIVE });
-      alert('Employee disable endpoint not yet implemented in backend');
-      loadEmployees();
+      setError('');
+      await apiClient.updateEmployee(employeeId, { status: EntityStatus.INACTIVE });
+      await loadEmployees();
     } catch (err: any) {
       setError(err.message || 'Failed to disable employee');
     }
@@ -186,7 +196,7 @@ export default function EmployeesPage() {
           }}>
             <p>No employees found. Invite your first employee to get started.</p>
             <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
-              Note: Backend endpoints for employees are not yet implemented.
+              Note: Employee management endpoints are not yet implemented in the backend.
             </p>
           </div>
         ) : (

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ProtectedRoute } from '../../components/protected-route';
 import { useAuth } from '../../contexts/auth-context';
 import { apiClient } from '../../lib/api-client';
-import { MealDto, UserRole } from '@contracts/core';
+import { MealDto, UserRole, OrderDto, OrderStatus, EntityStatus } from '@contracts/core';
 
 export default function MenuPage() {
   const { user, logout } = useAuth();
@@ -14,24 +14,41 @@ export default function MenuPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedMeals, setSelectedMeals] = useState<Record<string, number>>({});
+  const [todayOrder, setTodayOrder] = useState<OrderDto | null>(null);
   const [today] = useState(() => new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     loadMeals();
+    checkTodayOrder();
   }, []);
 
   const loadMeals = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual endpoint once backend is implemented
-      // const data = await apiClient.getMealsForDate(today);
-      // setMeals(data);
-      setMeals([]); // Placeholder
-      setError('Meal listing endpoint not yet implemented in backend');
+      setError('');
+      const data = await apiClient.getMealsForDate(today);
+      // Filter only active meals
+      const activeMeals = data.filter(
+        (meal) => meal.isActive && meal.status === EntityStatus.ACTIVE,
+      );
+      setMeals(activeMeals);
     } catch (err: any) {
       setError(err.message || 'Failed to load meals');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkTodayOrder = async () => {
+    try {
+      const orders = await apiClient.getMyOrders();
+      const todayOrderData = orders.find(
+        (order) => order.orderDate === today && order.status !== OrderStatus.CANCELLED,
+      );
+      setTodayOrder(todayOrderData || null);
+    } catch (err) {
+      // Silently fail - not critical
+      console.error('Failed to check today order:', err);
     }
   };
 
@@ -53,10 +70,20 @@ export default function MenuPage() {
   const hasSelection = Object.keys(selectedMeals).length > 0;
 
   const handleProceed = () => {
+    if (todayOrder) {
+      setError('You have already placed an order for today. Only one order per day is allowed.');
+      return;
+    }
+
     const items = Object.entries(selectedMeals).map(([mealId, quantity]) => ({
       mealId,
       quantity,
     }));
+
+    if (items.length === 0) {
+      setError('Please select at least one meal');
+      return;
+    }
 
     router.push(`/order/confirm?date=${today}&items=${encodeURIComponent(JSON.stringify(items))}`);
   };
@@ -98,16 +125,77 @@ export default function MenuPage() {
           )}
         </header>
 
+        {todayOrder && (
+          <div style={{
+            margin: '1rem',
+            padding: '1rem',
+            backgroundColor: todayOrder.status === OrderStatus.LOCKED ? '#d4edda' : '#fff3cd',
+            color: todayOrder.status === OrderStatus.LOCKED ? '#155724' : '#856404',
+            borderRadius: '8px',
+            fontSize: '0.9rem',
+            border: `1px solid ${todayOrder.status === OrderStatus.LOCKED ? '#c3e6cb' : '#ffeaa7'}`
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <strong>Today's Order Status:</strong>
+              <span style={{
+                padding: '0.25rem 0.5rem',
+                borderRadius: '4px',
+                backgroundColor: todayOrder.status === OrderStatus.LOCKED ? '#155724' : '#856404',
+                color: 'white',
+                fontSize: '0.85rem',
+                fontWeight: '500'
+              }}>
+                {todayOrder.status}
+              </span>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.85rem' }}>
+              {todayOrder.status === OrderStatus.LOCKED
+                ? 'Your order has been locked and confirmed.'
+                : 'Your order has been placed and is pending confirmation.'}
+            </p>
+            <button
+              onClick={() => router.push('/orders')}
+              style={{
+                marginTop: '0.75rem',
+                padding: '0.5rem 1rem',
+                backgroundColor: 'transparent',
+                border: `1px solid ${todayOrder.status === OrderStatus.LOCKED ? '#155724' : '#856404'}`,
+                borderRadius: '4px',
+                color: todayOrder.status === OrderStatus.LOCKED ? '#155724' : '#856404',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                fontWeight: '500'
+              }}
+            >
+              View Order Details
+            </button>
+          </div>
+        )}
+
         {error && !loading && (
           <div style={{
             margin: '1rem',
             padding: '1rem',
-            backgroundColor: '#fff3cd',
-            color: '#856404',
+            backgroundColor: '#fee',
+            color: '#c33',
             borderRadius: '8px',
             fontSize: '0.9rem'
           }}>
             {error}
+          </div>
+        )}
+
+        {todayOrder && !loading && (
+          <div style={{
+            margin: '1rem',
+            padding: '1rem',
+            backgroundColor: '#e7f3ff',
+            color: '#004085',
+            borderRadius: '8px',
+            fontSize: '0.9rem',
+            border: '1px solid #b3d9ff'
+          }}>
+            <strong>Note:</strong> You have already placed an order for today. You can view it in the Orders section.
           </div>
         )}
 
@@ -209,7 +297,7 @@ export default function MenuPage() {
         )}
 
         {/* Fixed bottom bar for order summary */}
-        {hasSelection && (
+        {hasSelection && !todayOrder && (
           <div style={{
             position: 'fixed',
             bottom: 0,

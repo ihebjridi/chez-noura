@@ -57,23 +57,20 @@ class ApiClient {
     return this.request<UserDto>('/auth/me');
   }
 
-  // Employee endpoints (to be implemented in backend)
+  // Employee endpoints (not yet implemented in backend)
   async getEmployees(): Promise<EmployeeDto[]> {
-    return this.request<EmployeeDto[]>('/employees');
+    // Note: Employee endpoints are not yet implemented in backend
+    throw new Error('Employee endpoints are not yet implemented in the backend');
   }
 
   async createEmployee(data: CreateEmployeeDto): Promise<EmployeeDto> {
-    return this.request<EmployeeDto>('/employees', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    // Note: Employee endpoints are not yet implemented in backend
+    throw new Error('Employee endpoints are not yet implemented in the backend');
   }
 
   async updateEmployee(id: string, data: UpdateEmployeeDto): Promise<EmployeeDto> {
-    return this.request<EmployeeDto>(`/employees/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    });
+    // Note: Employee endpoints are not yet implemented in backend
+    throw new Error('Employee endpoints are not yet implemented in the backend');
   }
 
   // Order endpoints
@@ -81,9 +78,9 @@ class ApiClient {
     return this.request<OrderSummaryDto[]>('/business/orders');
   }
 
-  // Invoice endpoints (to be implemented in backend)
-  async getInvoices(): Promise<InvoiceSummaryDto[]> {
-    return this.request<InvoiceSummaryDto[]>('/invoices');
+  // Invoice endpoints
+  async getBusinessInvoices(): Promise<InvoiceSummaryDto[]> {
+    return this.request<InvoiceSummaryDto[]>('/invoices/business');
   }
 
   async getInvoice(id: string): Promise<InvoiceDto> {

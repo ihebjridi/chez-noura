@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ProtectedRoute } from '../../../components/protected-route';
 import { useAuth } from '../../../contexts/auth-context';
 import { apiClient } from '../../../lib/api-client';
-import { MealDto, CreateOrderItemDto, UserRole } from '@contracts/core';
+import { MealDto, CreateOrderItemDto, UserRole, EntityStatus } from '@contracts/core';
 
 function OrderConfirmContent() {
   const { user, logout } = useAuth();
@@ -46,11 +46,13 @@ function OrderConfirmContent() {
   const loadMeals = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual endpoint once backend is implemented
-      // const data = await apiClient.getMealsForDate(orderDate);
-      // setMeals(data);
-      setMeals([]); // Placeholder - in production, fetch actual meals
-      setError('Meal data endpoint not yet implemented in backend');
+      setError('');
+      const data = await apiClient.getMealsForDate(orderDate);
+      // Filter only active meals
+      const activeMeals = data.filter(
+        (meal) => meal.isActive && meal.status === EntityStatus.ACTIVE,
+      );
+      setMeals(activeMeals);
     } catch (err: any) {
       setError(err.message || 'Failed to load meal information');
     } finally {
@@ -64,15 +66,39 @@ function OrderConfirmContent() {
     setSubmitting(true);
 
     try {
-      await apiClient.createOrder({
-        orderDate,
-        items,
-      });
+      // Generate idempotency key from order date and items
+      const idempotencyKey = `${orderDate}-${JSON.stringify(items)}-${Date.now()}`;
+      await apiClient.createOrder(
+        {
+          orderDate,
+          items,
+        },
+        idempotencyKey,
+      );
       router.push('/orders?success=true');
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to place order';
-      if (errorMessage.includes('cutoff') || errorMessage.includes('cut-off')) {
-        setError('Ordering cutoff time has passed. Please contact your business admin.');
+      // Handle specific error cases
+      if (
+        errorMessage.includes('cutoff') ||
+        errorMessage.includes('cut-off') ||
+        errorMessage.includes('Ordering cutoff')
+      ) {
+        setError(
+          'Ordering cutoff time has passed. Orders cannot be placed after the cutoff time.',
+        );
+      } else if (
+        errorMessage.includes('already ordered') ||
+        errorMessage.includes('duplicate') ||
+        errorMessage.includes('Conflict')
+      ) {
+        setError(
+          'You have already placed an order for this date. Only one order per day is allowed.',
+        );
+      } else if (errorMessage.includes('locked') || errorMessage.includes('LOCKED')) {
+        setError(
+          'Ordering for this date has been locked. Please contact your business admin.',
+        );
       } else {
         setError(errorMessage);
       }

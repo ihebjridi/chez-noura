@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ProtectedRoute } from '../../../components/protected-route';
 import { useAuth } from '../../../contexts/auth-context';
 import { apiClient } from '../../../lib/api-client';
-import { InvoiceDto, UserRole } from '@contracts/core';
+import { InvoiceDto, UserRole, InvoiceStatus } from '@contracts/core';
 import Link from 'next/link';
 
 export default function InvoiceDetailPage() {
@@ -25,11 +25,9 @@ export default function InvoiceDetailPage() {
   const loadInvoice = async (id: string) => {
     try {
       setLoading(true);
-      // TODO: Replace with actual endpoint once backend is implemented
-      // const data = await apiClient.getInvoice(id);
-      // setInvoice(data);
-      setInvoice(null); // Placeholder
-      setError('Invoice detail endpoint not yet implemented in backend');
+      setError('');
+      const data = await apiClient.getInvoice(id);
+      setInvoice(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load invoice');
     } finally {
@@ -91,8 +89,41 @@ export default function InvoiceDetailPage() {
               <p><strong>Email:</strong> {invoice.businessEmail}</p>
               <p><strong>Period:</strong> {new Date(invoice.periodStart).toLocaleDateString()} - {new Date(invoice.periodEnd).toLocaleDateString()}</p>
               <p><strong>Due Date:</strong> {new Date(invoice.dueDate).toLocaleDateString()}</p>
-              <p><strong>Status:</strong> {invoice.status}</p>
-              {invoice.paidAt && <p><strong>Paid At:</strong> {new Date(invoice.paidAt).toLocaleString()}</p>}
+              <p>
+                <strong>Status:</strong>{' '}
+                <span
+                  style={{
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: '4px',
+                    backgroundColor:
+                      invoice.status === InvoiceStatus.PAID
+                        ? '#d4edda'
+                        : invoice.status === InvoiceStatus.ISSUED
+                          ? '#d1ecf1'
+                          : '#e2e3e5',
+                    color:
+                      invoice.status === InvoiceStatus.PAID
+                        ? '#155724'
+                        : invoice.status === InvoiceStatus.ISSUED
+                          ? '#0c5460'
+                          : '#383d41',
+                    fontSize: '0.9rem',
+                  }}
+                >
+                  {invoice.status}
+                </span>
+              </p>
+              {invoice.issuedAt && (
+                <p>
+                  <strong>Issued At:</strong>{' '}
+                  {new Date(invoice.issuedAt).toLocaleString()}
+                </p>
+              )}
+              {invoice.paidAt && (
+                <p>
+                  <strong>Paid At:</strong> {new Date(invoice.paidAt).toLocaleString()}
+                </p>
+              )}
             </div>
 
             <div style={{ marginBottom: '2rem' }}>

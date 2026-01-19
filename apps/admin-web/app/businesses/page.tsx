@@ -27,10 +27,10 @@ export default function BusinessesPage() {
   const loadBusinesses = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual endpoint once backend is implemented
-      // const data = await apiClient.getBusinesses();
-      // setBusinesses(data);
-      setBusinesses([]); // Placeholder
+      setError('');
+      // Note: Business CRUD endpoints are not yet implemented in backend
+      // This is a placeholder until backend endpoints are available
+      setBusinesses([]);
     } catch (err: any) {
       setError(err.message || 'Failed to load businesses');
     } finally {
@@ -41,12 +41,11 @@ export default function BusinessesPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // TODO: Replace with actual endpoint once backend is implemented
-      // await apiClient.createBusiness(formData);
-      alert('Business creation endpoint not yet implemented in backend');
+      setError('');
+      // Note: Business CRUD endpoints are not yet implemented in backend
+      setError('Business creation endpoint is not yet available in the backend');
       setShowCreateForm(false);
       setFormData({ name: '', email: '', phone: '', address: '' });
-      loadBusinesses();
     } catch (err: any) {
       setError(err.message || 'Failed to create business');
     }
@@ -176,7 +175,7 @@ export default function BusinessesPage() {
           }}>
             <p>No businesses found. Create your first business to get started.</p>
             <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
-              Note: Backend endpoints for businesses are not yet implemented.
+              Note: Business CRUD endpoints are not yet implemented in the backend.
             </p>
           </div>
         ) : (

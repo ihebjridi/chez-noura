@@ -2,11 +2,16 @@ import {
   LoginRequestDto,
   LoginResponseDto,
   UserDto,
-  BusinessDto,
-  CreateBusinessDto,
   MealDto,
   CreateMealDto,
+  UpdateMealDto,
+  OrderDto,
   OrderSummaryDto,
+  KitchenSummaryDto,
+  KitchenBusinessSummaryDto,
+  DayLockDto,
+  InvoiceDto,
+  InvoiceSummaryDto,
 } from '@contracts/core';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -56,21 +61,10 @@ class ApiClient {
     return this.request<UserDto>('/auth/me');
   }
 
-  // Business endpoints (to be implemented in backend)
-  async getBusinesses(): Promise<BusinessDto[]> {
-    return this.request<BusinessDto[]>('/businesses');
-  }
-
-  async createBusiness(data: CreateBusinessDto): Promise<BusinessDto> {
-    return this.request<BusinessDto>('/businesses', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  // Meal endpoints (to be implemented in backend)
-  async getMeals(): Promise<MealDto[]> {
-    return this.request<MealDto[]>('/meals');
+  // Meal endpoints
+  async getMeals(date?: string): Promise<MealDto[]> {
+    const query = date ? `?date=${date}` : '';
+    return this.request<MealDto[]>(`/meals${query}`);
   }
 
   async createMeal(data: CreateMealDto): Promise<MealDto> {
@@ -80,9 +74,46 @@ class ApiClient {
     });
   }
 
+  async updateMeal(id: string, data: UpdateMealDto): Promise<MealDto> {
+    return this.request<MealDto>(`/meals/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Order endpoints
-  async getBusinessOrders(): Promise<OrderSummaryDto[]> {
-    return this.request<OrderSummaryDto[]>('/business/orders');
+  async getAdminOrders(): Promise<OrderDto[]> {
+    return this.request<OrderDto[]>('/orders/admin');
+  }
+
+  // Kitchen operations endpoints
+  async lockDay(date: string): Promise<DayLockDto> {
+    return this.request<DayLockDto>(`/ops/lock-day?date=${date}`, {
+      method: 'POST',
+    });
+  }
+
+  async getKitchenSummary(date: string): Promise<KitchenSummaryDto> {
+    return this.request<KitchenSummaryDto>(`/ops/summary?date=${date}&format=json`);
+  }
+
+  async getKitchenBusinessSummary(date: string): Promise<KitchenBusinessSummaryDto> {
+    return this.request<KitchenBusinessSummaryDto>(`/ops/business-summary?date=${date}&format=json`);
+  }
+
+  // Invoice endpoints
+  async getAdminInvoices(): Promise<InvoiceSummaryDto[]> {
+    return this.request<InvoiceSummaryDto[]>('/invoices/admin');
+  }
+
+  async getInvoiceById(id: string): Promise<InvoiceDto> {
+    return this.request<InvoiceDto>(`/invoices/${id}`);
+  }
+
+  async generateInvoices(start: string, end: string): Promise<InvoiceDto[]> {
+    return this.request<InvoiceDto[]>(`/invoices/generate?start=${start}&end=${end}`, {
+      method: 'POST',
+    });
   }
 }
 

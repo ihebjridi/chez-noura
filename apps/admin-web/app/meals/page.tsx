@@ -27,10 +27,9 @@ export default function MealsPage() {
   const loadMeals = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual endpoint once backend is implemented
-      // const data = await apiClient.getMeals();
-      // setMeals(data);
-      setMeals([]); // Placeholder
+      setError('');
+      const data = await apiClient.getMeals();
+      setMeals(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load meals');
     } finally {
@@ -41,12 +40,11 @@ export default function MealsPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // TODO: Replace with actual endpoint once backend is implemented
-      // await apiClient.createMeal(formData);
-      alert('Meal creation endpoint not yet implemented in backend');
+      setError('');
+      await apiClient.createMeal(formData);
       setShowCreateForm(false);
       setFormData({ name: '', description: '', price: 0, availableDate: '' });
-      loadMeals();
+      await loadMeals();
     } catch (err: any) {
       setError(err.message || 'Failed to create meal');
     }
@@ -178,9 +176,6 @@ export default function MealsPage() {
             backgroundColor: 'white'
           }}>
             <p>No meals found. Create your first meal to get started.</p>
-            <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
-              Note: Backend endpoints for meals are not yet implemented.
-            </p>
           </div>
         ) : (
           <div style={{ display: 'grid', gap: '1rem' }}>
