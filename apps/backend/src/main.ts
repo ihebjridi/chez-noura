@@ -1,9 +1,10 @@
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, HttpStatus } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { validateEnv } from './common/config/env.validation';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
+import { setupSwagger } from './common/config/swagger.config';
 
 async function bootstrap() {
   // Validate environment variables
@@ -28,6 +29,12 @@ async function bootstrap() {
       transformOptions: {
         enableImplicitConversion: true,
       },
+      errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+      stopAtFirstError: false, // Collect all validation errors
+      validationError: {
+        target: false, // Don't expose target object
+        value: false, // Don't expose invalid values
+      },
     }),
   );
 
@@ -43,8 +50,12 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id', 'X-Idempotency-Key'],
   });
 
+  // Setup Swagger documentation
+  setupSwagger(app);
+
   const port = process.env.PORT || 3000;
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}`);
+  console.log(`Swagger documentation available at: http://localhost:${port}/api/docs`);
 }
 bootstrap();

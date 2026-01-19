@@ -32,6 +32,7 @@ export interface InvoiceDto {
   total: number;
   items: InvoiceItemDto[];
   dueDate: string; // ISO date string
+  issuedAt?: string; // ISO datetime string
   paidAt?: string; // ISO datetime string
   createdAt: string;
   updatedAt: string;

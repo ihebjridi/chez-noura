@@ -38,6 +38,7 @@ export class OrderingCutoffService {
           gte: startOfDay,
           lt: endOfDay,
         },
+        isActive: true,
         status: 'ACTIVE',
       },
     });
@@ -77,6 +78,7 @@ export class OrderingCutoffService {
           gte: startOfDay,
           lt: endOfDay,
         },
+        isActive: true,
         status: 'ACTIVE',
       },
       orderBy: {

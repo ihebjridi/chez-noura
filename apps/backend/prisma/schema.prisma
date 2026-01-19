@@ -2,8 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -23,16 +22,15 @@ enum EntityStatus {
 }
 
 enum OrderStatus {
-  PENDING
-  CONFIRMED
+  CREATED
+  LOCKED
   CANCELLED
 }
 
 enum InvoiceStatus {
   DRAFT
-  SENT
+  ISSUED
   PAID
-  OVERDUE
 }
 
 model User {
@@ -95,6 +93,7 @@ model Meal {
   price        Decimal  @db.Decimal(10, 2)
   availableDate DateTime // Date when meal is available
   cutoffTime   DateTime // When ordering closes for this meal
+  isActive     Boolean  @default(true)
   status       EntityStatus @default(ACTIVE)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -103,6 +102,7 @@ model Meal {
 
   @@index([availableDate])
   @@index([cutoffTime])
+  @@index([isActive])
 }
 
 model Order {
@@ -110,7 +110,7 @@ model Order {
   employeeId String
   businessId String
   orderDate  DateTime    // Date the order is for (YYYY-MM-DD)
-  status     OrderStatus @default(PENDING)
+  status     OrderStatus @default(CREATED)
   totalAmount Decimal    @db.Decimal(10, 2)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
@@ -123,6 +123,8 @@ model Order {
   @@index([businessId])
   @@index([orderDate])
   @@index([status])
+  // Composite index for date-based queries with status filter (for aggregation)
+  @@index([orderDate, status])
   // Prevent duplicate orders per employee per day
   @@unique([employeeId, orderDate])
 }
@@ -153,6 +155,7 @@ model Invoice {
   tax          Decimal?      @db.Decimal(10, 2)
   total        Decimal       @db.Decimal(10, 2)
   dueDate      DateTime
+  issuedAt     DateTime?
   paidAt       DateTime?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -163,12 +166,13 @@ model Invoice {
   @@index([businessId])
   @@index([invoiceNumber])
   @@index([status])
+  @@index([periodStart, periodEnd])
 }
 
 model InvoiceItem {
   id          String   @id @default(uuid())
   invoiceId   String
-  orderId     String
+  orderId     String   @unique // An order can belong to only one invoice
   orderDate   DateTime
   employeeEmail String
   employeeName String
@@ -182,4 +186,15 @@ model InvoiceItem {
 
   @@index([invoiceId])
   @@index([orderId])
+}
+
+model DayLock {
+  id        String   @id @default(uuid())
+  lockDate  DateTime @unique // Date that was locked (YYYY-MM-DD)
+  lockedAt  DateTime @default(now())
+  lockedBy  String?  // User ID who locked it (optional)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([lockDate])
 }

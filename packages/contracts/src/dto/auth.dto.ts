@@ -40,3 +40,24 @@ export interface TokenPayload {
   iat?: number;
   exp?: number;
 }
+
+/**
+ * Employee login request DTO (email-only)
+ */
+export interface EmployeeLoginRequestDto {
+  email: string;
+}
+
+/**
+ * Refresh token request DTO
+ */
+export interface RefreshTokenRequestDto {
+  refreshToken: string;
+}
+
+/**
+ * Refresh token response DTO
+ */
+export interface RefreshTokenResponseDto {
+  accessToken: string;
+}

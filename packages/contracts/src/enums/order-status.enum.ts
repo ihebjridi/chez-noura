@@ -3,14 +3,14 @@
  */
 export enum OrderStatus {
   /**
-   * Order is pending - employee has selected but not yet locked
+   * Order is created - employee has placed order but not yet locked
    */
-  PENDING = 'PENDING',
+  CREATED = 'CREATED',
 
   /**
-   * Order is confirmed and locked after cutoff time
+   * Order is locked after cutoff time - read-only
    */
-  CONFIRMED = 'CONFIRMED',
+  LOCKED = 'LOCKED',
 
   /**
    * Order has been cancelled (before cutoff)

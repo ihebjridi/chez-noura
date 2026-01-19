@@ -7,3 +7,4 @@ export * from './employee.dto';
 export * from './meal.dto';
 export * from './order.dto';
 export * from './invoice.dto';
+export * from './kitchen.dto';

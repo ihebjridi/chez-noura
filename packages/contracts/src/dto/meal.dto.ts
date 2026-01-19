@@ -9,6 +9,7 @@ export interface MealDto {
   description?: string;
   price: number;
   availableDate: string; // ISO date string (YYYY-MM-DD)
+  isActive: boolean;
   status: EntityStatus;
   createdAt: string;
   updatedAt: string;
@@ -32,6 +33,7 @@ export interface UpdateMealDto {
   description?: string;
   price?: number;
   availableDate?: string;
+  isActive?: boolean;
   status?: EntityStatus;
 }
 

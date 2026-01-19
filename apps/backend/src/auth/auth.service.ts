@@ -5,6 +5,7 @@ import * as bcrypt from 'bcryptjs';
 import {
   LoginRequestDto,
   LoginResponseDto,
+  RefreshTokenResponseDto,
   UserDto,
   TokenPayload,
   UserRole,
@@ -135,7 +136,9 @@ export class AuthService {
   /**
    * Refresh access token using refresh token
    */
-  async refreshToken(refreshToken: string): Promise<{ accessToken: string }> {
+  async refreshToken(
+    refreshToken: string,
+  ): Promise<RefreshTokenResponseDto> {
     try {
       const payload = this.jwtService.verify<TokenPayload>(refreshToken);
 

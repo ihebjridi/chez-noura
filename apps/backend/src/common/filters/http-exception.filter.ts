@@ -60,12 +60,51 @@ export class HttpExceptionFilter implements ExceptionFilter {
       this.winstonLogger.warn('HTTP Exception', logContext);
     }
 
+    // Generate error code based on status
+    const errorCode = this.getErrorCode(status, exception);
+
     response.status(status).json({
       statusCode: status,
+      code: errorCode,
       message,
       error,
       requestId,
       timestamp: new Date().toISOString(),
     });
+  }
+
+  private getErrorCode(status: number, exception: unknown): string {
+    if (exception instanceof HttpException) {
+      const exceptionResponse = exception.getResponse();
+      if (
+        typeof exceptionResponse === 'object' &&
+        exceptionResponse !== null &&
+        (exceptionResponse as any).code
+      ) {
+        return (exceptionResponse as any).code;
+      }
+    }
+
+    // Default error codes based on HTTP status
+    switch (status) {
+      case HttpStatus.BAD_REQUEST:
+        return 'BAD_REQUEST';
+      case HttpStatus.UNAUTHORIZED:
+        return 'UNAUTHORIZED';
+      case HttpStatus.FORBIDDEN:
+        return 'FORBIDDEN';
+      case HttpStatus.NOT_FOUND:
+        return 'NOT_FOUND';
+      case HttpStatus.CONFLICT:
+        return 'CONFLICT';
+      case HttpStatus.UNPROCESSABLE_ENTITY:
+        return 'VALIDATION_ERROR';
+      case HttpStatus.TOO_MANY_REQUESTS:
+        return 'RATE_LIMIT_EXCEEDED';
+      case HttpStatus.INTERNAL_SERVER_ERROR:
+        return 'INTERNAL_SERVER_ERROR';
+      default:
+        return 'UNKNOWN_ERROR';
+    }
   }
 }
