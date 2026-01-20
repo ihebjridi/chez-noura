@@ -206,27 +206,35 @@ function OrdersContent() {
                   </div>
 
                   <div style={{ marginBottom: '1rem' }}>
-                    {order.items.map((item) => (
-                      <div
-                        key={item.id}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          padding: '0.5rem 0',
-                          borderBottom: '1px solid #f0f0f0'
-                        }}
-                      >
-                        <div>
-                          <p style={{ fontWeight: '500' }}>{item.mealName}</p>
-                          <p style={{ fontSize: '0.85rem', color: '#666' }}>
-                            {item.quantity} × {item.mealPrice.toFixed(2)} TND
+                    <div style={{
+                      padding: '0.75rem',
+                      backgroundColor: '#f9f9f9',
+                      borderRadius: '4px',
+                      marginBottom: '0.75rem'
+                    }}>
+                      <p style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
+                        {order.packName}
+                      </p>
+                      <p style={{ fontSize: '0.85rem', color: '#666' }}>
+                        {order.packPrice.toFixed(2)} TND
+                      </p>
+                    </div>
+                    <div style={{ paddingLeft: '0.5rem' }}>
+                      {order.items.map((item) => (
+                        <div
+                          key={item.id}
+                          style={{
+                            padding: '0.5rem 0',
+                            borderBottom: '1px solid #f0f0f0'
+                          }}
+                        >
+                          <p style={{ fontSize: '0.9rem', color: '#666' }}>
+                            <span style={{ fontWeight: '500' }}>{item.componentName}:</span>{' '}
+                            {item.variantName}
                           </p>
                         </div>
-                        <p style={{ fontWeight: '600' }}>
-                          {(item.mealPrice * item.quantity).toFixed(2)} TND
-                        </p>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
 
                   <div style={{

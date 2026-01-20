@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ProtectedRoute } from '../../components/protected-route';
 import { useAuth } from '../../contexts/auth-context';
 import { apiClient } from '../../lib/api-client';
-import { MealDto, UserRole, OrderDto, OrderStatus, EntityStatus } from '@contracts/core';
+import { AvailablePackDto, UserRole, OrderDto, OrderStatus } from '@contracts/core';
 import { DegradedModeBanner } from '../../components/degraded-mode-banner';
 import { Logo } from '../../components/logo';
 import { Loading } from '../../components/ui/loading';
@@ -15,30 +15,27 @@ import { Error } from '../../components/ui/error';
 export default function MenuPage() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const [meals, setMeals] = useState<MealDto[]>([]);
+  const [packs, setPacks] = useState<AvailablePackDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedMeals, setSelectedMeals] = useState<Record<string, number>>({});
+  const [selectedPack, setSelectedPack] = useState<AvailablePackDto | null>(null);
+  const [selections, setSelections] = useState<Record<string, string>>({}); // componentId -> variantId
   const [todayOrder, setTodayOrder] = useState<OrderDto | null>(null);
   const [today] = useState(() => new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
-    loadMeals();
+    loadPacks();
     checkTodayOrder();
   }, []);
 
-  const loadMeals = async () => {
+  const loadPacks = async () => {
     try {
       setLoading(true);
       setError('');
-      const data = await apiClient.getMealsForDate(today);
-      // Filter only active meals
-      const activeMeals = data.filter(
-        (meal) => meal.isActive && meal.status === EntityStatus.ACTIVE,
-      );
-      setMeals(activeMeals);
+      const data = await apiClient.getAvailablePacks(today);
+      setPacks(data);
     } catch (err: any) {
-      setError(err.message || 'Failed to load meals');
+      setError(err.message || 'Failed to load packs');
     } finally {
       setLoading(false);
     }
@@ -57,22 +54,27 @@ export default function MenuPage() {
     }
   };
 
-  const handleQuantityChange = (mealId: string, quantity: number) => {
-    if (quantity <= 0) {
-      const newSelected = { ...selectedMeals };
-      delete newSelected[mealId];
-      setSelectedMeals(newSelected);
-    } else {
-      setSelectedMeals({ ...selectedMeals, [mealId]: quantity });
-    }
+  const handlePackSelect = (pack: AvailablePackDto) => {
+    setSelectedPack(pack);
+    setSelections({});
   };
 
-  const totalAmount = meals.reduce((sum, meal) => {
-    const quantity = selectedMeals[meal.id] || 0;
-    return sum + meal.price * quantity;
-  }, 0);
+  const handleVariantSelect = (componentId: string, variantId: string) => {
+    setSelections((prev) => ({
+      ...prev,
+      [componentId]: variantId,
+    }));
+  };
 
-  const hasSelection = Object.keys(selectedMeals).length > 0;
+  const sortedComponents = selectedPack
+    ? [...selectedPack.components].sort((a, b) => a.orderIndex - b.orderIndex)
+    : [];
+
+  const isOrderValid = selectedPack && sortedComponents.every(
+    (component) => !component.required || selections[component.id]
+  );
+
+  const totalAmount = selectedPack ? selectedPack.price : 0;
 
   const handleProceed = () => {
     if (todayOrder) {
@@ -80,17 +82,19 @@ export default function MenuPage() {
       return;
     }
 
-    const items = Object.entries(selectedMeals).map(([mealId, quantity]) => ({
-      mealId,
-      quantity,
-    }));
-
-    if (items.length === 0) {
-      setError('Please select at least one meal');
+    if (!selectedPack || !isOrderValid) {
+      setError('Please select a pack and all required components');
       return;
     }
 
-    router.push(`/order/confirm?date=${today}&items=${encodeURIComponent(JSON.stringify(items))}`);
+    const items = Object.entries(selections).map(([componentId, variantId]) => ({
+      componentId,
+      variantId,
+    }));
+
+    router.push(
+      `/order/confirm?date=${today}&packId=${selectedPack.id}&items=${encodeURIComponent(JSON.stringify(items))}`
+    );
   };
 
   return (
@@ -102,7 +106,7 @@ export default function MenuPage() {
           <div className="px-4 py-3">
             <div className="flex justify-between items-center">
               <div className="flex-1">
-                <h1 className="text-lg md:text-xl font-semibold text-gray-900">Today's Iftar Menu</h1>
+                <h1 className="text-lg md:text-xl font-semibold text-gray-900">Select Your Iftar Pack</h1>
                 {user && (
                   <p className="text-xs md:text-sm text-gray-600 mt-0.5">{user.email}</p>
                 )}
@@ -158,65 +162,118 @@ export default function MenuPage() {
         )}
 
         {loading ? (
-          <Loading message="Loading menu..." />
-        ) : meals.length === 0 ? (
+          <Loading message="Loading packs..." />
+        ) : packs.length === 0 ? (
           <Empty 
-            message="No meals available for today"
+            message="No packs available for today"
             description="Check back later or contact your business admin."
           />
-        ) : (
+        ) : !selectedPack ? (
           <div className="px-4 py-4 space-y-4">
-            {meals.map((meal) => {
-              const quantity = selectedMeals[meal.id] || 0;
-              return (
-                <div
-                  key={meal.id}
-                  className="bg-white rounded-lg border border-gray-200 p-4 md:p-6"
-                >
-                  <div className="mb-4">
+            {packs.map((pack) => (
+              <button
+                key={pack.id}
+                onClick={() => handlePackSelect(pack)}
+                className="w-full bg-white rounded-lg border-2 border-gray-200 p-4 md:p-6 text-left hover:border-primary-500 hover:shadow-md transition-all"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
                     <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-1">
-                      {meal.name}
+                      {pack.name}
                     </h3>
-                    {meal.description && (
-                      <p className="text-sm md:text-base text-gray-600 mb-2">
-                        {meal.description}
-                      </p>
-                    )}
-                    <p className="text-xl md:text-2xl font-semibold text-primary-600">
-                      {meal.price.toFixed(2)} TND
+                    <p className="text-sm text-gray-600">
+                      {pack.components.length} component{pack.components.length !== 1 ? 's' : ''}
                     </p>
                   </div>
-
-                  <div className="flex items-center gap-4">
-                    <button
-                      onClick={() => handleQuantityChange(meal.id, quantity - 1)}
-                      disabled={quantity === 0}
-                      className={`w-9 h-9 md:w-10 md:h-10 rounded-full border flex items-center justify-center text-lg md:text-xl font-medium transition-colors ${
-                        quantity === 0
-                          ? 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
-                          : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      −
-                    </button>
-                    <span className="min-w-[2rem] text-center font-semibold text-lg md:text-xl">
-                      {quantity}
-                    </span>
-                    <button
-                      onClick={() => handleQuantityChange(meal.id, quantity + 1)}
-                      className="w-9 h-9 md:w-10 md:h-10 rounded-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 flex items-center justify-center text-lg md:text-xl font-medium transition-colors"
-                    >
-                      +
-                    </button>
-                  </div>
+                  <p className="text-xl md:text-2xl font-semibold text-primary-600">
+                    {pack.price.toFixed(2)} TND
+                  </p>
                 </div>
-              );
-            })}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="px-4 py-4 space-y-4">
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">{selectedPack.name}</h3>
+                  <p className="text-sm text-gray-600">{selectedPack.price.toFixed(2)} TND</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedPack(null);
+                    setSelections({});
+                  }}
+                  className="text-sm text-primary-600 hover:text-primary-700"
+                >
+                  Change Pack
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {sortedComponents.map((component) => {
+                  const selectedVariantId = selections[component.id];
+                  return (
+                    <div key={component.id} className="border-t border-gray-200 pt-4">
+                      <h4 className="font-medium text-gray-900 mb-2">
+                        {component.name}
+                        {component.required && <span className="text-red-600 ml-1">*</span>}
+                      </h4>
+                      <div className="space-y-2">
+                        {component.variants.map((variant) => {
+                          const isOutOfStock = variant.stockQuantity <= 0;
+                          const isInactive = !variant.isActive;
+                          const isDisabled = isOutOfStock || isInactive;
+                          const isSelected = selectedVariantId === variant.id;
+
+                          return (
+                            <button
+                              key={variant.id}
+                              onClick={() => !isDisabled && handleVariantSelect(component.id, variant.id)}
+                              disabled={isDisabled}
+                              className={`w-full text-left p-3 rounded border-2 transition-all ${
+                                isSelected
+                                  ? 'border-primary-500 bg-primary-50'
+                                  : 'border-gray-200 hover:border-gray-300'
+                              } ${
+                                isDisabled
+                                  ? 'opacity-50 cursor-not-allowed bg-gray-50'
+                                  : 'cursor-pointer'
+                              }`}
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className={isSelected ? 'font-medium' : ''}>
+                                  {variant.name}
+                                </span>
+                                {isOutOfStock && (
+                                  <span className="text-xs text-red-600 font-medium">Out of Stock</span>
+                                )}
+                                {!isOutOfStock && variant.stockQuantity < 10 && (
+                                  <span className="text-xs text-yellow-600 font-medium">
+                                    {variant.stockQuantity} left
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {component.required && !selectedVariantId && (
+                        <p className="text-xs text-red-600 mt-2">
+                          Please select a variant for this required component
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
 
         {/* Fixed bottom bar for order summary - mobile only */}
-        {hasSelection && !todayOrder && (
+        {selectedPack && isOrderValid && !todayOrder && (
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-20 md:hidden">
             <div className="px-4 py-3">
               <div className="flex justify-between items-center mb-3">
@@ -236,7 +293,7 @@ export default function MenuPage() {
         )}
 
         {/* Desktop order summary */}
-        {hasSelection && !todayOrder && (
+        {selectedPack && isOrderValid && !todayOrder && (
           <div className="hidden md:block fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-20">
             <div className="max-w-4xl mx-auto px-6 py-4">
               <div className="flex justify-between items-center">

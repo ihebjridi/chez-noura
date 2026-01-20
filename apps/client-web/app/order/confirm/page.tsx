@@ -142,37 +142,38 @@ function OrderConfirmContent() {
           </div>
         </header>
 
-        <form onSubmit={handleSubmit}>
-          <div style={{ padding: '1rem' }}>
-            <div style={{
-              backgroundColor: 'white',
-              padding: '1rem',
-              borderRadius: '8px',
-              marginBottom: '1rem'
-            }}>
-              <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
-                Order Date
-              </p>
-              <p style={{ fontWeight: '600' }}>
-                {new Date(orderDate).toLocaleDateString('en-US', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
-              </p>
-            </div>
+        {pack && (
+          <form onSubmit={handleSubmit}>
+            <div style={{ padding: '1rem' }}>
+              <div style={{
+                backgroundColor: 'white',
+                padding: '1rem',
+                borderRadius: '8px',
+                marginBottom: '1rem'
+              }}>
+                <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
+                  Order Date
+                </p>
+                <p style={{ fontWeight: '600' }}>
+                  {new Date(orderDate).toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </p>
+              </div>
 
-            <div style={{
-              backgroundColor: 'white',
-              padding: '1rem',
-              borderRadius: '8px',
-              marginBottom: '1rem'
-            }}>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem' }}>
-                Pack: {pack.name}
-              </h2>
-              {pack.components.map((component) => {
+              <div style={{
+                backgroundColor: 'white',
+                padding: '1rem',
+                borderRadius: '8px',
+                marginBottom: '1rem'
+              }}>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem' }}>
+                  Pack: {pack.name}
+                </h2>
+                {pack.components.map((component) => {
                 const selectedVariant = component.variants.find(v => 
                   items.some(item => item.componentId === component.id && item.variantId === v.id)
                 );
@@ -253,6 +254,7 @@ function OrderConfirmContent() {
             </p>
           </div>
         </form>
+        )}
       </div>
     </ProtectedRoute>
   );
