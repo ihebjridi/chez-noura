@@ -45,6 +45,16 @@ export class OrdersService {
       throw new BadRequestException('Employee must be associated with a business');
     }
 
+    // Check if business is active (disabled businesses cannot place orders)
+    const business = await this.prisma.business.findUnique({
+      where: { id: user.businessId },
+      select: { status: true },
+    });
+
+    if (!business || business.status !== 'ACTIVE') {
+      throw new BadRequestException('Business is disabled and cannot place orders');
+    }
+
     // Check if ordering is manually locked for this date
     if (this.orderingLockService.isLocked(createOrderDto.orderDate)) {
       throw new BadRequestException('Ordering is locked for this date');

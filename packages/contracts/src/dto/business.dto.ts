@@ -6,6 +6,7 @@ import { EntityStatus } from '../enums';
 export interface BusinessDto {
   id: string;
   name: string;
+  legalName?: string;
   email: string;
   phone?: string;
   address?: string;
@@ -19,9 +20,11 @@ export interface BusinessDto {
  */
 export interface CreateBusinessDto {
   name: string;
+  legalName?: string;
   email: string;
   phone?: string;
   address?: string;
+  adminEmail: string; // Email for the business admin user
 }
 
 /**
@@ -29,6 +32,7 @@ export interface CreateBusinessDto {
  */
 export interface UpdateBusinessDto {
   name?: string;
+  legalName?: string;
   email?: string;
   phone?: string;
   address?: string;
