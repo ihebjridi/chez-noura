@@ -3,46 +3,48 @@
  */
 
 /**
- * Meal quantity summary (total per meal)
+ * Variant quantity summary (total per variant)
  */
-export interface MealSummaryDto {
-  mealId: string;
-  mealName: string;
+export interface VariantSummaryDto {
+  variantId: string;
+  variantName: string;
+  componentId: string;
+  componentName: string;
+  packId: string;
+  packName: string;
   totalQuantity: number;
-  unitPrice: number;
-  totalAmount: number;
 }
 
 /**
- * Business breakdown for a meal
+ * Business breakdown for a variant
  */
-export interface BusinessMealSummaryDto {
+export interface BusinessVariantSummaryDto {
   businessId: string;
   businessName: string;
   quantity: number;
-  totalAmount: number;
 }
 
 /**
- * Meal summary with business breakdown
+ * Variant summary with business breakdown
  */
-export interface MealSummaryWithBusinessDto {
-  mealId: string;
-  mealName: string;
+export interface VariantSummaryWithBusinessDto {
+  variantId: string;
+  variantName: string;
+  componentId: string;
+  componentName: string;
+  packId: string;
+  packName: string;
   totalQuantity: number;
-  unitPrice: number;
-  totalAmount: number;
-  businesses: BusinessMealSummaryDto[];
+  businesses: BusinessVariantSummaryDto[];
 }
 
 /**
- * Kitchen summary for a date
+ * Kitchen summary for a date (aggregated by variant)
  */
 export interface KitchenSummaryDto {
   date: string; // ISO date string (YYYY-MM-DD)
-  totalMeals: number; // Total number of meal items
-  totalAmount: number; // Total revenue
-  meals: MealSummaryDto[];
+  totalVariants: number; // Total number of variant items
+  variants: VariantSummaryDto[];
   lockedAt?: string; // ISO datetime when the day was locked
 }
 
@@ -51,9 +53,8 @@ export interface KitchenSummaryDto {
  */
 export interface KitchenBusinessSummaryDto {
   date: string; // ISO date string (YYYY-MM-DD)
-  totalMeals: number;
-  totalAmount: number;
-  meals: MealSummaryWithBusinessDto[];
+  totalVariants: number;
+  variants: VariantSummaryWithBusinessDto[];
   lockedAt?: string;
 }
 

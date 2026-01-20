@@ -5,56 +5,47 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ProtectedRoute } from '../../../components/protected-route';
 import { useAuth } from '../../../contexts/auth-context';
 import { apiClient } from '../../../lib/api-client';
-import { MealDto, CreateOrderItemDto, UserRole, EntityStatus } from '@contracts/core';
+import { AvailablePackDto, CreateOrderDto, UserRole } from '@contracts/core';
 
 function OrderConfirmContent() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [meals, setMeals] = useState<MealDto[]>([]);
+  const [pack, setPack] = useState<AvailablePackDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const orderDate = searchParams.get('date') || new Date().toISOString().split('T')[0];
+  const packIdParam = searchParams.get('packId');
   const itemsParam = searchParams.get('items');
-  const items: CreateOrderItemDto[] = itemsParam ? JSON.parse(decodeURIComponent(itemsParam)) : [];
+  const packId = packIdParam || '';
+  const items: Array<{ componentId: string; variantId: string }> = itemsParam ? JSON.parse(decodeURIComponent(itemsParam)) : [];
 
-  const selectedMeals = useMemo(() => {
-    const mealMap = new Map(meals.map(m => [m.id, m]));
-    return items
-      .map(item => {
-        const meal = mealMap.get(item.mealId);
-        return meal ? { meal, quantity: item.quantity } : null;
-      })
-      .filter((item): item is { meal: MealDto; quantity: number } => item !== null);
-  }, [meals, items]);
-
-  const totalAmount = selectedMeals.reduce(
-    (sum, { meal, quantity }) => sum + meal.price * quantity,
-    0
-  );
+  const totalAmount = pack ? pack.price : 0;
 
   useEffect(() => {
-    if (items.length === 0) {
+    if (!packId || items.length === 0) {
       router.push('/menu');
       return;
     }
-    loadMeals();
+    loadPack();
   }, []);
 
-  const loadMeals = async () => {
+  const loadPack = async () => {
     try {
       setLoading(true);
       setError('');
-      const data = await apiClient.getMealsForDate(orderDate);
-      // Filter only active meals
-      const activeMeals = data.filter(
-        (meal) => meal.isActive && meal.status === EntityStatus.ACTIVE,
-      );
-      setMeals(activeMeals);
+      const packs = await apiClient.getAvailablePacks(orderDate);
+      const selectedPack = packs.find(p => p.id === packId);
+      if (!selectedPack) {
+        setError('Pack not found or no longer available');
+        router.push('/menu');
+        return;
+      }
+      setPack(selectedPack);
     } catch (err: any) {
-      setError(err.message || 'Failed to load meal information');
+      setError(err.message || 'Failed to load pack information');
     } finally {
       setLoading(false);
     }
@@ -66,11 +57,16 @@ function OrderConfirmContent() {
     setSubmitting(true);
 
     try {
+      if (!pack) {
+        setError('Pack information is missing');
+        return;
+      }
       // Generate idempotency key from order date and items
-      const idempotencyKey = `${orderDate}-${JSON.stringify(items)}-${Date.now()}`;
+      const idempotencyKey = `${orderDate}-${packId}-${JSON.stringify(items)}-${Date.now()}`;
       await apiClient.createOrder(
         {
           orderDate,
+          packId,
           items,
         },
         idempotencyKey,
@@ -174,30 +170,31 @@ function OrderConfirmContent() {
               marginBottom: '1rem'
             }}>
               <h2 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem' }}>
-                Order Items
+                Pack: {pack.name}
               </h2>
-              {selectedMeals.map(({ meal, quantity }) => (
-                <div
-                  key={meal.id}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '0.75rem 0',
-                    borderBottom: '1px solid #eee'
-                  }}
-                >
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontWeight: '500' }}>{meal.name}</p>
-                    <p style={{ fontSize: '0.9rem', color: '#666' }}>
-                      {quantity} × {meal.price.toFixed(2)} TND
+              {pack.components.map((component) => {
+                const selectedVariant = component.variants.find(v => 
+                  items.some(item => item.componentId === component.id && item.variantId === v.id)
+                );
+                return (
+                  <div
+                    key={component.id}
+                    style={{
+                      padding: '0.75rem 0',
+                      borderBottom: '1px solid #eee'
+                    }}
+                  >
+                    <p style={{ fontWeight: '500', marginBottom: '0.25rem' }}>
+                      {component.name} {component.required && <span style={{ color: '#c33' }}>*</span>}
                     </p>
+                    {selectedVariant && (
+                      <p style={{ fontSize: '0.9rem', color: '#666' }}>
+                        {selectedVariant.name}
+                      </p>
+                    )}
                   </div>
-                  <p style={{ fontWeight: '600' }}>
-                    {(meal.price * quantity).toFixed(2)} TND
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {error && (
@@ -229,17 +226,17 @@ function OrderConfirmContent() {
 
             <button
               type="submit"
-              disabled={submitting || selectedMeals.length === 0}
+              disabled={submitting || !pack || items.length === 0}
               style={{
                 width: '100%',
                 padding: '0.75rem',
-                backgroundColor: submitting || selectedMeals.length === 0 ? '#ccc' : '#0070f3',
+                backgroundColor: submitting || !pack || items.length === 0 ? '#ccc' : '#0070f3',
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',
                 fontSize: '1rem',
                 fontWeight: '500',
-                cursor: submitting || selectedMeals.length === 0 ? 'not-allowed' : 'pointer',
+                cursor: submitting || !pack || items.length === 0 ? 'not-allowed' : 'pointer',
                 marginBottom: '1rem'
               }}
             >

@@ -4,26 +4,24 @@ import {
   ValidateNested,
   IsDateString,
   IsUUID,
-  Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 
 class CreateOrderItemDto {
   @ApiProperty({
-    description: 'Meal ID',
+    description: 'Component ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @IsUUID()
-  mealId: string;
+  componentId: string;
 
   @ApiProperty({
-    description: 'Quantity of this meal',
-    example: 2,
-    minimum: 1,
+    description: 'Variant ID',
+    example: '123e4567-e89b-12d3-a456-426614174001',
   })
-  @Min(1)
-  quantity: number;
+  @IsUUID()
+  variantId: string;
 }
 
 export class CreateOrderDto {
@@ -35,7 +33,14 @@ export class CreateOrderDto {
   orderDate: string;
 
   @ApiProperty({
-    description: 'Order items',
+    description: 'Pack ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  packId: string;
+
+  @ApiProperty({
+    description: 'Order items (component variant selections)',
     type: [CreateOrderItemDto],
   })
   @IsArray()

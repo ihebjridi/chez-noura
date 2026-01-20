@@ -97,9 +97,20 @@ export class OrdersService {
             name: true,
           },
         },
+        pack: {
+          select: {
+            name: true,
+            price: true,
+          },
+        },
         items: {
           include: {
-            meal: {
+            component: {
+              select: {
+                name: true,
+              },
+            },
+            variant: {
               select: {
                 name: true,
               },
@@ -128,84 +139,174 @@ export class OrdersService {
       throw new ForbiddenException('Employee does not belong to this business');
     }
 
-    // Fetch meals and calculate total
-    const mealIds = createOrderDto.items.map((item) => item.mealId);
-    // Reuse orderDate from above (line 56)
-    const startOfDay = new Date(orderDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(orderDate);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    const meals = await this.prisma.meal.findMany({
-      where: {
-        id: { in: mealIds },
-        isActive: true,
-        status: 'ACTIVE',
-        availableDate: {
-          gte: startOfDay,
-          lte: endOfDay,
+    // Fetch and validate pack
+    const pack = await this.prisma.pack.findUnique({
+      where: { id: createOrderDto.packId },
+      include: {
+        packComponents: {
+          include: {
+            component: true,
+          },
+          orderBy: {
+            orderIndex: 'asc',
+          },
         },
       },
     });
 
-    if (meals.length !== mealIds.length) {
-      throw new BadRequestException(
-        'One or more meals not found, inactive, or not available for this date',
-      );
+    if (!pack) {
+      throw new BadRequestException(`Pack with ID ${createOrderDto.packId} not found`);
     }
 
-    // Calculate total amount
-    let totalAmount = 0;
-    const orderItems = createOrderDto.items.map((item) => {
-      const meal = meals.find((m) => m.id === item.mealId);
-      if (!meal) {
-        throw new BadRequestException(`Meal ${item.mealId} not found`);
+    if (!pack.isActive) {
+      throw new BadRequestException('Pack is not active');
+    }
+
+    // Validate all required components are selected
+    const requiredComponents = pack.packComponents.filter((pc) => pc.required);
+    const selectedComponentIds = new Set(createOrderDto.items.map((item) => item.componentId));
+
+    for (const requiredComponent of requiredComponents) {
+      if (!selectedComponentIds.has(requiredComponent.componentId)) {
+        throw new BadRequestException(
+          `Required component "${requiredComponent.component.name}" is missing`,
+        );
       }
-      const itemTotal = Number(meal.price) * item.quantity;
-      totalAmount += itemTotal;
-      return {
-        mealId: meal.id,
-        quantity: item.quantity,
-        unitPrice: meal.price,
-      };
+    }
+
+    // Validate no duplicate components
+    const componentIdsInOrder = createOrderDto.items.map((item) => item.componentId);
+    const uniqueComponentIds = new Set(componentIdsInOrder);
+    if (componentIdsInOrder.length !== uniqueComponentIds.size) {
+      throw new BadRequestException('Duplicate component selections are not allowed');
+    }
+
+    // Fetch all variants and validate
+    const variantIds = createOrderDto.items.map((item) => item.variantId);
+    const variants = await this.prisma.variant.findMany({
+      where: {
+        id: { in: variantIds },
+        isActive: true,
+      },
+      include: {
+        component: true,
+      },
     });
 
-    // Create order with items (with duplicate prevention)
+    if (variants.length !== variantIds.length) {
+      throw new BadRequestException('One or more variants not found or inactive');
+    }
+
+    // Validate variants belong to correct components and have stock
+    const variantMap = new Map(variants.map((v) => [v.id, v]));
+    for (const item of createOrderDto.items) {
+      const variant = variantMap.get(item.variantId);
+      if (!variant) {
+        throw new BadRequestException(`Variant ${item.variantId} not found`);
+      }
+
+      if (variant.componentId !== item.componentId) {
+        throw new BadRequestException(
+          `Variant ${variant.name} does not belong to component ${item.componentId}`,
+        );
+      }
+
+      if (variant.stockQuantity <= 0) {
+        throw new BadRequestException(
+          `Variant "${variant.name}" is out of stock`,
+        );
+      }
+    }
+
+    // Calculate total amount (pack price)
+    const totalAmount = Number(pack.price);
+
+    // Create order with items and decrement stock in a transaction
     try {
-      const order = await this.prisma.order.create({
-        data: {
-          employeeId: user.employeeId,
-          businessId: user.businessId,
-          orderDate: new Date(createOrderDto.orderDate),
-          status: OrderStatus.CREATED,
-          totalAmount,
-          items: {
-            create: orderItems,
+      const order = await this.prisma.$transaction(async (tx) => {
+        // Re-check stock within transaction to prevent race conditions
+        const variantsInTx = await tx.variant.findMany({
+          where: {
+            id: { in: variantIds },
           },
-        },
-        include: {
-          employee: {
-            select: {
-              email: true,
-              firstName: true,
-              lastName: true,
+        });
+
+        // Verify stock is still available
+        for (const variant of variantsInTx) {
+          if (variant.stockQuantity <= 0) {
+            throw new BadRequestException(
+              `Variant "${variant.name}" is out of stock`,
+            );
+          }
+        }
+
+        // Create order
+        const newOrder = await tx.order.create({
+          data: {
+            employeeId: user.employeeId,
+            businessId: user.businessId,
+            packId: pack.id,
+            orderDate: new Date(createOrderDto.orderDate),
+            status: OrderStatus.CREATED,
+            totalAmount,
+            items: {
+              create: createOrderDto.items.map((item) => ({
+                componentId: item.componentId,
+                variantId: item.variantId,
+              })),
             },
           },
-          business: {
-            select: {
-              name: true,
+          include: {
+            employee: {
+              select: {
+                email: true,
+                firstName: true,
+                lastName: true,
+              },
             },
-          },
-          items: {
-            include: {
-              meal: {
-                select: {
-                  name: true,
+            business: {
+              select: {
+                name: true,
+              },
+            },
+            pack: {
+              select: {
+                name: true,
+                price: true,
+              },
+            },
+            items: {
+              include: {
+                component: {
+                  select: {
+                    name: true,
+                  },
+                },
+                variant: {
+                  select: {
+                    name: true,
+                  },
                 },
               },
             },
           },
-        },
+        });
+
+        // Decrement stock for all variants atomically
+        await Promise.all(
+          variantsInTx.map((variant) =>
+            tx.variant.update({
+              where: { id: variant.id },
+              data: {
+                stockQuantity: {
+                  decrement: 1,
+                },
+              },
+            }),
+          ),
+        );
+
+        return newOrder;
       });
 
       return this.mapOrderToDto(order);
@@ -243,9 +344,20 @@ export class OrdersService {
                 name: true,
               },
             },
+            pack: {
+              select: {
+                name: true,
+                price: true,
+              },
+            },
             items: {
               include: {
-                meal: {
+                component: {
+                  select: {
+                    name: true,
+                  },
+                },
+                variant: {
                   select: {
                     name: true,
                   },
@@ -293,9 +405,20 @@ export class OrdersService {
             name: true,
           },
         },
+        pack: {
+          select: {
+            name: true,
+            price: true,
+          },
+        },
         items: {
           include: {
-            meal: {
+            component: {
+              select: {
+                name: true,
+              },
+            },
+            variant: {
               select: {
                 name: true,
               },
@@ -346,9 +469,20 @@ export class OrdersService {
             name: true,
           },
         },
+        pack: {
+          select: {
+            name: true,
+            price: true,
+          },
+        },
         items: {
           include: {
-            meal: {
+            component: {
+              select: {
+                name: true,
+              },
+            },
+            variant: {
               select: {
                 name: true,
               },
@@ -387,9 +521,20 @@ export class OrdersService {
             name: true,
           },
         },
+        pack: {
+          select: {
+            name: true,
+            price: true,
+          },
+        },
         items: {
           include: {
-            meal: {
+            component: {
+              select: {
+                name: true,
+              },
+            },
+            variant: {
               select: {
                 name: true,
               },
@@ -463,14 +608,17 @@ export class OrdersService {
       employeeName: `${order.employee.firstName} ${order.employee.lastName}`,
       businessId: order.businessId,
       businessName: order.business.name,
+      packId: order.packId,
+      packName: order.pack?.name || '',
+      packPrice: order.pack ? Number(order.pack.price) : Number(order.totalAmount),
       orderDate: order.orderDate.toISOString().split('T')[0],
       status: order.status as any,
       items: order.items.map((item: any) => ({
         id: item.id,
-        mealId: item.mealId,
-        mealName: item.meal.name,
-        mealPrice: Number(item.unitPrice),
-        quantity: item.quantity,
+        componentId: item.componentId,
+        componentName: item.component?.name || '',
+        variantId: item.variantId,
+        variantName: item.variant?.name || '',
       })),
       totalAmount: Number(order.totalAmount),
       createdAt: order.createdAt.toISOString(),

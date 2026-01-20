@@ -104,7 +104,7 @@ export class OpsService {
   }
 
   /**
-   * Get kitchen summary for a date (aggregated by meal)
+   * Get kitchen summary for a date (aggregated by variant)
    * Only includes LOCKED orders
    */
   async getSummary(
@@ -138,64 +138,82 @@ export class OpsService {
         },
       },
       include: {
-        meal: {
+        variant: {
           select: {
             id: true,
             name: true,
-            price: true,
           },
         },
-      },
-    });
+        component: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        order: {
+          include: {
+            pack: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      } as any,
+    }) as any[];
 
-    // Aggregate by meal
-    const mealMap = new Map<
+    // Aggregate by variant
+    const variantMap = new Map<
       string,
       {
-        mealId: string;
-        mealName: string;
-        unitPrice: number;
+        variantId: string;
+        variantName: string;
+        componentId: string;
+        componentName: string;
+        packId: string;
+        packName: string;
         totalQuantity: number;
-        totalAmount: number;
       }
     >();
 
     for (const item of orderItems) {
-      const mealId = item.mealId;
-      const existing = mealMap.get(mealId);
+      const variantId = item.variantId;
+      const existing = variantMap.get(variantId);
 
       if (existing) {
-        existing.totalQuantity += item.quantity;
-        existing.totalAmount += Number(item.unitPrice) * item.quantity;
+        existing.totalQuantity += 1; // Each order item represents one variant selection
       } else {
-        mealMap.set(mealId, {
-          mealId: item.meal.id,
-          mealName: item.meal.name,
-          unitPrice: Number(item.meal.price),
-          totalQuantity: item.quantity,
-          totalAmount: Number(item.unitPrice) * item.quantity,
+        variantMap.set(variantId, {
+          variantId: item.variant.id,
+          variantName: item.variant.name,
+          componentId: item.component.id,
+          componentName: item.component.name,
+          packId: item.order.pack.id,
+          packName: item.order.pack.name,
+          totalQuantity: 1,
         });
       }
     }
 
-    const meals = Array.from(mealMap.values()).map((meal) => ({
-      mealId: meal.mealId,
-      mealName: meal.mealName,
-      totalQuantity: meal.totalQuantity,
-      unitPrice: meal.unitPrice,
-      totalAmount: meal.totalAmount,
+    const variants = Array.from(variantMap.values()).map((variant) => ({
+      variantId: variant.variantId,
+      variantName: variant.variantName,
+      componentId: variant.componentId,
+      componentName: variant.componentName,
+      packId: variant.packId,
+      packName: variant.packName,
+      totalQuantity: variant.totalQuantity,
     }));
 
-    const totalMeals = meals.reduce((sum, meal) => sum + meal.totalQuantity, 0);
-    const totalAmount = meals.reduce((sum, meal) => sum + meal.totalAmount, 0);
+    const totalVariants = variants.reduce((sum, v) => sum + v.totalQuantity, 0);
 
-    const summary: KitchenSummaryDto = {
+    const summary = {
       date: date,
-      totalMeals,
-      totalAmount,
-      meals,
+      totalVariants,
+      variants,
       lockedAt: dayLock?.lockedAt.toISOString(),
-    };
+    } as unknown as KitchenSummaryDto;
 
     if (format === 'csv') {
       return this.formatSummaryAsCsv(summary);
@@ -249,13 +267,12 @@ export class OpsService {
     });
 
     if (orders.length === 0) {
-      const summary: KitchenBusinessSummaryDto = {
+      const summary = {
         date: date,
-        totalMeals: 0,
-        totalAmount: 0,
-        meals: [],
+        totalVariants: 0,
+        variants: [],
         lockedAt: dayLock?.lockedAt.toISOString(),
-      };
+      } as unknown as KitchenBusinessSummaryDto;
       return format === 'csv' ? this.formatBusinessSummaryAsCsv(summary) : summary;
     }
 
@@ -271,99 +288,109 @@ export class OpsService {
           in: orderIds,
         },
       },
-      select: {
-        id: true,
-        orderId: true,
-        mealId: true,
-        quantity: true,
-        unitPrice: true,
-        meal: {
+      include: {
+        variant: {
           select: {
             id: true,
             name: true,
-            price: true,
           },
         },
-      },
-    });
+        component: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        order: {
+          include: {
+            pack: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      } as any,
+    }) as any[];
 
-    // Aggregate by meal, then by business
-    const mealMap = new Map<
+    // Aggregate by variant, then by business
+    const variantMap = new Map<
       string,
       {
-        mealId: string;
-        mealName: string;
-        unitPrice: number;
+        variantId: string;
+        variantName: string;
+        componentId: string;
+        componentName: string;
+        packId: string;
+        packName: string;
         businesses: Map<
           string,
           {
             businessId: string;
             businessName: string;
             quantity: number;
-            totalAmount: number;
           }
         >;
         totalQuantity: number;
-        totalAmount: number;
       }
     >();
 
     for (const item of orderItems) {
-      const mealId = item.mealId;
+      const variantId = item.variantId;
       const business = businessMap.get(item.orderId);
       if (!business) continue; // Skip if business not found (shouldn't happen)
       const businessId = business.id;
       const businessName = business.name;
 
-      let mealData = mealMap.get(mealId);
-      if (!mealData) {
-        mealData = {
-          mealId: item.meal.id,
-          mealName: item.meal.name,
-          unitPrice: Number(item.unitPrice),
+      let variantData = variantMap.get(variantId);
+      if (!variantData) {
+        variantData = {
+          variantId: item.variant.id,
+          variantName: item.variant.name,
+          componentId: item.component.id,
+          componentName: item.component.name,
+          packId: item.order.pack.id,
+          packName: item.order.pack.name,
           businesses: new Map(),
           totalQuantity: 0,
-          totalAmount: 0,
         };
-        mealMap.set(mealId, mealData);
+        variantMap.set(variantId, variantData);
       }
 
-      let businessData = mealData.businesses.get(businessId);
+      let businessData = variantData.businesses.get(businessId);
       if (!businessData) {
         businessData = {
           businessId,
           businessName,
           quantity: 0,
-          totalAmount: 0,
         };
-        mealData.businesses.set(businessId, businessData);
+        variantData.businesses.set(businessId, businessData);
       }
 
-      businessData.quantity += item.quantity;
-      businessData.totalAmount += Number(item.unitPrice) * item.quantity;
-      mealData.totalQuantity += item.quantity;
-      mealData.totalAmount += Number(item.unitPrice) * item.quantity;
+      businessData.quantity += 1; // Each order item represents one variant selection
+      variantData.totalQuantity += 1;
     }
 
-    const meals = Array.from(mealMap.values()).map((meal) => ({
-      mealId: meal.mealId,
-      mealName: meal.mealName,
-      totalQuantity: meal.totalQuantity,
-      unitPrice: meal.unitPrice,
-      totalAmount: meal.totalAmount,
-      businesses: Array.from(meal.businesses.values()),
+    const variants = Array.from(variantMap.values()).map((variant) => ({
+      variantId: variant.variantId,
+      variantName: variant.variantName,
+      componentId: variant.componentId,
+      componentName: variant.componentName,
+      packId: variant.packId,
+      packName: variant.packName,
+      totalQuantity: variant.totalQuantity,
+      businesses: Array.from(variant.businesses.values()),
     }));
 
-    const totalMeals = meals.reduce((sum, meal) => sum + meal.totalQuantity, 0);
-    const totalAmount = meals.reduce((sum, meal) => sum + meal.totalAmount, 0);
+    const totalVariants = variants.reduce((sum, v) => sum + v.totalQuantity, 0);
 
-    const summary: KitchenBusinessSummaryDto = {
+    const summary = {
       date: date,
-      totalMeals,
-      totalAmount,
-      meals,
+      totalVariants,
+      variants,
       lockedAt: dayLock?.lockedAt.toISOString(),
-    };
+    } as unknown as KitchenBusinessSummaryDto;
 
     if (format === 'csv') {
       return this.formatBusinessSummaryAsCsv(summary);
@@ -375,23 +402,22 @@ export class OpsService {
   /**
    * Format summary as CSV
    */
-  private formatSummaryAsCsv(summary: KitchenSummaryDto): string {
+  private formatSummaryAsCsv(summary: any): string {
     const lines: string[] = [];
     
     // Header
-    lines.push('Date,Meal ID,Meal Name,Quantity,Unit Price,Total Amount');
+    lines.push('Date,Variant ID,Variant Name,Component ID,Component Name,Pack ID,Pack Name,Quantity');
     
     // Data rows
-    for (const meal of summary.meals) {
+    for (const variant of summary.variants) {
       lines.push(
-        `${summary.date},${meal.mealId},"${meal.mealName}",${meal.totalQuantity},${meal.unitPrice},${meal.totalAmount}`,
+        `${summary.date},${variant.variantId},"${variant.variantName}",${variant.componentId},"${variant.componentName}",${variant.packId},"${variant.packName}",${variant.totalQuantity}`,
       );
     }
     
     // Footer
     lines.push('');
-    lines.push(`Total Meals,${summary.totalMeals}`);
-    lines.push(`Total Amount,${summary.totalAmount}`);
+    lines.push(`Total Variants,${summary.totalVariants}`);
     
     if (summary.lockedAt) {
       lines.push(`Locked At,${summary.lockedAt}`);
@@ -404,26 +430,25 @@ export class OpsService {
    * Format business summary as CSV
    */
   private formatBusinessSummaryAsCsv(
-    summary: KitchenBusinessSummaryDto,
+    summary: any,
   ): string {
     const lines: string[] = [];
     
     // Header
-    lines.push('Date,Meal ID,Meal Name,Business ID,Business Name,Quantity,Unit Price,Total Amount');
+    lines.push('Date,Variant ID,Variant Name,Component ID,Component Name,Pack ID,Pack Name,Business ID,Business Name,Quantity');
     
     // Data rows
-    for (const meal of summary.meals) {
-      for (const business of meal.businesses) {
+    for (const variant of summary.variants) {
+      for (const business of variant.businesses) {
         lines.push(
-          `${summary.date},${meal.mealId},"${meal.mealName}",${business.businessId},"${business.businessName}",${business.quantity},${meal.unitPrice},${business.totalAmount}`,
+          `${summary.date},${variant.variantId},"${variant.variantName}",${variant.componentId},"${variant.componentName}",${variant.packId},"${variant.packName}",${business.businessId},"${business.businessName}",${business.quantity}`,
         );
       }
     }
     
     // Footer
     lines.push('');
-    lines.push(`Total Meals,${summary.totalMeals}`);
-    lines.push(`Total Amount,${summary.totalAmount}`);
+    lines.push(`Total Variants,${summary.totalVariants}`);
     
     if (summary.lockedAt) {
       lines.push(`Locked At,${summary.lockedAt}`);

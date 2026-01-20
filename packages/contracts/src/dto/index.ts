@@ -8,3 +8,6 @@ export * from './meal.dto';
 export * from './order.dto';
 export * from './invoice.dto';
 export * from './kitchen.dto';
+export * from './pack.dto';
+export * from './component.dto';
+export * from './variant.dto';

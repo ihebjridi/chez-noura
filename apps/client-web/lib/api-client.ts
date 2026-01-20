@@ -4,6 +4,7 @@ import {
   MealDto,
   CreateOrderDto,
   OrderDto,
+  AvailablePackDto,
 } from '@contracts/core';
 import { readOnlyFallback } from './readonly-fallback';
 
@@ -75,7 +76,7 @@ class ApiClient {
     return this.request<UserDto>('/auth/me');
   }
 
-  // Meal endpoints
+  // Meal endpoints (kept for backward compatibility if needed)
   async getMealsForDate(date: string): Promise<MealDto[]> {
     try {
       const meals = await this.request<MealDto[]>(`/meals?date=${date}`, {}, true);
@@ -91,6 +92,19 @@ class ApiClient {
           return cached;
         }
         throw new Error('Backend is unavailable and no cached data found. Please try again later.');
+      }
+      throw error;
+    }
+  }
+
+  // Pack endpoints
+  async getAvailablePacks(date: string): Promise<AvailablePackDto[]> {
+    try {
+      const packs = await this.request<AvailablePackDto[]>(`/packs/available?date=${date}`, {}, true);
+      return packs;
+    } catch (error: any) {
+      if (error.message === 'BACKEND_DEGRADED') {
+        throw new Error('Backend is unavailable. Please try again later.');
       }
       throw error;
     }

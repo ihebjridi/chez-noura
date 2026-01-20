@@ -13,6 +13,7 @@ import { InvoicesModule } from './invoices/invoices.module';
 import { HealthModule } from './health/health.module';
 import { SystemModule } from './system/system.module';
 import { OpsModule } from './ops/ops.module';
+import { PacksModule } from './packs/packs.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { WinstonModule } from 'nest-winston';
@@ -49,6 +50,7 @@ import * as winston from 'winston';
     HealthModule,
     SystemModule,
     OpsModule,
+    PacksModule,
   ],
   controllers: [],
   providers: [

@@ -79,21 +79,11 @@ export class InvoicesService {
             email: true,
           },
         },
-        employee: {
+        pack: {
           select: {
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        items: {
-          include: {
-            meal: {
-              select: {
-                name: true,
-                price: true,
-              },
-            },
+            id: true,
+            name: true,
+            price: true,
           },
         },
       },
@@ -165,37 +155,31 @@ export class InvoicesService {
         continue;
       }
 
-      // Calculate totals
+      // Calculate totals (pack-based: one pack per order)
       let subtotal = 0;
       const invoiceItems: Array<{
         orderId: string;
         orderDate: Date;
-        employeeEmail: string;
-        employeeName: string;
-        mealName: string;
-        quantity: number;
-        unitPrice: number;
-        totalPrice: number;
+        packName: string;
+        quantity: number; // Always 1 (one pack per order)
+        unitPrice: number; // Pack price
+        totalPrice: number; // Pack price × quantity
       }> = [];
 
       for (const order of availableOrders) {
-        for (const orderItem of order.items) {
-          const unitPrice = Number(orderItem.meal.price);
-          const quantity = orderItem.quantity;
-          const totalPrice = unitPrice * quantity;
-          subtotal += totalPrice;
+        const packPrice = Number(order.pack.price);
+        const quantity = 1; // One pack per order
+        const totalPrice = packPrice * quantity;
+        subtotal += totalPrice;
 
-          invoiceItems.push({
-            orderId: order.id,
-            orderDate: order.orderDate,
-            employeeEmail: order.employee.email,
-            employeeName: `${order.employee.firstName} ${order.employee.lastName}`,
-            mealName: orderItem.meal.name,
-            quantity,
-            unitPrice,
-            totalPrice,
-          });
-        }
+        invoiceItems.push({
+          orderId: order.id,
+          orderDate: order.orderDate,
+          packName: order.pack.name,
+          quantity,
+          unitPrice: packPrice,
+          totalPrice,
+        });
       }
 
       if (invoiceItems.length === 0) {
@@ -557,9 +541,7 @@ export class InvoicesService {
         id: item.id,
         orderId: item.orderId,
         orderDate: item.orderDate.toISOString().split('T')[0],
-        employeeEmail: item.employeeEmail,
-        employeeName: item.employeeName,
-        mealName: item.mealName,
+        packName: item.packName,
         quantity: item.quantity,
         unitPrice: Number(item.unitPrice),
         totalPrice: Number(item.totalPrice),

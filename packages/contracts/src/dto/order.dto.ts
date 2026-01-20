@@ -1,14 +1,14 @@
 import { OrderStatus } from '../enums';
 
 /**
- * Order item DTO (meal selection within an order)
+ * Order item DTO (component variant selection within an order)
  */
 export interface OrderItemDto {
   id: string;
-  mealId: string;
-  mealName: string;
-  mealPrice: number;
-  quantity: number;
+  componentId: string;
+  componentName: string;
+  variantId: string;
+  variantName: string;
 }
 
 /**
@@ -21,6 +21,9 @@ export interface OrderDto {
   employeeName: string;
   businessId: string;
   businessName: string;
+  packId: string;
+  packName: string;
+  packPrice: number;
   orderDate: string; // ISO date string (YYYY-MM-DD)
   status: OrderStatus;
   items: OrderItemDto[];
@@ -34,15 +37,16 @@ export interface OrderDto {
  */
 export interface CreateOrderDto {
   orderDate: string; // ISO date string (YYYY-MM-DD)
+  packId: string;
   items: CreateOrderItemDto[];
 }
 
 /**
- * Create order item DTO
+ * Create order item DTO (component variant selection)
  */
 export interface CreateOrderItemDto {
-  mealId: string;
-  quantity: number;
+  componentId: string;
+  variantId: string;
 }
 
 /**

@@ -1,18 +1,16 @@
 import { InvoiceStatus } from '../enums';
 
 /**
- * Invoice item DTO
+ * Invoice item DTO (pack-based)
  */
 export interface InvoiceItemDto {
   id: string;
   orderId: string;
   orderDate: string;
-  employeeEmail: string;
-  employeeName: string;
-  mealName: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
+  packName: string;
+  quantity: number; // Always 1 per order (one pack per order)
+  unitPrice: number; // Pack price
+  totalPrice: number; // Pack price × quantity (same as unitPrice for quantity=1)
 }
 
 /**

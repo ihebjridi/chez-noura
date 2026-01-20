@@ -62,7 +62,7 @@ export class OpsController {
   @Get('summary')
   @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({
-    summary: 'Get kitchen summary for a date (aggregated by meal)',
+    summary: 'Get kitchen summary for a date (aggregated by variant)',
   })
   @ApiQuery({
     name: 'date',

@@ -34,32 +34,32 @@ enum InvoiceStatus {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String?  // Nullable for EMPLOYEE (email-based auth)
-  role      UserRole
+  id         String   @id @default(uuid())
+  email      String   @unique
+  password   String? // Nullable for EMPLOYEE (email-based auth)
+  role       UserRole
   businessId String?
-  employeeId String? @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  employeeId String?  @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  business  Business? @relation(fields: [businessId], references: [id])
-  employee  Employee? @relation(fields: [employeeId], references: [id])
+  business Business? @relation(fields: [businessId], references: [id])
+  employee Employee? @relation(fields: [employeeId], references: [id])
 
   @@index([email])
   @@index([businessId])
 }
 
 model Business {
-  id        String   @id @default(uuid())
-  name      String   @unique
+  id        String       @id @default(uuid())
+  name      String       @unique
   legalName String?
-  email     String   @unique
+  email     String       @unique
   phone     String?
   address   String?
   status    EntityStatus @default(ACTIVE)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
   users     User[]
   employees Employee[]
@@ -72,99 +72,167 @@ model Business {
 }
 
 model Employee {
-  id         String   @id @default(uuid())
-  email      String   @unique
+  id         String       @id @default(uuid())
+  email      String       @unique
   firstName  String
   lastName   String
   businessId String
   status     EntityStatus @default(ACTIVE)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
 
-  business   Business @relation(fields: [businessId], references: [id])
-  user       User?
-  orders     Order[]
+  business Business @relation(fields: [businessId], references: [id])
+  user     User?
+  orders   Order[]
 
   @@index([email])
   @@index([businessId])
 }
 
 model Meal {
-  id           String   @id @default(uuid())
-  name         String
-  description  String?
-  price        Decimal  @db.Decimal(10, 2)
+  id            String       @id @default(uuid())
+  name          String
+  description   String?
+  price         Decimal      @db.Decimal(10, 2)
   availableDate DateTime // Date when meal is available
-  cutoffTime   DateTime // When ordering closes for this meal
-  isActive     Boolean  @default(true)
-  status       EntityStatus @default(ACTIVE)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  cutoffTime    DateTime // When ordering closes for this meal
+  isActive      Boolean      @default(true)
+  status        EntityStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
-  orderItems   OrderItem[]
+  orderItems OrderItem[]
 
   @@index([availableDate])
   @@index([cutoffTime])
   @@index([isActive])
 }
 
+model Pack {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  price     Decimal  @db.Decimal(10, 2)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  packComponents PackComponent[]
+  orders         Order[]
+
+  @@index([isActive])
+  @@index([name])
+}
+
+model Component {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  packComponents PackComponent[]
+  variants       Variant[]
+  orderItems     OrderItem[]
+}
+
+model PackComponent {
+  id          String   @id @default(uuid())
+  packId      String
+  componentId String
+  required    Boolean  @default(true)
+  orderIndex  Int // Order in which components appear in the pack
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  pack      Pack      @relation(fields: [packId], references: [id], onDelete: Cascade)
+  component Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+
+  @@unique([packId, componentId])
+  @@index([packId])
+  @@index([componentId])
+}
+
+model Variant {
+  id            String   @id @default(uuid())
+  componentId   String
+  name          String
+  stockQuantity Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  component  Component   @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@unique([componentId, name])
+  @@index([componentId])
+  @@index([stockQuantity])
+  @@index([isActive])
+}
+
 model Order {
-  id         String      @id @default(uuid())
-  employeeId String
-  businessId String
-  orderDate  DateTime    // Date the order is for (YYYY-MM-DD)
-  status     OrderStatus @default(CREATED)
-  totalAmount Decimal    @db.Decimal(10, 2)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id          String      @id @default(uuid())
+  employeeId  String
+  businessId  String
+  packId      String
+  orderDate   DateTime // Date the order is for (YYYY-MM-DD)
+  status      OrderStatus @default(CREATED)
+  totalAmount Decimal     @db.Decimal(10, 2)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
-  employee   Employee    @relation(fields: [employeeId], references: [id])
-  business   Business    @relation(fields: [businessId], references: [id])
-  items      OrderItem[]
+  employee Employee    @relation(fields: [employeeId], references: [id])
+  business Business    @relation(fields: [businessId], references: [id])
+  pack     Pack        @relation(fields: [packId], references: [id])
+  items    OrderItem[]
 
+  // Prevent duplicate orders per employee per day
+  @@unique([employeeId, orderDate])
   @@index([employeeId])
   @@index([businessId])
+  @@index([packId])
   @@index([orderDate])
   @@index([status])
   // Composite index for date-based queries with status filter (for aggregation)
   @@index([orderDate, status])
-  // Prevent duplicate orders per employee per day
-  @@unique([employeeId, orderDate])
 }
 
 model OrderItem {
-  id        String   @id @default(uuid())
-  orderId   String
-  mealId    String
-  quantity  Int      @default(1)
-  unitPrice Decimal  @db.Decimal(10, 2)
-  createdAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  orderId     String
+  componentId String
+  variantId   String
+  createdAt   DateTime @default(now())
 
-  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  meal      Meal     @relation(fields: [mealId], references: [id])
+  order     Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  component Component @relation(fields: [componentId], references: [id])
+  variant   Variant   @relation(fields: [variantId], references: [id])
+  meal      Meal?     @relation(fields: [mealId], references: [id])
+  mealId    String?
 
+  @@unique([orderId, componentId]) // One variant per component per order
   @@index([orderId])
-  @@index([mealId])
+  @@index([componentId])
+  @@index([variantId])
 }
 
 model Invoice {
-  id           String        @id @default(uuid())
-  businessId   String
-  invoiceNumber String       @unique
-  periodStart  DateTime
-  periodEnd    DateTime
-  status       InvoiceStatus @default(DRAFT)
-  subtotal     Decimal       @db.Decimal(10, 2)
-  tax          Decimal?      @db.Decimal(10, 2)
-  total        Decimal       @db.Decimal(10, 2)
-  dueDate      DateTime
-  issuedAt     DateTime?
-  paidAt       DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id            String        @id @default(uuid())
+  businessId    String
+  invoiceNumber String        @unique
+  periodStart   DateTime
+  periodEnd     DateTime
+  status        InvoiceStatus @default(DRAFT)
+  subtotal      Decimal       @db.Decimal(10, 2)
+  tax           Decimal?      @db.Decimal(10, 2)
+  total         Decimal       @db.Decimal(10, 2)
+  dueDate       DateTime
+  issuedAt      DateTime?
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  business     Business      @relation(fields: [businessId], references: [id])
-  items        InvoiceItem[]
+  business Business      @relation(fields: [businessId], references: [id])
+  items    InvoiceItem[]
 
   @@index([businessId])
   @@index([invoiceNumber])
@@ -173,19 +241,17 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id          String   @id @default(uuid())
-  invoiceId   String
-  orderId     String   @unique // An order can belong to only one invoice
-  orderDate   DateTime
-  employeeEmail String
-  employeeName String
-  mealName   String
-  quantity   Int
-  unitPrice  Decimal  @db.Decimal(10, 2)
-  totalPrice Decimal  @db.Decimal(10, 2)
-  createdAt  DateTime @default(now())
+  id            String   @id @default(uuid())
+  invoiceId     String
+  orderId       String   @unique // An order can belong to only one invoice
+  orderDate     DateTime
+  packName      String   // Pack name for this order
+  quantity      Int      @default(1) // Always 1 (one pack per order)
+  unitPrice     Decimal  @db.Decimal(10, 2) // Pack price
+  totalPrice    Decimal  @db.Decimal(10, 2) // Pack price × quantity
+  createdAt     DateTime @default(now())
 
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@index([invoiceId])
   @@index([orderId])
@@ -195,7 +261,7 @@ model DayLock {
   id        String   @id @default(uuid())
   lockDate  DateTime @unique // Date that was locked (YYYY-MM-DD)
   lockedAt  DateTime @default(now())
-  lockedBy  String?  // User ID who locked it (optional)
+  lockedBy  String? // User ID who locked it (optional)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
