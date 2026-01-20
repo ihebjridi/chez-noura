@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/auth-context';
+import { Logo } from '../../components/logo';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -32,31 +33,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      minHeight: '100vh',
-      padding: '1rem'
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        padding: '2rem',
-        borderRadius: '8px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        width: '100%',
-        maxWidth: '400px'
-      }}>
-        <h1 style={{ marginBottom: '0.5rem', textAlign: 'center', fontSize: '1.5rem' }}>
-          Chez Noura
-        </h1>
-        <p style={{ marginBottom: '1.5rem', textAlign: 'center', color: '#666', fontSize: '0.9rem' }}>
-          Employee Ordering
-        </p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-sm border border-gray-200 p-6 md:p-8">
+        <div className="mb-6 md:mb-8 text-center">
+          <Logo className="justify-center mb-2" />
+          <p className="text-xs md:text-sm text-gray-600 mt-2">Employee Ordering</p>
+        </div>
         
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '1rem' }}>
-            <label htmlFor="email" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
               Email Address
             </label>
             <input
@@ -66,54 +52,26 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="your.email@company.com"
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '1rem'
-              }}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-base"
             />
           </div>
 
           {error && (
-            <div style={{
-              marginBottom: '1rem',
-              padding: '0.75rem',
-              backgroundColor: '#fee',
-              color: '#c33',
-              borderRadius: '4px',
-              fontSize: '0.9rem'
-            }}>
-              {error}
+            <div className="bg-red-50 border border-red-200 rounded-md p-3">
+              <p className="text-sm text-red-800">{error}</p>
             </div>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              backgroundColor: loading ? '#ccc' : '#0070f3',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '1rem',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              fontWeight: '500'
-            }}
+            className="w-full py-2.5 px-4 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? 'Logging in...' : 'Continue'}
           </button>
         </form>
 
-        <p style={{ 
-          marginTop: '1.5rem', 
-          fontSize: '0.85rem', 
-          color: '#666', 
-          textAlign: 'center' 
-        }}>
+        <p className="mt-6 text-xs md:text-sm text-gray-500 text-center">
           Enter your company email to access meal ordering
         </p>
       </div>

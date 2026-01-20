@@ -7,6 +7,10 @@ import { useAuth } from '../../contexts/auth-context';
 import { apiClient } from '../../lib/api-client';
 import { MealDto, UserRole, OrderDto, OrderStatus, EntityStatus } from '@contracts/core';
 import { DegradedModeBanner } from '../../components/degraded-mode-banner';
+import { Logo } from '../../components/logo';
+import { Loading } from '../../components/ui/loading';
+import { Empty } from '../../components/ui/empty';
+import { Error } from '../../components/ui/error';
 
 export default function MenuPage() {
   const { user, logout } = useAuth();
@@ -91,83 +95,56 @@ export default function MenuPage() {
 
   return (
     <ProtectedRoute requiredRole={UserRole.EMPLOYEE}>
-      <DegradedModeBanner />
-      <div style={{ 
-        minHeight: '100vh',
-        paddingBottom: '5rem' // Space for fixed bottom bar
-      }}>
-        <header style={{
-          backgroundColor: 'white',
-          padding: '1rem',
-          borderBottom: '1px solid #eee',
-          position: 'sticky',
-          top: 0,
-          zIndex: 10
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: '600' }}>Today's Iftar Menu</h1>
-            <button
-              onClick={logout}
-              style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: '#f5f5f5',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.9rem'
-              }}
-            >
-              Logout
-            </button>
+      <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
+        <DegradedModeBanner />
+        
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+          <div className="px-4 py-3">
+            <div className="flex justify-between items-center">
+              <div className="flex-1">
+                <h1 className="text-lg md:text-xl font-semibold text-gray-900">Today's Iftar Menu</h1>
+                {user && (
+                  <p className="text-xs md:text-sm text-gray-600 mt-0.5">{user.email}</p>
+                )}
+              </div>
+              <button
+                onClick={logout}
+                className="px-3 py-1.5 text-xs md:text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+              >
+                Logout
+              </button>
+            </div>
           </div>
-          {user && (
-            <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#666' }}>
-              {user.email}
-            </p>
-          )}
         </header>
 
         {todayOrder && (
-          <div style={{
-            margin: '1rem',
-            padding: '1rem',
-            backgroundColor: todayOrder.status === OrderStatus.LOCKED ? '#d4edda' : '#fff3cd',
-            color: todayOrder.status === OrderStatus.LOCKED ? '#155724' : '#856404',
-            borderRadius: '8px',
-            fontSize: '0.9rem',
-            border: `1px solid ${todayOrder.status === OrderStatus.LOCKED ? '#c3e6cb' : '#ffeaa7'}`
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <strong>Today's Order Status:</strong>
-              <span style={{
-                padding: '0.25rem 0.5rem',
-                borderRadius: '4px',
-                backgroundColor: todayOrder.status === OrderStatus.LOCKED ? '#155724' : '#856404',
-                color: 'white',
-                fontSize: '0.85rem',
-                fontWeight: '500'
-              }}>
+          <div className={`mx-4 mt-4 p-4 rounded-lg border ${
+            todayOrder.status === OrderStatus.LOCKED
+              ? 'bg-green-50 border-green-200 text-green-800'
+              : 'bg-yellow-50 border-yellow-200 text-yellow-800'
+          }`}>
+            <div className="flex justify-between items-center mb-2">
+              <strong className="text-sm font-semibold">Today's Order Status:</strong>
+              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                todayOrder.status === OrderStatus.LOCKED
+                  ? 'bg-green-700 text-white'
+                  : 'bg-yellow-700 text-white'
+              }`}>
                 {todayOrder.status}
               </span>
             </div>
-            <p style={{ margin: 0, fontSize: '0.85rem' }}>
+            <p className="text-xs md:text-sm mb-3">
               {todayOrder.status === OrderStatus.LOCKED
                 ? 'Your order has been locked and confirmed.'
                 : 'Your order has been placed and is pending confirmation.'}
             </p>
             <button
               onClick={() => router.push('/orders')}
-              style={{
-                marginTop: '0.75rem',
-                padding: '0.5rem 1rem',
-                backgroundColor: 'transparent',
-                border: `1px solid ${todayOrder.status === OrderStatus.LOCKED ? '#155724' : '#856404'}`,
-                borderRadius: '4px',
-                color: todayOrder.status === OrderStatus.LOCKED ? '#155724' : '#856404',
-                cursor: 'pointer',
-                fontSize: '0.85rem',
-                fontWeight: '500'
-              }}
+              className={`text-xs md:text-sm px-3 py-1.5 rounded border font-medium transition-colors ${
+                todayOrder.status === OrderStatus.LOCKED
+                  ? 'border-green-700 text-green-700 hover:bg-green-100'
+                  : 'border-yellow-700 text-yellow-700 hover:bg-yellow-100'
+              }`}
             >
               View Order Details
             </button>
@@ -175,119 +152,59 @@ export default function MenuPage() {
         )}
 
         {error && !loading && (
-          <div style={{
-            margin: '1rem',
-            padding: '1rem',
-            backgroundColor: '#fee',
-            color: '#c33',
-            borderRadius: '8px',
-            fontSize: '0.9rem'
-          }}>
-            {error}
-          </div>
-        )}
-
-        {todayOrder && !loading && (
-          <div style={{
-            margin: '1rem',
-            padding: '1rem',
-            backgroundColor: '#e7f3ff',
-            color: '#004085',
-            borderRadius: '8px',
-            fontSize: '0.9rem',
-            border: '1px solid #b3d9ff'
-          }}>
-            <strong>Note:</strong> You have already placed an order for today. You can view it in the Orders section.
+          <div className="mx-4 mt-4">
+            <Error message={error} />
           </div>
         )}
 
         {loading ? (
-          <div style={{ padding: '2rem', textAlign: 'center' }}>
-            <p>Loading menu...</p>
-          </div>
+          <Loading message="Loading menu..." />
         ) : meals.length === 0 ? (
-          <div style={{
-            padding: '2rem',
-            textAlign: 'center',
-            backgroundColor: 'white',
-            margin: '1rem',
-            borderRadius: '8px'
-          }}>
-            <p>No meals available for today.</p>
-            <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
-              Check back later or contact your business admin.
-            </p>
-          </div>
+          <Empty 
+            message="No meals available for today"
+            description="Check back later or contact your business admin."
+          />
         ) : (
-          <div style={{ padding: '1rem' }}>
+          <div className="px-4 py-4 space-y-4">
             {meals.map((meal) => {
               const quantity = selectedMeals[meal.id] || 0;
               return (
                 <div
                   key={meal.id}
-                  style={{
-                    backgroundColor: 'white',
-                    padding: '1.5rem',
-                    borderRadius: '8px',
-                    marginBottom: '1rem',
-                    border: '1px solid #eee'
-                  }}
+                  className="bg-white rounded-lg border border-gray-200 p-4 md:p-6"
                 >
-                  <div style={{ marginBottom: '0.75rem' }}>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.25rem' }}>
+                  <div className="mb-4">
+                    <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-1">
                       {meal.name}
                     </h3>
                     {meal.description && (
-                      <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.25rem' }}>
+                      <p className="text-sm md:text-base text-gray-600 mb-2">
                         {meal.description}
                       </p>
                     )}
-                    <p style={{ fontSize: '1.25rem', fontWeight: '600', color: '#0070f3', marginTop: '0.5rem' }}>
+                    <p className="text-xl md:text-2xl font-semibold text-primary-600">
                       {meal.price.toFixed(2)} TND
                     </p>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div className="flex items-center gap-4">
                     <button
                       onClick={() => handleQuantityChange(meal.id, quantity - 1)}
                       disabled={quantity === 0}
-                      style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '50%',
-                        border: '1px solid #ddd',
-                        backgroundColor: quantity === 0 ? '#f5f5f5' : 'white',
-                        cursor: quantity === 0 ? 'not-allowed' : 'pointer',
-                        fontSize: '1.25rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
+                      className={`w-9 h-9 md:w-10 md:h-10 rounded-full border flex items-center justify-center text-lg md:text-xl font-medium transition-colors ${
+                        quantity === 0
+                          ? 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
+                          : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                      }`}
                     >
                       −
                     </button>
-                    <span style={{ 
-                      minWidth: '2rem', 
-                      textAlign: 'center', 
-                      fontWeight: '600',
-                      fontSize: '1.1rem'
-                    }}>
+                    <span className="min-w-[2rem] text-center font-semibold text-lg md:text-xl">
                       {quantity}
                     </span>
                     <button
                       onClick={() => handleQuantityChange(meal.id, quantity + 1)}
-                      style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '50%',
-                        border: '1px solid #ddd',
-                        backgroundColor: 'white',
-                        cursor: 'pointer',
-                        fontSize: '1.25rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
+                      className="w-9 h-9 md:w-10 md:h-10 rounded-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 flex items-center justify-center text-lg md:text-xl font-medium transition-colors"
                     >
                       +
                     </button>
@@ -298,46 +215,45 @@ export default function MenuPage() {
           </div>
         )}
 
-        {/* Fixed bottom bar for order summary */}
+        {/* Fixed bottom bar for order summary - mobile only */}
         {hasSelection && !todayOrder && (
-          <div style={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            backgroundColor: 'white',
-            padding: '1rem',
-            borderTop: '1px solid #eee',
-            boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
-            zIndex: 10
-          }}>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              marginBottom: '0.75rem'
-            }}>
-              <span style={{ fontWeight: '600' }}>Total:</span>
-              <span style={{ fontSize: '1.25rem', fontWeight: '600', color: '#0070f3' }}>
-                {totalAmount.toFixed(2)} TND
-              </span>
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-20 md:hidden">
+            <div className="px-4 py-3">
+              <div className="flex justify-between items-center mb-3">
+                <span className="font-semibold text-gray-900">Total:</span>
+                <span className="text-xl font-bold text-primary-600">
+                  {totalAmount.toFixed(2)} TND
+                </span>
+              </div>
+              <button
+                onClick={handleProceed}
+                className="w-full py-2.5 px-4 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 transition-colors"
+              >
+                Review Order
+              </button>
             </div>
-            <button
-              onClick={handleProceed}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                backgroundColor: '#0070f3',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                fontSize: '1rem',
-                fontWeight: '500',
-                cursor: 'pointer'
-              }}
-            >
-              Review Order
-            </button>
+          </div>
+        )}
+
+        {/* Desktop order summary */}
+        {hasSelection && !todayOrder && (
+          <div className="hidden md:block fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-20">
+            <div className="max-w-4xl mx-auto px-6 py-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <span className="text-sm text-gray-600">Total:</span>
+                  <span className="ml-2 text-2xl font-bold text-primary-600">
+                    {totalAmount.toFixed(2)} TND
+                  </span>
+                </div>
+                <button
+                  onClick={handleProceed}
+                  className="px-6 py-2.5 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 transition-colors"
+                >
+                  Review Order
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

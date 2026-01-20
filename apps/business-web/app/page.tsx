@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/auth-context';
+import { Loading } from '../components/ui/loading';
 
 export default function Home() {
   const { isAuthenticated, loading } = useAuth();
@@ -19,8 +20,8 @@ export default function Home() {
   }, [loading, isAuthenticated, router]);
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-      <p>Loading...</p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <Loading message="Loading..." />
     </div>
   );
 }
