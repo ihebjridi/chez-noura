@@ -6,6 +6,7 @@ import { ProtectedRoute } from '../../components/protected-route';
 import { useAuth } from '../../contexts/auth-context';
 import { apiClient } from '../../lib/api-client';
 import { MealDto, UserRole, OrderDto, OrderStatus, EntityStatus } from '@contracts/core';
+import { DegradedModeBanner } from '../../components/degraded-mode-banner';
 
 export default function MenuPage() {
   const { user, logout } = useAuth();
@@ -90,6 +91,7 @@ export default function MenuPage() {
 
   return (
     <ProtectedRoute requiredRole={UserRole.EMPLOYEE}>
+      <DegradedModeBanner />
       <div style={{ 
         minHeight: '100vh',
         paddingBottom: '5rem' // Space for fixed bottom bar

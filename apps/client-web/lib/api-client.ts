@@ -5,10 +5,13 @@ import {
   CreateOrderDto,
   OrderDto,
 } from '@contracts/core';
+import { readOnlyFallback } from './readonly-fallback';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 class ApiClient {
+  private degradedMode: boolean = false;
+
   private getAuthToken(): string | null {
     if (typeof window === 'undefined') return null;
     return localStorage.getItem('accessToken');
@@ -17,6 +20,7 @@ class ApiClient {
   private async request<T>(
     endpoint: string,
     options: RequestInit = {},
+    useCache: boolean = false,
   ): Promise<T> {
     const token = this.getAuthToken();
     const headers: Record<string, string> = {
@@ -28,17 +32,35 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers,
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...options,
+        headers,
+        signal: AbortSignal.timeout(10000), // 10 second timeout
+      });
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'An error occurred' }));
-      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      if (!response.ok) {
+        // If it's a server error (5xx), check if we should use cache
+        if (response.status >= 500 && useCache) {
+          this.degradedMode = true;
+          throw new Error('BACKEND_DEGRADED');
+        }
+        
+        const error = await response.json().catch(() => ({ message: 'An error occurred' }));
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+
+      // Backend is healthy, reset degraded mode
+      this.degradedMode = false;
+      return response.json();
+    } catch (error: any) {
+      // Network error or timeout
+      if ((error.name === 'AbortError' || error.message === 'Failed to fetch') && useCache) {
+        this.degradedMode = true;
+        throw new Error('BACKEND_DEGRADED');
+      }
+      throw error;
     }
-
-    return response.json();
   }
 
   // Auth endpoints
@@ -55,25 +77,83 @@ class ApiClient {
 
   // Meal endpoints
   async getMealsForDate(date: string): Promise<MealDto[]> {
-    return this.request<MealDto[]>(`/meals?date=${date}`);
+    try {
+      const meals = await this.request<MealDto[]>(`/meals?date=${date}`, {}, true);
+      // Cache successful response
+      readOnlyFallback.cacheMeals(date, meals);
+      return meals;
+    } catch (error: any) {
+      // If backend is degraded, try to return cached data
+      if (error.message === 'BACKEND_DEGRADED') {
+        const cached = readOnlyFallback.getCachedMeals(date);
+        if (cached) {
+          console.warn('Using cached meals - backend is degraded');
+          return cached;
+        }
+        throw new Error('Backend is unavailable and no cached data found. Please try again later.');
+      }
+      throw error;
+    }
   }
 
   // Order endpoints
   async createOrder(data: CreateOrderDto, idempotencyKey?: string): Promise<OrderDto> {
+    // Never use cache for write operations
+    if (this.degradedMode) {
+      throw new Error('Backend is unavailable. Orders cannot be placed at this time. Please try again later.');
+    }
+
     const headers: Record<string, string> = {};
     if (idempotencyKey) {
       headers['x-idempotency-key'] = idempotencyKey;
     }
-    return this.request<OrderDto>('/orders', {
-      method: 'POST',
-      body: JSON.stringify(data),
-      headers,
-    });
+    
+    try {
+      const order = await this.request<OrderDto>('/orders', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers,
+      });
+      
+      // Update cached orders after successful creation
+      const cachedOrders = readOnlyFallback.getCachedOrders() || [];
+      readOnlyFallback.cacheOrders([order, ...cachedOrders]);
+      
+      return order;
+    } catch (error: any) {
+      if (error.message === 'BACKEND_DEGRADED') {
+        throw new Error('Backend is unavailable. Orders cannot be placed at this time. Please try again later.');
+      }
+      throw error;
+    }
   }
 
   // Get employee's own orders
   async getMyOrders(): Promise<OrderDto[]> {
-    return this.request<OrderDto[]>('/orders/me');
+    try {
+      const orders = await this.request<OrderDto[]>('/orders/me', {}, true);
+      // Cache successful response
+      readOnlyFallback.cacheOrders(orders);
+      return orders;
+    } catch (error: any) {
+      // If backend is degraded, try to return cached data
+      if (error.message === 'BACKEND_DEGRADED') {
+        const cached = readOnlyFallback.getCachedOrders();
+        if (cached) {
+          console.warn('Using cached orders - backend is degraded');
+          return cached;
+        }
+        throw new Error('Backend is unavailable and no cached data found. Please try again later.');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Check if backend is in degraded mode
+   */
+  isDegradedMode(): boolean {
+    return this.degradedMode;
   }
 }
 

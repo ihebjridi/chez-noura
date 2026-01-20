@@ -18,6 +18,7 @@ export default function BusinessesPage() {
     email: '',
     phone: '',
     address: '',
+    adminEmail: '',
   });
 
   useEffect(() => {
@@ -28,9 +29,8 @@ export default function BusinessesPage() {
     try {
       setLoading(true);
       setError('');
-      // Note: Business CRUD endpoints are not yet implemented in backend
-      // This is a placeholder until backend endpoints are available
-      setBusinesses([]);
+      const data = await apiClient.getBusinesses();
+      setBusinesses(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load businesses');
     } finally {
@@ -42,10 +42,18 @@ export default function BusinessesPage() {
     e.preventDefault();
     try {
       setError('');
-      // Note: Business CRUD endpoints are not yet implemented in backend
-      setError('Business creation endpoint is not yet available in the backend');
+      const result = await apiClient.createBusiness(formData);
       setShowCreateForm(false);
-      setFormData({ name: '', email: '', phone: '', address: '' });
+      setFormData({ name: '', email: '', phone: '', address: '', adminEmail: '' });
+      await loadBusinesses();
+      
+      // Show success message with admin credentials
+      alert(
+        `Business created successfully!\n\n` +
+        `Admin Email: ${result.adminCredentials.email}\n` +
+        `Temporary Password: ${result.adminCredentials.temporaryPassword}\n\n` +
+        `Please save these credentials securely.`
+      );
     } catch (err: any) {
       setError(err.message || 'Failed to create business');
     }
@@ -147,6 +155,20 @@ export default function BusinessesPage() {
                 style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
               />
             </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem' }}>Admin Email *</label>
+              <input
+                type="email"
+                value={formData.adminEmail}
+                onChange={(e) => setFormData({ ...formData, adminEmail: e.target.value })}
+                required
+                placeholder="Email for the business admin user"
+                style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
+              />
+              <p style={{ fontSize: '0.85rem', color: '#666', marginTop: '0.25rem' }}>
+                A temporary password will be generated for this admin user
+              </p>
+            </div>
             <button
               type="submit"
               style={{
@@ -174,9 +196,6 @@ export default function BusinessesPage() {
             backgroundColor: 'white'
           }}>
             <p>No businesses found. Create your first business to get started.</p>
-            <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
-              Note: Business CRUD endpoints are not yet implemented in the backend.
-            </p>
           </div>
         ) : (
           <div style={{ display: 'grid', gap: '1rem' }}>

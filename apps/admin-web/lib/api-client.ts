@@ -12,6 +12,9 @@ import {
   DayLockDto,
   InvoiceDto,
   InvoiceSummaryDto,
+  BusinessDto,
+  CreateBusinessDto,
+  UpdateBusinessDto,
 } from '@contracts/core';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -113,6 +116,41 @@ class ApiClient {
   async generateInvoices(start: string, end: string): Promise<InvoiceDto[]> {
     return this.request<InvoiceDto[]>(`/invoices/generate?start=${start}&end=${end}`, {
       method: 'POST',
+    });
+  }
+
+  // Business endpoints
+  async getBusinesses(): Promise<BusinessDto[]> {
+    return this.request<BusinessDto[]>('/businesses');
+  }
+
+  async getBusinessById(id: string): Promise<BusinessDto> {
+    return this.request<BusinessDto>(`/businesses/${id}`);
+  }
+
+  async createBusiness(data: CreateBusinessDto): Promise<{
+    business: BusinessDto;
+    adminCredentials: { email: string; temporaryPassword: string };
+  }> {
+    return this.request<{
+      business: BusinessDto;
+      adminCredentials: { email: string; temporaryPassword: string };
+    }>('/businesses', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateBusiness(id: string, data: UpdateBusinessDto): Promise<BusinessDto> {
+    return this.request<BusinessDto>(`/businesses/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async disableBusiness(id: string): Promise<BusinessDto> {
+    return this.request<BusinessDto>(`/businesses/${id}/disable`, {
+      method: 'PATCH',
     });
   }
 }

@@ -86,8 +86,8 @@ export class OpsController {
   async getSummary(
     @Query('date') date: string,
     @Query('format') format: 'json' | 'csv' = 'json',
-    @Res() res?: Response,
-  ): Promise<KitchenSummaryDto | void> {
+    @Res() res: Response,
+  ): Promise<void> {
     if (!date) {
       throw new BadRequestException('Date query parameter is required');
     }
@@ -95,9 +95,6 @@ export class OpsController {
     const result = await this.opsService.getSummary(date, format);
 
     if (format === 'csv') {
-      if (!res) {
-        throw new BadRequestException('Response object required for CSV format');
-      }
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader(
         'Content-Disposition',
@@ -107,7 +104,8 @@ export class OpsController {
       return;
     }
 
-    return result as KitchenSummaryDto;
+    // For JSON format, manually send the response
+    res.json(result as KitchenSummaryDto);
   }
 
   @Get('business-summary')
@@ -137,8 +135,8 @@ export class OpsController {
   async getBusinessSummary(
     @Query('date') date: string,
     @Query('format') format: 'json' | 'csv' = 'json',
-    @Res() res?: Response,
-  ): Promise<KitchenBusinessSummaryDto | void> {
+    @Res() res: Response,
+  ): Promise<void> {
     if (!date) {
       throw new BadRequestException('Date query parameter is required');
     }
@@ -146,9 +144,6 @@ export class OpsController {
     const result = await this.opsService.getBusinessSummary(date, format);
 
     if (format === 'csv') {
-      if (!res) {
-        throw new BadRequestException('Response object required for CSV format');
-      }
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader(
         'Content-Disposition',
@@ -158,6 +153,7 @@ export class OpsController {
       return;
     }
 
-    return result as KitchenBusinessSummaryDto;
+    // For JSON format, manually send the response
+    res.json(result as KitchenBusinessSummaryDto);
   }
 }

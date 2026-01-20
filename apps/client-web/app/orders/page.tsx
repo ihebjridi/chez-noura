@@ -6,6 +6,7 @@ import { ProtectedRoute } from '../../components/protected-route';
 import { useAuth } from '../../contexts/auth-context';
 import { apiClient } from '../../lib/api-client';
 import { OrderDto, UserRole, OrderStatus } from '@contracts/core';
+import { DegradedModeBanner } from '../../components/degraded-mode-banner';
 
 function OrdersContent() {
   const { user, logout } = useAuth();
@@ -58,6 +59,7 @@ function OrdersContent() {
 
   return (
     <ProtectedRoute requiredRole={UserRole.EMPLOYEE}>
+      <DegradedModeBanner />
       <div style={{ minHeight: '100vh', paddingBottom: '2rem' }}>
         <header style={{
           backgroundColor: 'white',

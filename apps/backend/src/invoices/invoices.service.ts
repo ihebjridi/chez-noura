@@ -97,10 +97,10 @@ export class InvoicesService {
           },
         },
       },
-      orderBy: {
-        businessId: 'asc',
-        orderDate: 'asc',
-      },
+      orderBy: [
+        { businessId: 'asc' },
+        { orderDate: 'asc' },
+      ],
     });
 
     // Find orders that are already in non-DRAFT invoices
@@ -122,18 +122,9 @@ export class InvoicesService {
 
     const excludedOrderIds = new Set(invoiceItems.map((item) => item.orderId));
 
-    // Filter out orders that are already in non-DRAFT invoices
-    const orders = allOrders.filter((order) => !excludedOrderIds.has(order.id));
-
-    if (orders.length === 0) {
-      throw new BadRequestException(
-        'No LOCKED orders found for the specified period',
-      );
-    }
-
-    // Group orders by business
-    const ordersByBusiness = new Map<string, typeof orders>();
-    for (const order of orders) {
+    // Group orders by business (including already invoiced ones for idempotency check)
+    const ordersByBusiness = new Map<string, typeof allOrders>();
+    for (const order of allOrders) {
       const businessId = order.businessId;
       if (!ordersByBusiness.has(businessId)) {
         ordersByBusiness.set(businessId, []);
@@ -164,6 +155,16 @@ export class InvoicesService {
         continue;
       }
 
+      // Filter to only orders that aren't already invoiced
+      const availableOrders = businessOrders.filter(
+        (order) => !excludedOrderIds.has(order.id),
+      );
+
+      if (availableOrders.length === 0) {
+        // All orders for this business are already invoiced, skip
+        continue;
+      }
+
       // Calculate totals
       let subtotal = 0;
       const invoiceItems: Array<{
@@ -177,7 +178,7 @@ export class InvoicesService {
         totalPrice: number;
       }> = [];
 
-      for (const order of businessOrders) {
+      for (const order of availableOrders) {
         for (const orderItem of order.items) {
           const unitPrice = Number(orderItem.meal.price);
           const quantity = orderItem.quantity;
@@ -302,6 +303,36 @@ export class InvoicesService {
       });
 
       invoices.push(this.mapInvoiceToDto(invoice));
+    }
+
+    // If no new invoices were created but we have existing ones, return them
+    // This handles the case where all orders were already invoiced
+    if (invoices.length === 0 && allOrders.length > 0) {
+      // Try to find existing invoices for all businesses in the period
+      const businessIds = Array.from(ordersByBusiness.keys());
+      const existingInvoices = await this.prisma.invoice.findMany({
+        where: {
+          businessId: {
+            in: businessIds,
+          },
+          periodStart: startDate,
+          periodEnd: endDate,
+          status: {
+            in: ['DRAFT', 'ISSUED'],
+          },
+        },
+      });
+
+      for (const existingInvoice of existingInvoices) {
+        const invoice = await this.getInvoiceById(existingInvoice.id, user);
+        invoices.push(invoice);
+      }
+    }
+
+    if (invoices.length === 0) {
+      throw new BadRequestException(
+        'No LOCKED orders found for the specified period',
+      );
     }
 
     return invoices;

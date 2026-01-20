@@ -227,33 +227,61 @@ export class OpsService {
       where: { lockDate: startOfDay },
     });
 
-    // Aggregate order items with business info for LOCKED orders only
-    const orderItems = await this.prisma.orderItem.findMany({
+    // First, get all LOCKED orders for the date (uses composite index)
+    const orders = await this.prisma.order.findMany({
       where: {
-        order: {
-          orderDate: {
-            gte: startOfDay,
-            lte: endOfDay,
+        orderDate: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+        status: 'LOCKED',
+      },
+      select: {
+        id: true,
+        businessId: true,
+        business: {
+          select: {
+            id: true,
+            name: true,
           },
-          status: 'LOCKED',
         },
       },
-      include: {
+    });
+
+    if (orders.length === 0) {
+      const summary: KitchenBusinessSummaryDto = {
+        date: date,
+        totalMeals: 0,
+        totalAmount: 0,
+        meals: [],
+        lockedAt: dayLock?.lockedAt.toISOString(),
+      };
+      return format === 'csv' ? this.formatBusinessSummaryAsCsv(summary) : summary;
+    }
+
+    const orderIds = orders.map((o) => o.id);
+    const businessMap = new Map(
+      orders.map((o) => [o.id, { id: o.businessId, name: o.business.name }]),
+    );
+
+    // Then get order items for those orders
+    const orderItems = await this.prisma.orderItem.findMany({
+      where: {
+        orderId: {
+          in: orderIds,
+        },
+      },
+      select: {
+        id: true,
+        orderId: true,
+        mealId: true,
+        quantity: true,
+        unitPrice: true,
         meal: {
           select: {
             id: true,
             name: true,
             price: true,
-          },
-        },
-        order: {
-          include: {
-            business: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
           },
         },
       },
@@ -282,15 +310,17 @@ export class OpsService {
 
     for (const item of orderItems) {
       const mealId = item.mealId;
-      const businessId = item.order.businessId;
-      const businessName = item.order.business.name;
+      const business = businessMap.get(item.orderId);
+      if (!business) continue; // Skip if business not found (shouldn't happen)
+      const businessId = business.id;
+      const businessName = business.name;
 
       let mealData = mealMap.get(mealId);
       if (!mealData) {
         mealData = {
           mealId: item.meal.id,
           mealName: item.meal.name,
-          unitPrice: Number(item.meal.price),
+          unitPrice: Number(item.unitPrice),
           businesses: new Map(),
           totalQuantity: 0,
           totalAmount: 0,
