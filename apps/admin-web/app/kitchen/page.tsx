@@ -246,10 +246,7 @@ export default function KitchenPage() {
             )}
             <div style={{ marginBottom: '1rem' }}>
               <p>
-                <strong>Total Meals:</strong> {summary.totalMeals}
-              </p>
-              <p>
-                <strong>Total Amount:</strong> {summary.totalAmount.toFixed(2)} TND
+                <strong>Total Variants:</strong> {summary.totalVariants}
               </p>
             </div>
             <div style={{ overflowX: 'auto' }}>
@@ -269,7 +266,25 @@ export default function KitchenPage() {
                         borderBottom: '1px solid #ddd',
                       }}
                     >
-                      Meal
+                      Pack
+                    </th>
+                    <th
+                      style={{
+                        padding: '1rem',
+                        textAlign: 'left',
+                        borderBottom: '1px solid #ddd',
+                      }}
+                    >
+                      Component
+                    </th>
+                    <th
+                      style={{
+                        padding: '1rem',
+                        textAlign: 'left',
+                        borderBottom: '1px solid #ddd',
+                      }}
+                    >
+                      Variant
                     </th>
                     <th
                       style={{
@@ -280,38 +295,16 @@ export default function KitchenPage() {
                     >
                       Quantity
                     </th>
-                    <th
-                      style={{
-                        padding: '1rem',
-                        textAlign: 'right',
-                        borderBottom: '1px solid #ddd',
-                      }}
-                    >
-                      Unit Price
-                    </th>
-                    <th
-                      style={{
-                        padding: '1rem',
-                        textAlign: 'right',
-                        borderBottom: '1px solid #ddd',
-                      }}
-                    >
-                      Total
-                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {summary.meals.map((meal) => (
-                    <tr key={meal.mealId} style={{ borderBottom: '1px solid #eee' }}>
-                      <td style={{ padding: '1rem' }}>{meal.mealName}</td>
-                      <td style={{ padding: '1rem', textAlign: 'right' }}>
-                        {meal.totalQuantity}
-                      </td>
-                      <td style={{ padding: '1rem', textAlign: 'right' }}>
-                        {meal.unitPrice.toFixed(2)} TND
-                      </td>
-                      <td style={{ padding: '1rem', textAlign: 'right' }}>
-                        {meal.totalAmount.toFixed(2)} TND
+                  {summary.variants.map((variant) => (
+                    <tr key={variant.variantId} style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '1rem' }}>{variant.packName}</td>
+                      <td style={{ padding: '1rem' }}>{variant.componentName}</td>
+                      <td style={{ padding: '1rem' }}>{variant.variantName}</td>
+                      <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 'bold' }}>
+                        {variant.totalQuantity}
                       </td>
                     </tr>
                   ))}
@@ -338,36 +331,32 @@ export default function KitchenPage() {
             )}
             <div style={{ marginBottom: '1rem' }}>
               <p>
-                <strong>Total Meals:</strong> {businessSummary.totalMeals}
-              </p>
-              <p>
-                <strong>Total Amount:</strong>{' '}
-                {businessSummary.totalAmount.toFixed(2)} TND
+                <strong>Total Variants:</strong> {businessSummary.totalVariants}
               </p>
             </div>
             <div style={{ display: 'grid', gap: '1.5rem' }}>
-              {businessSummary.meals.map((meal) => (
+              {businessSummary.variants.map((variant) => (
                 <div
-                  key={meal.mealId}
+                  key={variant.variantId}
                   style={{
                     padding: '1rem',
                     border: '1px solid #eee',
                     borderRadius: '4px',
                   }}
                 >
-                  <h3>{meal.mealName}</h3>
+                  <h3>{variant.variantName}</h3>
                   <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
-                    Total: {meal.totalQuantity} × {meal.unitPrice.toFixed(2)} TND ={' '}
-                    {meal.totalAmount.toFixed(2)} TND
+                    <strong>Pack:</strong> {variant.packName} | <strong>Component:</strong> {variant.componentName}
+                  </p>
+                  <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
+                    Total Quantity: {variant.totalQuantity}
                   </p>
                   <div style={{ marginTop: '0.5rem' }}>
                     <strong>By Business:</strong>
                     <ul style={{ marginTop: '0.5rem', paddingLeft: '1.5rem' }}>
-                      {meal.businesses.map((business) => (
+                      {variant.businesses.map((business) => (
                         <li key={business.businessId}>
-                          {business.businessName}: {business.quantity} ×{' '}
-                          {meal.unitPrice.toFixed(2)} TND ={' '}
-                          {business.totalAmount.toFixed(2)} TND
+                          {business.businessName}: {business.quantity}
                         </li>
                       ))}
                     </ul>

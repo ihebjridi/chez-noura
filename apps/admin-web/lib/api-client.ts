@@ -15,6 +15,17 @@ import {
   BusinessDto,
   CreateBusinessDto,
   UpdateBusinessDto,
+  PackDto,
+  CreatePackDto,
+  UpdatePackDto,
+  PackWithComponentsDto,
+  PackComponentDto,
+  CreatePackComponentDto,
+  ComponentDto,
+  CreateComponentDto,
+  VariantDto,
+  CreateVariantDto,
+  UpdateVariantDto,
 } from '@contracts/core';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -151,6 +162,71 @@ class ApiClient {
   async disableBusiness(id: string): Promise<BusinessDto> {
     return this.request<BusinessDto>(`/businesses/${id}/disable`, {
       method: 'PATCH',
+    });
+  }
+
+  // Pack endpoints
+  async getPacks(): Promise<PackDto[]> {
+    return this.request<PackDto[]>('/packs');
+  }
+
+  async getPackById(id: string): Promise<PackWithComponentsDto> {
+    return this.request<PackWithComponentsDto>(`/packs/${id}`);
+  }
+
+  async createPack(data: CreatePackDto): Promise<PackDto> {
+    return this.request<PackDto>('/packs', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updatePack(id: string, data: UpdatePackDto): Promise<PackDto> {
+    return this.request<PackDto>(`/packs/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getPackComponents(packId: string): Promise<PackComponentDto[]> {
+    return this.request<PackComponentDto[]>(`/packs/${packId}/components`);
+  }
+
+  async addPackComponent(packId: string, data: CreatePackComponentDto): Promise<PackComponentDto> {
+    return this.request<PackComponentDto>(`/packs/${packId}/components`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Component endpoints
+  async getComponents(): Promise<ComponentDto[]> {
+    return this.request<ComponentDto[]>('/components');
+  }
+
+  async createComponent(data: CreateComponentDto): Promise<ComponentDto> {
+    return this.request<ComponentDto>('/components', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Variant endpoints
+  async getComponentVariants(componentId: string): Promise<VariantDto[]> {
+    return this.request<VariantDto[]>(`/components/${componentId}/variants`);
+  }
+
+  async createVariant(componentId: string, data: Omit<CreateVariantDto, 'componentId'>): Promise<VariantDto> {
+    return this.request<VariantDto>(`/components/${componentId}/variants`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateVariant(variantId: string, data: UpdateVariantDto): Promise<VariantDto> {
+    return this.request<VariantDto>(`/variants/${variantId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
     });
   }
 }

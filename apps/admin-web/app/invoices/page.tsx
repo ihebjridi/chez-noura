@@ -304,7 +304,7 @@ export default function InvoicesPage() {
                           borderBottom: '1px solid #ddd',
                         }}
                       >
-                        Meal
+                        Pack
                       </th>
                       <th
                         style={{
@@ -313,7 +313,7 @@ export default function InvoicesPage() {
                           borderBottom: '1px solid #ddd',
                         }}
                       >
-                        Employee
+                        Order Date
                       </th>
                       <th
                         style={{
@@ -347,9 +347,9 @@ export default function InvoicesPage() {
                   <tbody>
                     {selectedInvoice.items.map((item) => (
                       <tr key={item.id} style={{ borderBottom: '1px solid #eee' }}>
-                        <td style={{ padding: '1rem' }}>{item.mealName}</td>
+                        <td style={{ padding: '1rem' }}>{item.packName}</td>
                         <td style={{ padding: '1rem' }}>
-                          {item.employeeName} ({item.employeeEmail})
+                          {new Date(item.orderDate).toLocaleDateString()}
                         </td>
                         <td style={{ padding: '1rem', textAlign: 'right' }}>
                           {item.quantity}
