@@ -131,10 +131,9 @@ export default function InvoiceDetailPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f5f5f5' }}>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Date</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Employee</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Meal</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '1px solid #ddd' }}>Qty</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Order Date</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Pack</th>
+                    <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '1px solid #ddd' }}>Quantity</th>
                     <th style={{ padding: '0.75rem', textAlign: 'right', borderBottom: '1px solid #ddd' }}>Unit Price</th>
                     <th style={{ padding: '0.75rem', textAlign: 'right', borderBottom: '1px solid #ddd' }}>Total</th>
                   </tr>
@@ -143,11 +142,7 @@ export default function InvoiceDetailPage() {
                   {invoice.items.map((item) => (
                     <tr key={item.id} style={{ borderBottom: '1px solid #eee' }}>
                       <td style={{ padding: '0.75rem' }}>{new Date(item.orderDate).toLocaleDateString()}</td>
-                      <td style={{ padding: '0.75rem' }}>
-                        <div>{item.employeeName}</div>
-                        <div style={{ fontSize: '0.9rem', color: '#666' }}>{item.employeeEmail}</div>
-                      </td>
-                      <td style={{ padding: '0.75rem' }}>{item.mealName}</td>
+                      <td style={{ padding: '0.75rem' }}>{item.packName}</td>
                       <td style={{ padding: '0.75rem', textAlign: 'center' }}>{item.quantity}</td>
                       <td style={{ padding: '0.75rem', textAlign: 'right' }}>{item.unitPrice.toFixed(2)} TND</td>
                       <td style={{ padding: '0.75rem', textAlign: 'right' }}>{item.totalPrice.toFixed(2)} TND</td>

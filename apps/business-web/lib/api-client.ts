@@ -5,7 +5,7 @@ import {
   EmployeeDto,
   CreateEmployeeDto,
   UpdateEmployeeDto,
-  OrderSummaryDto,
+  OrderDto,
   InvoiceDto,
   InvoiceSummaryDto,
 } from '@contracts/core';
@@ -74,8 +74,8 @@ class ApiClient {
   }
 
   // Order endpoints
-  async getBusinessOrders(): Promise<OrderSummaryDto[]> {
-    return this.request<OrderSummaryDto[]>('/business/orders');
+  async getBusinessOrders(): Promise<OrderDto[]> {
+    return this.request<OrderDto[]>('/orders/business');
   }
 
   // Invoice endpoints

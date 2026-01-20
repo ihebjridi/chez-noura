@@ -1,13 +1,85 @@
 'use client';
 
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { ProtectedRoute } from '../../components/protected-route';
 import { useAuth } from '../../contexts/auth-context';
-import { UserRole } from '@contracts/core';
+import { apiClient } from '../../lib/api-client';
+import { UserRole, OrderDto } from '@contracts/core';
 import { Logo } from '../../components/logo';
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
+  const [orders, setOrders] = useState<OrderDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split('T')[0]
+  );
+  const [expandedPack, setExpandedPack] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadOrders();
+  }, []);
+
+  const loadOrders = async () => {
+    try {
+      setLoading(true);
+      const data = await apiClient.getBusinessOrders();
+      setOrders(data);
+    } catch (err) {
+      console.error('Failed to load orders:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const dailyOrders = useMemo(() => {
+    return orders.filter(
+      (order) => order.orderDate.split('T')[0] === selectedDate
+    );
+  }, [orders, selectedDate]);
+
+  const packSummary = useMemo(() => {
+    const summary: Record<
+      string,
+      {
+        packName: string;
+        packPrice: number;
+        count: number;
+        orders: OrderDto[];
+        variantBreakdown: Record<string, Record<string, number>>;
+      }
+    > = {};
+
+    dailyOrders.forEach((order) => {
+      if (!summary[order.packId]) {
+        summary[order.packId] = {
+          packName: order.packName,
+          packPrice: order.packPrice,
+          count: 0,
+          orders: [],
+          variantBreakdown: {},
+        };
+      }
+      summary[order.packId].count++;
+      summary[order.packId].orders.push(order);
+
+      order.items.forEach((item) => {
+        if (!summary[order.packId].variantBreakdown[item.componentName]) {
+          summary[order.packId].variantBreakdown[item.componentName] = {};
+        }
+        const variantCount =
+          summary[order.packId].variantBreakdown[item.componentName][
+            item.variantName
+          ] || 0;
+        summary[order.packId].variantBreakdown[item.componentName][
+          item.variantName
+        ] = variantCount + 1;
+      });
+    });
+
+    return Object.values(summary);
+  }, [dailyOrders]);
 
   return (
     <ProtectedRoute requiredRole={UserRole.BUSINESS_ADMIN}>
@@ -35,6 +107,94 @@ export default function DashboardPage() {
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Business Admin Dashboard</h1>
             <p className="mt-2 text-gray-600">Manage employees, orders, and invoices for your business</p>
+          </div>
+
+          {/* Daily Summary Section */}
+          <div className="mb-8 bg-white rounded-lg border border-gray-200 p-6">
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Daily Summary</h2>
+              <div className="flex items-center gap-4 mb-4">
+                <label htmlFor="date" className="text-sm font-medium text-gray-700">
+                  Date:
+                </label>
+                <input
+                  id="date"
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+            </div>
+
+            {loading ? (
+              <p className="text-gray-600">Loading orders...</p>
+            ) : dailyOrders.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>No orders found for {new Date(selectedDate).toLocaleDateString()}</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="text-sm text-gray-600 mb-4">
+                  Total Orders: <strong>{dailyOrders.length}</strong>
+                </div>
+                {packSummary.map((pack) => (
+                  <div
+                    key={pack.packName}
+                    className="border border-gray-200 rounded-lg p-4"
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{pack.packName}</h3>
+                        <p className="text-sm text-gray-600">
+                          {pack.packPrice.toFixed(2)} TND per pack
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-gray-900">{pack.count}</div>
+                        <div className="text-sm text-gray-600">orders</div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() =>
+                        setExpandedPack(expandedPack === pack.packName ? null : pack.packName)
+                      }
+                      className="mt-2 text-sm text-primary-600 hover:text-primary-700"
+                    >
+                      {expandedPack === pack.packName ? 'Hide' : 'Show'} Variant Breakdown
+                    </button>
+                    {expandedPack === pack.packName && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                          Variant Breakdown:
+                        </h4>
+                        <div className="space-y-2">
+                          {Object.entries(pack.variantBreakdown).map(
+                            ([componentName, variants]) => (
+                              <div key={componentName} className="ml-4">
+                                <div className="font-medium text-gray-700 text-sm mb-1">
+                                  {componentName}:
+                                </div>
+                                <div className="ml-4 space-y-1">
+                                  {Object.entries(variants).map(([variantName, count]) => (
+                                    <div
+                                      key={variantName}
+                                      className="text-sm text-gray-600"
+                                    >
+                                      {variantName}: <strong>{count}</strong>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
