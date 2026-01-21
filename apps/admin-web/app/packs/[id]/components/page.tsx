@@ -257,7 +257,7 @@ export default function PackComponentsPage() {
                       </td>
                       <td style={{ padding: '0.75rem' }}>
                         <Link
-                          href={`/components/${pc.componentId}/variants`}
+                          href={`/food-components/${pc.componentId}/variants`}
                           style={{
                             padding: '0.25rem 0.5rem',
                             backgroundColor: '#0070f3',

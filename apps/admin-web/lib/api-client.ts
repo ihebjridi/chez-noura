@@ -26,6 +26,12 @@ import {
   VariantDto,
   CreateVariantDto,
   UpdateVariantDto,
+  DailyMenuDto,
+  DailyMenuWithDetailsDto,
+  CreateDailyMenuDto,
+  AddPackToDailyMenuDto,
+  AddVariantToDailyMenuDto,
+  PublishDailyMenuResponseDto,
 } from '@contracts/core';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -227,6 +233,48 @@ class ApiClient {
     return this.request<VariantDto>(`/variants/${variantId}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
+    });
+  }
+
+  // Daily Menu endpoints
+  async getDailyMenus(): Promise<DailyMenuDto[]> {
+    return this.request<DailyMenuDto[]>('/daily-menus');
+  }
+
+  async getDailyMenuById(id: string): Promise<DailyMenuWithDetailsDto> {
+    return this.request<DailyMenuWithDetailsDto>(`/daily-menus/${id}`);
+  }
+
+  async createDailyMenu(data: CreateDailyMenuDto): Promise<DailyMenuDto> {
+    return this.request<DailyMenuDto>('/daily-menus', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async addPackToDailyMenu(dailyMenuId: string, data: AddPackToDailyMenuDto): Promise<any> {
+    return this.request<any>(`/daily-menus/${dailyMenuId}/packs`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async addVariantToDailyMenu(dailyMenuId: string, data: AddVariantToDailyMenuDto): Promise<any> {
+    return this.request<any>(`/daily-menus/${dailyMenuId}/variants`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async publishDailyMenu(id: string): Promise<PublishDailyMenuResponseDto> {
+    return this.request<PublishDailyMenuResponseDto>(`/daily-menus/${id}/publish`, {
+      method: 'POST',
+    });
+  }
+
+  async lockDailyMenu(id: string): Promise<DailyMenuDto> {
+    return this.request<DailyMenuDto>(`/daily-menus/${id}/lock`, {
+      method: 'POST',
     });
   }
 }

@@ -7,7 +7,7 @@ import { apiClient } from '../../lib/api-client';
 import { ComponentDto, CreateComponentDto, UserRole } from '@contracts/core';
 import Link from 'next/link';
 
-export default function ComponentsPage() {
+export default function FoodComponentsPage() {
   const { logout } = useAuth();
   const [components, setComponents] = useState<ComponentDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +28,7 @@ export default function ComponentsPage() {
       const data = await apiClient.getComponents();
       setComponents(data);
     } catch (err: any) {
-      setError(err.message || 'Failed to load components');
+      setError(err.message || 'Failed to load food components');
     } finally {
       setLoading(false);
     }
@@ -43,7 +43,7 @@ export default function ComponentsPage() {
       setFormData({ name: '' });
       await loadComponents();
     } catch (err: any) {
-      setError(err.message || 'Failed to create component');
+      setError(err.message || 'Failed to create food component');
     }
   };
 
@@ -53,7 +53,7 @@ export default function ComponentsPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
           <div>
             <Link href="/dashboard" style={{ marginRight: '1rem', textDecoration: 'none' }}>← Dashboard</Link>
-            <h1 style={{ display: 'inline', marginLeft: '1rem' }}>Components</h1>
+            <h1 style={{ display: 'inline', marginLeft: '1rem' }}>Food Components</h1>
           </div>
           <div>
             <button
@@ -68,7 +68,7 @@ export default function ComponentsPage() {
                 cursor: 'pointer'
               }}
             >
-              {showCreateForm ? 'Cancel' : '+ New Component'}
+              {showCreateForm ? 'Cancel' : '+ New Food Component'}
             </button>
             <button
               onClick={logout}
@@ -105,7 +105,7 @@ export default function ComponentsPage() {
             marginBottom: '2rem',
             backgroundColor: 'white'
           }}>
-            <h2>Create Component</h2>
+            <h2>Create Food Component</h2>
             <div style={{ marginBottom: '1rem' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem' }}>Name *</label>
               <input
@@ -128,13 +128,13 @@ export default function ComponentsPage() {
                 cursor: 'pointer'
               }}
             >
-              Create Component
+              Create Food Component
             </button>
           </form>
         )}
 
         {loading ? (
-          <p>Loading components...</p>
+          <p>Loading food components...</p>
         ) : components.length === 0 ? (
           <div style={{
             padding: '2rem',
@@ -143,7 +143,7 @@ export default function ComponentsPage() {
             borderRadius: '8px',
             backgroundColor: 'white'
           }}>
-            <p>No components found. Create your first component to get started.</p>
+            <p>No food components found. Create your first food component to get started.</p>
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: 'white', border: '1px solid #ddd', borderRadius: '8px' }}>
@@ -163,7 +163,7 @@ export default function ComponentsPage() {
                   </td>
                   <td style={{ padding: '0.75rem' }}>
                     <Link
-                      href={`/components/${component.id}/variants`}
+                      href={`/food-components/${component.id}/variants`}
                       style={{
                         padding: '0.25rem 0.5rem',
                         backgroundColor: '#0070f3',

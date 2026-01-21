@@ -228,59 +228,94 @@ export class PacksService {
 
   /**
    * Get available packs with components and variants for a specific date
-   * Only shows packs with available stock
+   * Only shows packs and variants from PUBLISHED DailyMenu
+   * Only shows variants with available stock from DailyMenuVariant
    */
   async getAvailablePacks(date: string): Promise<AvailablePackDto[]> {
     const orderDate = new Date(date);
     if (isNaN(orderDate.getTime())) {
       throw new BadRequestException('Invalid date format. Use YYYY-MM-DD');
     }
+    orderDate.setHours(0, 0, 0, 0);
 
-    // Get all active packs
-    const packs = await this.prisma.pack.findMany({
-      where: {
-        isActive: true,
-      },
+    // Find PUBLISHED DailyMenu for this date
+    const dailyMenu = await this.prisma.dailyMenu.findUnique({
+      where: { date: orderDate },
       include: {
-        packComponents: {
+        packs: {
           include: {
-            component: {
+            pack: {
               include: {
-                variants: {
-                  where: {
-                    isActive: true,
-                    stockQuantity: {
-                      gt: 0,
-                    },
+                packComponents: {
+                  include: {
+                    component: true,
                   },
                   orderBy: {
-                    name: 'asc',
+                    orderIndex: 'asc',
                   },
                 },
               },
             },
           },
-          orderBy: {
-            orderIndex: 'asc',
+        },
+        variants: {
+          include: {
+            variant: {
+              include: {
+                component: true,
+              },
+            },
           },
         },
       },
-      orderBy: {
-        name: 'asc',
-      },
     });
+
+    if (!dailyMenu) {
+      throw new NotFoundException(`No published menu found for date ${date}`);
+    }
+
+    if (dailyMenu.status !== 'PUBLISHED') {
+      throw new BadRequestException(
+        `Menu for date ${date} is not published. Current status: ${dailyMenu.status}`,
+      );
+    }
+
+    // Build variant map from DailyMenuVariant (using initialStock)
+    const variantStockMap = new Map<string, number>();
+    const variantMap = new Map<string, any>();
+    for (const dailyMenuVariant of dailyMenu.variants) {
+      variantStockMap.set(dailyMenuVariant.variantId, dailyMenuVariant.initialStock);
+      variantMap.set(dailyMenuVariant.variantId, dailyMenuVariant.variant);
+    }
 
     // Filter packs that have at least one variant for each required component
     const availablePacks: AvailablePackDto[] = [];
 
-    for (const pack of packs) {
+    for (const dailyMenuPack of dailyMenu.packs) {
+      const pack = dailyMenuPack.pack;
       const components: AvailableComponentDto[] = [];
 
       for (const packComponent of pack.packComponents) {
         const component = packComponent.component;
-        const availableVariants = component.variants.filter(
-          (v) => v.isActive && v.stockQuantity > 0,
-        );
+        
+        // Get variants for this component from DailyMenu
+        const availableVariants: AvailableVariantDto[] = [];
+        for (const [variantId, variant] of variantMap.entries()) {
+          if (variant.componentId === component.id && variant.isActive) {
+            const stock = variantStockMap.get(variantId) || 0;
+            if (stock > 0) {
+              availableVariants.push({
+                id: variant.id,
+                name: variant.name,
+                stockQuantity: stock,
+                isActive: variant.isActive,
+              });
+            }
+          }
+        }
+
+        // Sort variants by name
+        availableVariants.sort((a, b) => a.name.localeCompare(b.name));
 
         // If component is required and has no available variants, skip this pack
         if (packComponent.required && availableVariants.length === 0) {
@@ -292,12 +327,7 @@ export class PacksService {
           name: component.name,
           required: packComponent.required,
           orderIndex: packComponent.orderIndex,
-          variants: availableVariants.map((v) => ({
-            id: v.id,
-            name: v.name,
-            stockQuantity: v.stockQuantity,
-            isActive: v.isActive,
-          })),
+          variants: availableVariants,
         });
       }
 

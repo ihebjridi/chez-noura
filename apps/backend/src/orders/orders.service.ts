@@ -55,15 +55,42 @@ export class OrdersService {
       throw new BadRequestException('Business is disabled and cannot place orders');
     }
 
-    // Check if ordering is manually locked for this date
-    if (this.orderingLockService.isLocked(createOrderDto.orderDate)) {
-      throw new BadRequestException('Ordering is locked for this date');
+    // Find PUBLISHED DailyMenu for this date
+    const orderDate = new Date(createOrderDto.orderDate);
+    orderDate.setHours(0, 0, 0, 0);
+
+    const dailyMenu = await this.prisma.dailyMenu.findUnique({
+      where: { date: orderDate },
+      include: {
+        packs: {
+          include: {
+            pack: true,
+          },
+        },
+        variants: {
+          include: {
+            variant: {
+              include: {
+                component: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!dailyMenu) {
+      throw new BadRequestException(`No published menu found for date ${createOrderDto.orderDate}`);
     }
 
-    // Check if day is locked in database (persistent lock)
-    const isDayLocked = await this.opsService.isDayLocked(createOrderDto.orderDate);
-    if (isDayLocked) {
-      throw new BadRequestException('This day has been locked. No new orders can be created.');
+    if (dailyMenu.status === 'LOCKED') {
+      throw new BadRequestException('This menu has been locked. No new orders can be created.');
+    }
+
+    if (dailyMenu.status !== 'PUBLISHED') {
+      throw new BadRequestException(
+        `Menu for date ${createOrderDto.orderDate} is not published. Current status: ${dailyMenu.status}`,
+      );
     }
 
     // Check if ordering is still allowed for this date (cutoff time check)
@@ -71,8 +98,6 @@ export class OrdersService {
     await this.orderingCutoffService.checkOrderingAllowed(createOrderDto.orderDate);
 
     // Check for existing order for this employee on this date (idempotency)
-    const orderDate = new Date(createOrderDto.orderDate);
-    orderDate.setHours(0, 0, 0, 0);
     const nextDay = new Date(orderDate);
     nextDay.setDate(nextDay.getDate() + 1);
     
@@ -139,8 +164,22 @@ export class OrdersService {
       throw new ForbiddenException('Employee does not belong to this business');
     }
 
-    // Fetch and validate pack
-    const pack = await this.prisma.pack.findUnique({
+    // Validate pack belongs to DailyMenu
+    const dailyMenuPack = dailyMenu.packs.find((p) => p.packId === createOrderDto.packId);
+    if (!dailyMenuPack) {
+      throw new BadRequestException(
+        `Pack with ID ${createOrderDto.packId} is not available in the menu for date ${createOrderDto.orderDate}`,
+      );
+    }
+
+    const pack = dailyMenuPack.pack;
+
+    if (!pack.isActive) {
+      throw new BadRequestException('Pack is not active');
+    }
+
+    // Get pack components
+    const packWithComponents = await this.prisma.pack.findUnique({
       where: { id: createOrderDto.packId },
       include: {
         packComponents: {
@@ -154,16 +193,12 @@ export class OrdersService {
       },
     });
 
-    if (!pack) {
+    if (!packWithComponents) {
       throw new BadRequestException(`Pack with ID ${createOrderDto.packId} not found`);
     }
 
-    if (!pack.isActive) {
-      throw new BadRequestException('Pack is not active');
-    }
-
     // Validate all required components are selected
-    const requiredComponents = pack.packComponents.filter((pc) => pc.required);
+    const requiredComponents = packWithComponents.packComponents.filter((pc) => pc.required);
     const selectedComponentIds = new Set(createOrderDto.items.map((item) => item.componentId));
 
     for (const requiredComponent of requiredComponents) {
@@ -181,25 +216,22 @@ export class OrdersService {
       throw new BadRequestException('Duplicate component selections are not allowed');
     }
 
-    // Fetch all variants and validate
-    const variantIds = createOrderDto.items.map((item) => item.variantId);
-    const variants = await this.prisma.variant.findMany({
-      where: {
-        id: { in: variantIds },
-        isActive: true,
-      },
-      include: {
-        component: true,
-      },
-    });
+    // Validate variants belong to DailyMenu and have stock
+    const dailyMenuVariantMap = new Map(
+      dailyMenu.variants.map((dmv) => [dmv.variantId, dmv]),
+    );
+    const variantMap = new Map(
+      dailyMenu.variants.map((dmv) => [dmv.variantId, dmv.variant]),
+    );
 
-    if (variants.length !== variantIds.length) {
-      throw new BadRequestException('One or more variants not found or inactive');
-    }
-
-    // Validate variants belong to correct components and have stock
-    const variantMap = new Map(variants.map((v) => [v.id, v]));
     for (const item of createOrderDto.items) {
+      const dailyMenuVariant = dailyMenuVariantMap.get(item.variantId);
+      if (!dailyMenuVariant) {
+        throw new BadRequestException(
+          `Variant ${item.variantId} is not available in the menu for date ${createOrderDto.orderDate}`,
+        );
+      }
+
       const variant = variantMap.get(item.variantId);
       if (!variant) {
         throw new BadRequestException(`Variant ${item.variantId} not found`);
@@ -211,7 +243,7 @@ export class OrdersService {
         );
       }
 
-      if (variant.stockQuantity <= 0) {
+      if (dailyMenuVariant.initialStock <= 0) {
         throw new BadRequestException(
           `Variant "${variant.name}" is out of stock`,
         );
@@ -225,17 +257,21 @@ export class OrdersService {
     try {
       const order = await this.prisma.$transaction(async (tx) => {
         // Re-check stock within transaction to prevent race conditions
-        const variantsInTx = await tx.variant.findMany({
+        const dailyMenuVariantsInTx = await tx.dailyMenuVariant.findMany({
           where: {
-            id: { in: variantIds },
+            dailyMenuId: dailyMenu.id,
+            variantId: { in: createOrderDto.items.map((item) => item.variantId) },
+          },
+          include: {
+            variant: true,
           },
         });
 
         // Verify stock is still available
-        for (const variant of variantsInTx) {
-          if (variant.stockQuantity <= 0) {
+        for (const dailyMenuVariant of dailyMenuVariantsInTx) {
+          if (dailyMenuVariant.initialStock <= 0) {
             throw new BadRequestException(
-              `Variant "${variant.name}" is out of stock`,
+              `Variant "${dailyMenuVariant.variant.name}" is out of stock`,
             );
           }
         }
@@ -246,7 +282,8 @@ export class OrdersService {
             employeeId: user.employeeId,
             businessId: user.businessId,
             packId: pack.id,
-            orderDate: new Date(createOrderDto.orderDate),
+            dailyMenuId: dailyMenu.id,
+            orderDate: orderDate,
             status: OrderStatus.CREATED,
             totalAmount,
             items: {
@@ -292,13 +329,13 @@ export class OrdersService {
           },
         });
 
-        // Decrement stock for all variants atomically
+        // Decrement stock from DailyMenuVariant (not from Variant)
         await Promise.all(
-          variantsInTx.map((variant) =>
-            tx.variant.update({
-              where: { id: variant.id },
+          dailyMenuVariantsInTx.map((dailyMenuVariant) =>
+            tx.dailyMenuVariant.update({
+              where: { id: dailyMenuVariant.id },
               data: {
-                stockQuantity: {
+                initialStock: {
                   decrement: 1,
                 },
               },
@@ -318,8 +355,6 @@ export class OrdersService {
       ) {
         // Race condition: order was created between check and create
         // Fetch and return the existing order
-        const orderDate = new Date(createOrderDto.orderDate);
-        orderDate.setHours(0, 0, 0, 0);
         const nextDay = new Date(orderDate);
         nextDay.setDate(nextDay.getDate() + 1);
         

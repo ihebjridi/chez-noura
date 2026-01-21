@@ -20,13 +20,13 @@ type VariantFormData = {
 };
 import Link from 'next/link';
 
-export default function ComponentVariantsPage() {
+export default function FoodComponentVariantsPage() {
   const { logout } = useAuth();
   const params = useParams();
   const router = useRouter();
-  const componentId = params.id as string;
+  const foodComponentId = params.id as string;
 
-  const [component, setComponent] = useState<ComponentDto | null>(null);
+  const [foodComponent, setFoodComponent] = useState<ComponentDto | null>(null);
   const [variants, setVariants] = useState<VariantDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -39,21 +39,21 @@ export default function ComponentVariantsPage() {
   });
 
   useEffect(() => {
-    if (componentId) {
+    if (foodComponentId) {
       loadData();
     }
-  }, [componentId]);
+  }, [foodComponentId]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       setError('');
-      const [allComponents, variantsData] = await Promise.all([
+      const [allFoodComponents, variantsData] = await Promise.all([
         apiClient.getComponents(),
-        apiClient.getComponentVariants(componentId),
+        apiClient.getComponentVariants(foodComponentId),
       ]);
-      const foundComponent = allComponents.find((c) => c.id === componentId);
-      setComponent(foundComponent || null);
+      const foundFoodComponent = allFoodComponents.find((c) => c.id === foodComponentId);
+      setFoodComponent(foundFoodComponent || null);
       setVariants(variantsData);
     } catch (err: any) {
       setError(err.message || 'Failed to load data');
@@ -66,8 +66,8 @@ export default function ComponentVariantsPage() {
     e.preventDefault();
     try {
       setError('');
-      // componentId is passed as URL parameter, not in form data
-      await apiClient.createVariant(componentId, formData);
+      // foodComponentId is passed as URL parameter, not in form data
+      await apiClient.createVariant(foodComponentId, formData);
       setShowCreateForm(false);
       setFormData({ name: '', stockQuantity: 0, isActive: true });
       await loadData();
@@ -125,9 +125,9 @@ export default function ComponentVariantsPage() {
       <div style={{ padding: '2rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
           <div>
-            <Link href="/components" style={{ marginRight: '1rem', textDecoration: 'none' }}>← Components</Link>
+            <Link href="/food-components" style={{ marginRight: '1rem', textDecoration: 'none' }}>← Food Components</Link>
             <h1 style={{ display: 'inline', marginLeft: '1rem' }}>
-              {component ? `Variants: ${component.name}` : 'Component Variants'}
+              {foodComponent ? `Variants: ${foodComponent.name}` : 'Food Component Variants'}
             </h1>
           </div>
           <button

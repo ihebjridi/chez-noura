@@ -11,3 +11,4 @@ export * from './kitchen.dto';
 export * from './pack.dto';
 export * from './component.dto';
 export * from './variant.dto';
+export * from './daily-menu.dto';

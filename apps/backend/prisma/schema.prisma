@@ -33,6 +33,12 @@ enum InvoiceStatus {
   PAID
 }
 
+enum DailyMenuStatus {
+  DRAFT
+  PUBLISHED
+  LOCKED
+}
+
 model User {
   id         String   @id @default(uuid())
   email      String   @unique
@@ -116,8 +122,9 @@ model Pack {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  packComponents PackComponent[]
-  orders         Order[]
+  packComponents  PackComponent[]
+  orders          Order[]
+  dailyMenuPacks  DailyMenuPack[]
 
   @@index([isActive])
   @@index([name])
@@ -160,8 +167,9 @@ model Variant {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  component  Component   @relation(fields: [componentId], references: [id], onDelete: Cascade)
-  orderItems OrderItem[]
+  component        Component          @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  orderItems       OrderItem[]
+  dailyMenuVariants DailyMenuVariant[]
 
   @@unique([componentId, name])
   @@index([componentId])
@@ -169,27 +177,77 @@ model Variant {
   @@index([isActive])
 }
 
+model DailyMenu {
+  id          String          @id @default(uuid())
+  date        DateTime        @unique // Date (YYYY-MM-DD)
+  status      DailyMenuStatus @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  packs    DailyMenuPack[]
+  variants DailyMenuVariant[]
+  orders   Order[]
+
+  @@index([date])
+  @@index([status])
+}
+
+model DailyMenuPack {
+  id          String   @id @default(uuid())
+  dailyMenuId String
+  packId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  dailyMenu DailyMenu @relation(fields: [dailyMenuId], references: [id], onDelete: Cascade)
+  pack      Pack      @relation(fields: [packId], references: [id], onDelete: Cascade)
+
+  @@unique([dailyMenuId, packId])
+  @@index([dailyMenuId])
+  @@index([packId])
+}
+
+model DailyMenuVariant {
+  id           String   @id @default(uuid())
+  dailyMenuId  String
+  variantId    String
+  initialStock Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  dailyMenu DailyMenu @relation(fields: [dailyMenuId], references: [id], onDelete: Cascade)
+  variant   Variant   @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([dailyMenuId, variantId])
+  @@index([dailyMenuId])
+  @@index([variantId])
+}
+
 model Order {
   id          String      @id @default(uuid())
   employeeId  String
   businessId  String
   packId      String
+  dailyMenuId String
   orderDate   DateTime // Date the order is for (YYYY-MM-DD)
   status      OrderStatus @default(CREATED)
   totalAmount Decimal     @db.Decimal(10, 2)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  employee Employee    @relation(fields: [employeeId], references: [id])
-  business Business    @relation(fields: [businessId], references: [id])
-  pack     Pack        @relation(fields: [packId], references: [id])
-  items    OrderItem[]
+  employee  Employee   @relation(fields: [employeeId], references: [id])
+  business  Business   @relation(fields: [businessId], references: [id])
+  pack      Pack       @relation(fields: [packId], references: [id])
+  dailyMenu DailyMenu  @relation(fields: [dailyMenuId], references: [id])
+  items     OrderItem[]
 
   // Prevent duplicate orders per employee per day
   @@unique([employeeId, orderDate])
   @@index([employeeId])
   @@index([businessId])
   @@index([packId])
+  @@index([dailyMenuId])
   @@index([orderDate])
   @@index([status])
   // Composite index for date-based queries with status filter (for aggregation)
