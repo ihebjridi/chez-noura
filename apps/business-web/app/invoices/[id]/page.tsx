@@ -2,16 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ProtectedRoute } from '../../../components/protected-route';
-import { useAuth } from '../../../contexts/auth-context';
 import { apiClient } from '../../../lib/api-client';
-import { InvoiceDto, UserRole, InvoiceStatus } from '@contracts/core';
-import Link from 'next/link';
+import { InvoiceDto, InvoiceStatus } from '@contracts/core';
+import { Loading } from '../../../components/ui/loading';
+import { Error } from '../../../components/ui/error';
+import { Empty } from '../../../components/ui/empty';
+import { ArrowLeft, FileText } from 'lucide-react';
 
 export default function InvoiceDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { logout } = useAuth();
   const [invoice, setInvoice] = useState<InvoiceDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -35,146 +35,179 @@ export default function InvoiceDetailPage() {
     }
   };
 
+  const getStatusBadgeColor = (status: InvoiceStatus) => {
+    switch (status) {
+      case InvoiceStatus.PAID:
+        return 'bg-success-50 text-success-700 border-success-300';
+      case InvoiceStatus.ISSUED:
+        return 'bg-blue-100 text-blue-800 border-blue-300';
+      case InvoiceStatus.DRAFT:
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+    }
+  };
+
   return (
-    <ProtectedRoute requiredRole={UserRole.BUSINESS_ADMIN}>
-      <div style={{ padding: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <div>
-            <Link href="/invoices" style={{ marginRight: '1rem', textDecoration: 'none' }}>← Invoices</Link>
-            <h1 style={{ display: 'inline', marginLeft: '1rem' }}>Invoice Details</h1>
-          </div>
-          <button
-            onClick={logout}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: '#ccc',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            Logout
-          </button>
+    <div className="p-4 sm:p-6 lg:p-8">
+      {/* Header */}
+      <div className="mb-6">
+        <button
+          onClick={() => router.push('/invoices')}
+          className="mb-4 flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Invoices
+        </button>
+        <h1 className="text-2xl font-semibold text-gray-900">Invoice Details</h1>
+      </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="mb-4">
+          <Error message={error} onRetry={() => params.id && loadInvoice(params.id as string)} />
         </div>
+      )}
 
-        {error && (
-          <div style={{
-            padding: '0.75rem',
-            backgroundColor: '#fee',
-            color: '#c33',
-            borderRadius: '4px',
-            marginBottom: '1rem'
-          }}>
-            {error}
-          </div>
-        )}
+      {/* Loading State */}
+      {loading && (
+        <div className="bg-surface border border-surface-dark rounded-lg p-12">
+          <Loading message="Loading invoice..." />
+        </div>
+      )}
 
-        {loading ? (
-          <p>Loading invoice...</p>
-        ) : !invoice ? (
-          <div style={{
-            padding: '2rem',
-            textAlign: 'center',
-            border: '1px solid #ddd',
-            borderRadius: '8px',
-            backgroundColor: 'white'
-          }}>
-            <p>Invoice not found.</p>
-          </div>
-        ) : (
-          <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '8px', border: '1px solid #ddd' }}>
-            <div style={{ marginBottom: '2rem' }}>
-              <h2>Invoice #{invoice.invoiceNumber}</h2>
-              <p><strong>Business:</strong> {invoice.businessName}</p>
-              <p><strong>Email:</strong> {invoice.businessEmail}</p>
-              <p><strong>Period:</strong> {new Date(invoice.periodStart).toLocaleDateString()} - {new Date(invoice.periodEnd).toLocaleDateString()}</p>
-              <p><strong>Due Date:</strong> {new Date(invoice.dueDate).toLocaleDateString()}</p>
-              <p>
-                <strong>Status:</strong>{' '}
-                <span
-                  style={{
-                    padding: '0.25rem 0.5rem',
-                    borderRadius: '4px',
-                    backgroundColor:
-                      invoice.status === InvoiceStatus.PAID
-                        ? '#d4edda'
-                        : invoice.status === InvoiceStatus.ISSUED
-                          ? '#d1ecf1'
-                          : '#e2e3e5',
-                    color:
-                      invoice.status === InvoiceStatus.PAID
-                        ? '#155724'
-                        : invoice.status === InvoiceStatus.ISSUED
-                          ? '#0c5460'
-                          : '#383d41',
-                    fontSize: '0.9rem',
-                  }}
-                >
-                  {invoice.status}
-                </span>
-              </p>
-              {invoice.issuedAt && (
-                <p>
-                  <strong>Issued At:</strong>{' '}
-                  {new Date(invoice.issuedAt).toLocaleString()}
-                </p>
-              )}
-              {invoice.paidAt && (
-                <p>
-                  <strong>Paid At:</strong> {new Date(invoice.paidAt).toLocaleString()}
-                </p>
-              )}
+      {/* Empty State */}
+      {!loading && !invoice && (
+        <div className="bg-surface border border-surface-dark rounded-lg p-12">
+          <Empty message="Invoice not found" />
+        </div>
+      )}
+
+      {/* Invoice Details */}
+      {!loading && invoice && (
+        <div className="bg-surface border border-surface-dark rounded-lg p-6 lg:p-8">
+          {/* Invoice Header */}
+          <div className="mb-8 pb-6 border-b border-surface-dark">
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-primary-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-semibold text-gray-900">
+                    Invoice #{invoice.invoiceNumber}
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">{invoice.businessName}</p>
+                </div>
+              </div>
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusBadgeColor(
+                  invoice.status
+                )}`}
+              >
+                {invoice.status}
+              </span>
             </div>
 
-            <div style={{ marginBottom: '2rem' }}>
-              <h3>Items</h3>
-              <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-gray-600 mb-1">
+                  <strong>Business Email:</strong> {invoice.businessEmail}
+                </p>
+                <p className="text-gray-600 mb-1">
+                  <strong>Period:</strong>{' '}
+                  {new Date(invoice.periodStart).toLocaleDateString()} -{' '}
+                  {new Date(invoice.periodEnd).toLocaleDateString()}
+                </p>
+                <p className="text-gray-600">
+                  <strong>Due Date:</strong> {new Date(invoice.dueDate).toLocaleDateString()}
+                </p>
+              </div>
+              <div>
+                {invoice.issuedAt && (
+                  <p className="text-gray-600 mb-1">
+                    <strong>Issued At:</strong> {new Date(invoice.issuedAt).toLocaleString()}
+                  </p>
+                )}
+                {invoice.paidAt && (
+                  <p className="text-gray-600">
+                    <strong>Paid At:</strong> {new Date(invoice.paidAt).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Invoice Items */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Items</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
                 <thead>
-                  <tr style={{ backgroundColor: '#f5f5f5' }}>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Order Date</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Pack</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '1px solid #ddd' }}>Quantity</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'right', borderBottom: '1px solid #ddd' }}>Unit Price</th>
-                    <th style={{ padding: '0.75rem', textAlign: 'right', borderBottom: '1px solid #ddd' }}>Total</th>
+                  <tr className="bg-surface-dark border-b border-surface-dark">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Order Date
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Pack
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Quantity
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Unit Price
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Total
+                    </th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-gray-200">
                   {invoice.items.map((item) => (
-                    <tr key={item.id} style={{ borderBottom: '1px solid #eee' }}>
-                      <td style={{ padding: '0.75rem' }}>{new Date(item.orderDate).toLocaleDateString()}</td>
-                      <td style={{ padding: '0.75rem' }}>{item.packName}</td>
-                      <td style={{ padding: '0.75rem', textAlign: 'center' }}>{item.quantity}</td>
-                      <td style={{ padding: '0.75rem', textAlign: 'right' }}>{item.unitPrice.toFixed(2)} TND</td>
-                      <td style={{ padding: '0.75rem', textAlign: 'right' }}>{item.totalPrice.toFixed(2)} TND</td>
+                    <tr key={item.id} className="hover:bg-surface-light">
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        {new Date(item.orderDate).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{item.packName}</td>
+                      <td className="px-4 py-3 text-sm text-center text-gray-900">
+                        {item.quantity}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-right text-gray-900">
+                        {item.unitPrice.toFixed(2)} TND
+                      </td>
+                      <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
+                        {item.totalPrice.toFixed(2)} TND
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+          </div>
 
-            <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '2px solid #ddd' }}>
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <div style={{ width: '300px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                    <span>Subtotal:</span>
-                    <span>{invoice.subtotal.toFixed(2)} TND</span>
+          {/* Invoice Totals */}
+          <div className="pt-6 border-t-2 border-surface-dark">
+            <div className="flex justify-end">
+              <div className="w-full max-w-md space-y-2">
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Subtotal:</span>
+                  <span className="font-medium">{invoice.subtotal.toFixed(2)} TND</span>
+                </div>
+                {invoice.tax && invoice.tax > 0 && (
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Tax:</span>
+                    <span className="font-medium">{invoice.tax.toFixed(2)} TND</span>
                   </div>
-                  {invoice.tax && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                      <span>Tax:</span>
-                      <span>{invoice.tax.toFixed(2)} TND</span>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 'bold', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #ddd' }}>
-                    <span>Total:</span>
-                    <span>{invoice.total.toFixed(2)} TND</span>
-                  </div>
+                )}
+                <div className="flex justify-between text-xl font-semibold text-gray-900 pt-2 border-t border-surface-dark">
+                  <span>Total:</span>
+                  <span>{invoice.total.toFixed(2)} TND</span>
                 </div>
               </div>
             </div>
           </div>
-        )}
-      </div>
-    </ProtectedRoute>
+        </div>
+      )}
+    </div>
   );
 }

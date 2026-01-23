@@ -57,20 +57,31 @@ class ApiClient {
     return this.request<UserDto>('/auth/me');
   }
 
-  // Employee endpoints (not yet implemented in backend)
+  // Employee management endpoints (for BUSINESS_ADMIN)
   async getEmployees(): Promise<EmployeeDto[]> {
-    // Note: Employee endpoints are not yet implemented in backend
-    throw new Error('Employee endpoints are not yet implemented in the backend');
+    return this.request<EmployeeDto[]>('/business/employees');
   }
 
   async createEmployee(data: CreateEmployeeDto): Promise<EmployeeDto> {
-    // Note: Employee endpoints are not yet implemented in backend
-    throw new Error('Employee endpoints are not yet implemented in the backend');
+    return this.request<EmployeeDto>('/business/employees', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+      }),
+    });
   }
 
   async updateEmployee(id: string, data: UpdateEmployeeDto): Promise<EmployeeDto> {
-    // Note: Employee endpoints are not yet implemented in backend
-    throw new Error('Employee endpoints are not yet implemented in the backend');
+    return this.request<EmployeeDto>(`/business/employees/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        status: data.status,
+      }),
+    });
   }
 
   // Order endpoints

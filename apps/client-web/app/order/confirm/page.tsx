@@ -1,43 +1,56 @@
 'use client';
 
-import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ProtectedRoute } from '../../../components/protected-route';
 import { useAuth } from '../../../contexts/auth-context';
 import { apiClient } from '../../../lib/api-client';
-import { AvailablePackDto, CreateOrderDto, UserRole } from '@contracts/core';
+import {
+  AvailablePackDto,
+  UserRole,
+  EmployeeMenuDto,
+} from '@contracts/core';
+import { Loading } from '../../../components/ui/loading';
+import { Error } from '../../../components/ui/error';
+import { EmployeeLayout } from '../../../components/layouts/EmployeeLayout';
+import { Clock, CheckCircle } from 'lucide-react';
 
 function OrderConfirmContent() {
-  const { user, logout } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [menu, setMenu] = useState<EmployeeMenuDto | null>(null);
   const [pack, setPack] = useState<AvailablePackDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const orderDate = searchParams.get('date') || new Date().toISOString().split('T')[0];
+  const dailyMenuIdParam = searchParams.get('dailyMenuId');
   const packIdParam = searchParams.get('packId');
   const itemsParam = searchParams.get('items');
+  const dailyMenuId = dailyMenuIdParam || '';
   const packId = packIdParam || '';
-  const items: Array<{ componentId: string; variantId: string }> = itemsParam ? JSON.parse(decodeURIComponent(itemsParam)) : [];
+  const items: Array<{ componentId: string; variantId: string }> = itemsParam
+    ? JSON.parse(decodeURIComponent(itemsParam))
+    : [];
 
   const totalAmount = pack ? pack.price : 0;
 
   useEffect(() => {
-    if (!packId || items.length === 0) {
+    if (!dailyMenuId || !packId || items.length === 0) {
       router.push('/menu');
       return;
     }
-    loadPack();
+    loadMenu();
   }, []);
 
-  const loadPack = async () => {
+  const loadMenu = async () => {
     try {
       setLoading(true);
       setError('');
-      const packs = await apiClient.getAvailablePacks(orderDate);
-      const selectedPack = packs.find(p => p.id === packId);
+      const menuData = await apiClient.getEmployeeMenu(orderDate);
+      setMenu(menuData);
+      const selectedPack = menuData.packs.find((p) => p.id === packId);
       if (!selectedPack) {
         setError('Pack not found or no longer available');
         router.push('/menu');
@@ -45,7 +58,7 @@ function OrderConfirmContent() {
       }
       setPack(selectedPack);
     } catch (err: any) {
-      setError(err.message || 'Failed to load pack information');
+      setError(err.message || 'Failed to load menu information');
     } finally {
       setLoading(false);
     }
@@ -57,24 +70,24 @@ function OrderConfirmContent() {
     setSubmitting(true);
 
     try {
-      if (!pack) {
-        setError('Pack information is missing');
+      if (!pack || !dailyMenuId) {
+        setError('Menu or pack information is missing');
         return;
       }
-      // Generate idempotency key from order date and items
-      const idempotencyKey = `${orderDate}-${packId}-${JSON.stringify(items)}-${Date.now()}`;
-      await apiClient.createOrder(
-        {
-          orderDate,
-          packId,
-          items,
-        },
-        idempotencyKey,
-      );
+
+      const selectedVariants = items.map((item) => ({
+        componentId: item.componentId,
+        variantId: item.variantId,
+      }));
+
+      await apiClient.createEmployeeOrder({
+        dailyMenuId,
+        packId,
+        selectedVariants,
+      });
       router.push('/orders?success=true');
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to place order';
-      // Handle specific error cases
       if (
         errorMessage.includes('cutoff') ||
         errorMessage.includes('cut-off') ||
@@ -91,10 +104,6 @@ function OrderConfirmContent() {
         setError(
           'You have already placed an order for this date. Only one order per day is allowed.',
         );
-      } else if (errorMessage.includes('locked') || errorMessage.includes('LOCKED')) {
-        setError(
-          'Ordering for this date has been locked. Please contact your business admin.',
-        );
       } else {
         setError(errorMessage);
       }
@@ -103,170 +112,160 @@ function OrderConfirmContent() {
     }
   };
 
+  // Calculate ready time
+  const readyTime = menu?.cutoffTime
+    ? (() => {
+        const cutoffDate = new Date(menu.cutoffTime);
+        const readyDate = new Date(cutoffDate.getTime() + 2 * 60 * 60 * 1000); // +2 hours
+        const now = new Date();
+        const isToday = readyDate.toDateString() === now.toDateString();
+        const timeStr = readyDate.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        });
+        return { date: readyDate, isToday, timeStr };
+      })()
+    : null;
+
   if (loading) {
     return (
       <ProtectedRoute requiredRole={UserRole.EMPLOYEE}>
-        <div style={{ padding: '2rem', textAlign: 'center' }}>
-          <p>Loading order details...</p>
-        </div>
+        <EmployeeLayout>
+          <div className="flex-1 flex items-center justify-center">
+            <Loading message="Loading order details..." />
+          </div>
+        </EmployeeLayout>
       </ProtectedRoute>
     );
   }
 
   return (
     <ProtectedRoute requiredRole={UserRole.EMPLOYEE}>
-      <div style={{ minHeight: '100vh', paddingBottom: '2rem' }}>
-        <header style={{
-          backgroundColor: 'white',
-          padding: '1rem',
-          borderBottom: '1px solid #eee',
-          position: 'sticky',
-          top: 0,
-          zIndex: 10
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: '600' }}>Confirm Order</h1>
-            <button
-              onClick={() => router.push('/menu')}
-              style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: '#f5f5f5',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.9rem'
-              }}
-            >
-              Back
-            </button>
-          </div>
-        </header>
-
+      <EmployeeLayout showBackButton backAction={() => router.push('/menu')}>
         {pack && (
-          <form onSubmit={handleSubmit}>
-            <div style={{ padding: '1rem' }}>
-              <div style={{
-                backgroundColor: 'white',
-                padding: '1rem',
-                borderRadius: '8px',
-                marginBottom: '1rem'
-              }}>
-                <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
-                  Order Date
-                </p>
-                <p style={{ fontWeight: '600' }}>
-                  {new Date(orderDate).toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
-                </p>
+          <form onSubmit={handleSubmit} className="px-4 py-4 space-y-4">
+            {/* Order Summary */}
+            <div className="bg-surface border border-surface-dark rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <CheckCircle className="w-5 h-5 text-primary-600" />
+                <h2 className="text-lg font-semibold text-gray-900">Confirm Your Order</h2>
               </div>
 
-              <div style={{
-                backgroundColor: 'white',
-                padding: '1rem',
-                borderRadius: '8px',
-                marginBottom: '1rem'
-              }}>
-                <h2 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem' }}>
-                  Pack: {pack.name}
-                </h2>
-                {pack.components.map((component) => {
-                const selectedVariant = component.variants.find(v => 
-                  items.some(item => item.componentId === component.id && item.variantId === v.id)
-                );
-                return (
-                  <div
-                    key={component.id}
-                    style={{
-                      padding: '0.75rem 0',
-                      borderBottom: '1px solid #eee'
-                    }}
-                  >
-                    <p style={{ fontWeight: '500', marginBottom: '0.25rem' }}>
-                      {component.name} {component.required && <span style={{ color: '#c33' }}>*</span>}
-                    </p>
-                    {selectedVariant && (
-                      <p style={{ fontSize: '0.9rem', color: '#666' }}>
-                        {selectedVariant.name}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1 font-normal">Order Date</p>
+                  <p className="font-semibold text-gray-900">
+                    {new Date(orderDate).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </p>
+                </div>
+
+                <div className="border-t border-surface-dark pt-3">
+                  <p className="text-sm text-gray-600 mb-2 font-normal">Pack</p>
+                  <p className="font-semibold text-gray-900">{pack.name}</p>
+                </div>
+
+                <div className="border-t border-surface-dark pt-3 space-y-2">
+                  <p className="text-sm text-gray-600 mb-2 font-normal">Your Selection</p>
+                  {pack.components.map((component) => {
+                    const selectedVariant = component.variants.find((v) =>
+                      items.some(
+                        (item) =>
+                          item.componentId === component.id && item.variantId === v.id,
+                      ),
+                    );
+                    return (
+                      selectedVariant && (
+                        <div key={component.id} className="text-sm">
+                          <span className="font-medium text-gray-900">{component.name}:</span>{' '}
+                          <span className="text-gray-700">{selectedVariant.name}</span>
+                        </div>
+                      )
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
-            {error && (
-              <div style={{
-                padding: '1rem',
-                backgroundColor: '#fee',
-                color: '#c33',
-                borderRadius: '8px',
-                marginBottom: '1rem',
-                fontSize: '0.9rem'
-              }}>
-                {error}
+            {/* Ready Time */}
+            {readyTime && (
+              <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-primary-600" />
+                  <div>
+                    <p className="text-xs text-gray-600 font-normal">Order will be ready at:</p>
+                    <p className="text-base font-semibold text-primary-700">
+                      {readyTime.isToday
+                        ? `Today at ${readyTime.timeStr}`
+                        : readyTime.date.toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true,
+                          })}
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 
-            <div style={{
-              backgroundColor: 'white',
-              padding: '1rem',
-              borderRadius: '8px',
-              marginBottom: '1rem'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '1.1rem', fontWeight: '600' }}>Total:</span>
-                <span style={{ fontSize: '1.5rem', fontWeight: '600', color: '#0070f3' }}>
+            {/* Error Display */}
+            {error && (
+              <div>
+                <Error message={error} />
+              </div>
+            )}
+
+            {/* Total */}
+            <div className="bg-surface border border-surface-dark rounded-lg p-4">
+              <div className="flex justify-between items-center">
+                <span className="text-lg font-semibold text-gray-900">Total:</span>
+                <span className="text-2xl font-semibold text-primary-600">
                   {totalAmount.toFixed(2)} TND
                 </span>
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={submitting || !pack || items.length === 0}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                backgroundColor: submitting || !pack || items.length === 0 ? '#ccc' : '#0070f3',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                fontSize: '1rem',
-                fontWeight: '500',
-                cursor: submitting || !pack || items.length === 0 ? 'not-allowed' : 'pointer',
-                marginBottom: '1rem'
-              }}
-            >
-              {submitting ? 'Placing Order...' : 'Place Order'}
-            </button>
-
-            <p style={{ 
-              fontSize: '0.85rem', 
-              color: '#666', 
-              textAlign: 'center',
-              fontStyle: 'italic'
-            }}>
-              Note: Orders cannot be modified after the cutoff time.
-            </p>
-          </div>
-        </form>
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <button
+                type="submit"
+                disabled={submitting || !pack || items.length === 0}
+                className="w-full py-3 px-4 bg-primary-600 text-white font-semibold rounded-md hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed min-h-[44px]"
+              >
+                {submitting ? 'Placing Order...' : 'Place Order'}
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push('/menu')}
+                className="w-full py-2.5 px-4 bg-surface-light text-gray-700 rounded-md hover:bg-surface-dark transition-colors font-semibold min-h-[44px]"
+              >
+                Back to Menu
+              </button>
+            </div>
+          </form>
         )}
-      </div>
+      </EmployeeLayout>
     </ProtectedRoute>
   );
 }
 
 export default function OrderConfirmPage() {
   return (
-    <Suspense fallback={
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <p>Loading...</p>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <Loading message="Loading..." />
+        </div>
+      }
+    >
       <OrderConfirmContent />
     </Suspense>
   );

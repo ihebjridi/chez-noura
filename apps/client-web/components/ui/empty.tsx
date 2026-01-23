@@ -1,3 +1,8 @@
+'use client';
+
+import { motion } from 'framer-motion';
+import { Inbox } from 'lucide-react';
+
 export function Empty({ 
   message = 'No items found',
   description 
@@ -6,16 +11,38 @@ export function Empty({
   description?: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-4">
-      <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-        <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-        </svg>
-      </div>
-      <p className="text-base md:text-lg font-medium text-gray-900">{message}</p>
+    <motion.div
+      className="flex flex-col items-center justify-center py-12 px-4"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <motion.div
+        className="w-20 h-20 rounded-full bg-surface flex items-center justify-center mb-4"
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
+      >
+        <Inbox className="w-10 h-10 text-secondary-400" />
+      </motion.div>
+      <motion.p
+        className="text-base md:text-lg font-semibold text-gray-900"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        {message}
+      </motion.p>
       {description && (
-        <p className="mt-2 text-xs md:text-sm text-gray-500 text-center max-w-md">{description}</p>
+        <motion.p
+          className="mt-2 text-xs md:text-sm text-gray-600 text-center max-w-md font-normal"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          {description}
+        </motion.p>
       )}
-    </div>
+    </motion.div>
   );
 }

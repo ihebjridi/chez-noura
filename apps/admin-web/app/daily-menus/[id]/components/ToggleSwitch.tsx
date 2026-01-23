@@ -2,13 +2,12 @@ interface ToggleSwitchProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
-  color?: 'blue' | 'green';
+  color?: 'primary';
 }
 
-export function ToggleSwitch({ checked, onChange, disabled = false, color = 'blue' }: ToggleSwitchProps) {
+export function ToggleSwitch({ checked, onChange, disabled = false, color = 'primary' }: ToggleSwitchProps) {
   const colorClasses = {
-    blue: checked ? 'bg-blue-600' : 'bg-gray-300',
-    green: checked ? 'bg-green-600' : 'bg-gray-300',
+    primary: checked ? 'bg-primary-600' : 'bg-gray-300',
   };
 
   return (

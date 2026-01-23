@@ -8,13 +8,13 @@ export function StatusBadge({ status }: StatusBadgeProps) {
   const getStatusBadgeColor = (status: DailyMenuStatus) => {
     switch (status) {
       case DailyMenuStatus.DRAFT:
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+        return 'bg-blue-50 text-blue-700 border-blue-200';
       case DailyMenuStatus.PUBLISHED:
-        return 'bg-green-100 text-green-800 border-green-300';
+        return 'bg-primary-50 text-primary-700 border-primary-200';
       case DailyMenuStatus.LOCKED:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
+        return 'bg-warning-50 text-warning-700 border-warning-200';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
+        return 'bg-secondary-100 text-secondary-700 border-secondary-300';
     }
   };
 

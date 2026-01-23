@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { OrderingCutoffService } from '../common/services/ordering-cutoff.service';
 import { EmployeeMenuDto, AvailablePackDto, AvailableComponentDto, AvailableVariantDto } from '@contracts/core';
 
 @Injectable()
 export class EmployeeMenuService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly orderingCutoffService: OrderingCutoffService,
+  ) {}
 
   /**
    * Get PUBLISHED DailyMenu for a specific date
@@ -107,11 +111,17 @@ export class EmployeeMenuService {
         };
       });
 
+    // Get cutoff time for this date
+    const cutoffTime = await this.orderingCutoffService.getCutoffTimeForDate(
+      dailyMenu.date.toISOString().split('T')[0],
+    );
+
     return {
       id: dailyMenu.id,
       date: dailyMenu.date.toISOString().split('T')[0],
       status: dailyMenu.status,
       packs: availablePacks,
+      cutoffTime: cutoffTime ? cutoffTime.toISOString() : undefined,
     };
   }
 }

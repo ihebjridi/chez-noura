@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ProtectedRoute } from '../../components/protected-route';
-import { useAuth } from '../../contexts/auth-context';
 import { apiClient } from '../../lib/api-client';
-import { ComponentDto, CreateComponentDto, UserRole } from '@contracts/core';
+import { ComponentDto, CreateComponentDto } from '@contracts/core';
 import Link from 'next/link';
+import { Loading } from '../../components/ui/loading';
+import { Error } from '../../components/ui/error';
+import { Empty } from '../../components/ui/empty';
 
 export default function FoodComponentsPage() {
-  const { logout } = useAuth();
   const [components, setComponents] = useState<ComponentDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -48,140 +48,109 @@ export default function FoodComponentsPage() {
   };
 
   return (
-    <ProtectedRoute requiredRole={UserRole.SUPER_ADMIN}>
-      <div style={{ padding: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <div>
-            <Link href="/dashboard" style={{ marginRight: '1rem', textDecoration: 'none' }}>← Dashboard</Link>
-            <h1 style={{ display: 'inline', marginLeft: '1rem' }}>Food Components</h1>
-          </div>
-          <div>
-            <button
-              onClick={() => setShowCreateForm(!showCreateForm)}
-              style={{
-                padding: '0.5rem 1rem',
-                marginRight: '1rem',
-                backgroundColor: '#0070f3',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              {showCreateForm ? 'Cancel' : '+ New Food Component'}
-            </button>
-            <button
-              onClick={logout}
-              style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: '#ccc',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Logout
-            </button>
-          </div>
-        </div>
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900">Food Components</h1>
+        <p className="mt-1 text-sm text-gray-600 font-normal">Manage food components and their variants</p>
+      </div>
 
-        {error && (
-          <div style={{
-            padding: '0.75rem',
-            backgroundColor: '#fee',
-            color: '#c33',
-            borderRadius: '4px',
-            marginBottom: '1rem'
-          }}>
-            {error}
-          </div>
-        )}
-
+      {/* Inline Create Form */}
+      <div className="mb-6 bg-surface border border-surface-dark rounded-lg">
+        <button
+          onClick={() => setShowCreateForm(!showCreateForm)}
+          className="w-full px-6 py-4 flex justify-between items-center text-left hover:bg-surface-light transition-colors"
+        >
+          <span className="font-semibold">Create New Food Component</span>
+          <span className="text-gray-500">{showCreateForm ? '−' : '+'}</span>
+        </button>
         {showCreateForm && (
-          <form onSubmit={handleCreate} style={{
-            padding: '1.5rem',
-            border: '1px solid #ddd',
-            borderRadius: '8px',
-            marginBottom: '2rem',
-            backgroundColor: 'white'
-          }}>
-            <h2>Create Food Component</h2>
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem' }}>Name *</label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-                style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
-                placeholder="e.g., Soup, Main Dish, Salad"
-              />
-            </div>
-            <button
-              type="submit"
-              style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: '#0070f3',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Create Food Component
-            </button>
-          </form>
-        )}
+          <div className="px-6 py-4 border-t border-surface-dark">
+            <form onSubmit={handleCreate}>
 
-        {loading ? (
-          <p>Loading food components...</p>
-        ) : components.length === 0 ? (
-          <div style={{
-            padding: '2rem',
-            textAlign: 'center',
-            border: '1px solid #ddd',
-            borderRadius: '8px',
-            backgroundColor: 'white'
-          }}>
-            <p>No food components found. Create your first food component to get started.</p>
+      {error && (
+        <div className="mb-4">
+          <Error message={error} onRetry={() => setError('')} />
+        </div>
+      )}
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                  placeholder="e.g., Soup, Main Dish, Salad"
+                  className="w-full px-3 py-2 border border-surface-dark rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-background"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition-colors"
+                >
+                  Create Food Component
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateForm(false);
+                    setFormData({ name: '' });
+                  }}
+                  className="px-4 py-2 bg-surface text-gray-700 font-medium rounded-lg hover:bg-surface-dark transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: 'white', border: '1px solid #ddd', borderRadius: '8px' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#f5f5f5' }}>
-                <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Name</th>
-                <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Created</th>
-                <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {components.map((component) => (
-                <tr key={component.id} style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '0.75rem', fontWeight: '500' }}>{component.name}</td>
-                  <td style={{ padding: '0.75rem', color: '#666', fontSize: '0.875rem' }}>
-                    {new Date(component.createdAt).toLocaleDateString()}
-                  </td>
-                  <td style={{ padding: '0.75rem' }}>
-                    <Link
-                      href={`/food-components/${component.id}/variants`}
-                      style={{
-                        padding: '0.25rem 0.5rem',
-                        backgroundColor: '#0070f3',
-                        color: 'white',
-                        textDecoration: 'none',
-                        borderRadius: '4px',
-                        fontSize: '0.875rem'
-                      }}
-                    >
-                      Manage Variants
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         )}
       </div>
-    </ProtectedRoute>
+
+      {loading ? (
+        <div className="bg-surface border border-surface-dark rounded-lg p-12">
+          <Loading message="Loading food components..." />
+        </div>
+      ) : components.length === 0 ? (
+        <div className="bg-surface border border-surface-dark rounded-lg p-12">
+          <Empty
+            message="No food components found"
+            description="Create your first food component to get started."
+          />
+        </div>
+      ) : (
+        <div className="bg-surface border border-surface-dark rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-surface-dark">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-surface divide-y divide-surface-dark">
+                {components.map((component) => (
+                  <tr key={component.id} className="hover:bg-surface-light">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{component.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(component.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <Link
+                        href={`/food-components/${component.id}/variants`}
+                        className="px-3 py-1 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors inline-block"
+                      >
+                        Manage Variants
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

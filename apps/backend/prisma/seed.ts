@@ -184,33 +184,33 @@ async function main() {
   console.log('\nCreating Variants...');
   const variantsData = [
     // Soup variants
-    { componentName: 'Soup', name: 'Lentil Soup', stockQuantity: 100, isActive: true },
-    { componentName: 'Soup', name: 'Pumpkin Soup', stockQuantity: 80, isActive: true },
-    { componentName: 'Soup', name: 'Chorba', stockQuantity: 90, isActive: true },
-    { componentName: 'Soup', name: 'Vegetable Soup', stockQuantity: 70, isActive: true },
+    { componentName: 'Soup', name: 'Lentil Soup', stockQuantity: 50, isActive: true },
+    { componentName: 'Soup', name: 'Pumpkin Soup', stockQuantity: 50, isActive: true },
+    { componentName: 'Soup', name: 'Chorba', stockQuantity: 50, isActive: true },
+    { componentName: 'Soup', name: 'Vegetable Soup', stockQuantity: 50, isActive: true },
     
     // Main Dish variants
-    { componentName: 'Main Dish', name: 'Chicken Tagine', stockQuantity: 120, isActive: true },
-    { componentName: 'Main Dish', name: 'Lamb Tagine', stockQuantity: 100, isActive: true },
-    { componentName: 'Main Dish', name: 'Fish Tagine', stockQuantity: 90, isActive: true },
-    { componentName: 'Main Dish', name: 'Vegetarian Tagine', stockQuantity: 80, isActive: true },
-    { componentName: 'Main Dish', name: 'Couscous', stockQuantity: 110, isActive: true },
+    { componentName: 'Main Dish', name: 'Chicken Tagine', stockQuantity: 50, isActive: true },
+    { componentName: 'Main Dish', name: 'Lamb Tagine', stockQuantity: 50, isActive: true },
+    { componentName: 'Main Dish', name: 'Fish Tagine', stockQuantity: 50, isActive: true },
+    { componentName: 'Main Dish', name: 'Vegetarian Tagine', stockQuantity: 50, isActive: true },
+    { componentName: 'Main Dish', name: 'Couscous', stockQuantity: 50, isActive: true },
     
     // Salad variants
-    { componentName: 'Salad', name: 'Tunisian Salad', stockQuantity: 150, isActive: true },
-    { componentName: 'Salad', name: 'Green Salad', stockQuantity: 140, isActive: true },
-    { componentName: 'Salad', name: 'Carrot Salad', stockQuantity: 130, isActive: true },
-    { componentName: 'Salad', name: 'Potato Salad', stockQuantity: 120, isActive: true },
+    { componentName: 'Salad', name: 'Tunisian Salad', stockQuantity: 50, isActive: true },
+    { componentName: 'Salad', name: 'Green Salad', stockQuantity: 50, isActive: true },
+    { componentName: 'Salad', name: 'Carrot Salad', stockQuantity: 50, isActive: true },
+    { componentName: 'Salad', name: 'Potato Salad', stockQuantity: 50, isActive: true },
     
     // Brik/Tajin variants
-    { componentName: 'Brik/Tajin', name: 'Brik with Egg', stockQuantity: 100, isActive: true },
-    { componentName: 'Brik/Tajin', name: 'Brik with Tuna', stockQuantity: 90, isActive: true },
-    { componentName: 'Brik/Tajin', name: 'Tajin', stockQuantity: 85, isActive: true },
+    { componentName: 'Brik/Tajin', name: 'Brik with Egg', stockQuantity: 50, isActive: true },
+    { componentName: 'Brik/Tajin', name: 'Brik with Tuna', stockQuantity: 50, isActive: true },
+    { componentName: 'Brik/Tajin', name: 'Tajin', stockQuantity: 50, isActive: true },
     
     // Dessert variants
-    { componentName: 'Dessert', name: 'Baklava', stockQuantity: 100, isActive: true },
-    { componentName: 'Dessert', name: 'Zlabia', stockQuantity: 90, isActive: true },
-    { componentName: 'Dessert', name: 'Fruit', stockQuantity: 150, isActive: true },
+    { componentName: 'Dessert', name: 'Baklava', stockQuantity: 50, isActive: true },
+    { componentName: 'Dessert', name: 'Zlabia', stockQuantity: 50, isActive: true },
+    { componentName: 'Dessert', name: 'Fruit', stockQuantity: 50, isActive: true },
   ];
 
   for (const variantData of variantsData) {

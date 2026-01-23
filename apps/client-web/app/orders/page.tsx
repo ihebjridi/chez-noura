@@ -7,15 +7,24 @@ import { useAuth } from '../../contexts/auth-context';
 import { apiClient } from '../../lib/api-client';
 import { OrderDto, UserRole, OrderStatus } from '@contracts/core';
 import { DegradedModeBanner } from '../../components/degraded-mode-banner';
+import { Spotlight, SpotLightItem } from '../../components/ui-layouts/spotlight-cards';
+import { OrderCalendar } from '../../components/order-calendar';
+import { Loading } from '../../components/ui/loading';
+import { Empty } from '../../components/ui/empty';
+import { Error } from '../../components/ui/error';
+import { EmployeeLayout } from '../../components/layouts/EmployeeLayout';
+import { CollapsibleSection } from '../../components/layouts/CollapsibleSection';
+import { CheckCircle, Clock, X, Package, Calendar } from 'lucide-react';
 
 function OrdersContent() {
-  const { user, logout } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [orders, setOrders] = useState<OrderDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
@@ -37,6 +46,10 @@ function OrdersContent() {
         return dateB - dateA;
       });
       setOrders(sorted);
+      // Auto-expand most recent order
+      if (sorted.length > 0) {
+        setExpandedOrders(new Set([sorted[0].id]));
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load orders');
     } finally {
@@ -44,228 +57,225 @@ function OrdersContent() {
     }
   };
 
-  const getStatusColor = (status: OrderStatus) => {
+  const getStatusInfo = (status: OrderStatus) => {
     switch (status) {
       case OrderStatus.LOCKED:
-        return { bg: '#d4edda', color: '#155724' };
+        return {
+          icon: CheckCircle,
+          description: 'Confirmed - Ready for pickup',
+          className: 'bg-success-50 text-success-700 border-success-300',
+        };
       case OrderStatus.CREATED:
-        return { bg: '#fff3cd', color: '#856404' };
+        return {
+          icon: Clock,
+          description: 'Pending confirmation',
+          className: 'bg-warning-50 text-warning-700 border-warning-300',
+        };
       case OrderStatus.CANCELLED:
-        return { bg: '#f8d7da', color: '#721c24' };
+        return {
+          icon: X,
+          description: 'Cancelled',
+          className: 'bg-destructive/10 text-destructive border-destructive/30',
+        };
       default:
-        return { bg: '#e2e3e5', color: '#383d41' };
+        return {
+          icon: Clock,
+          description: status,
+          className: 'bg-secondary-100 text-secondary-700 border-secondary-300',
+        };
+    }
+  };
+
+  const toggleOrderExpanded = (orderId: string) => {
+    setExpandedOrders((prev) => {
+      const next = new Set(prev);
+      if (next.has(orderId)) {
+        next.delete(orderId);
+      } else {
+        next.add(orderId);
+      }
+      return next;
+    });
+  };
+
+  const filteredOrders = selectedDate
+    ? orders.filter((order) => order.orderDate === selectedDate)
+    : orders;
+
+  const formatOrderDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date().toISOString().split('T')[0];
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+
+    if (dateString === today) {
+      return 'Today';
+    } else if (dateString === tomorrow) {
+      return 'Tomorrow';
+    } else {
+      return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      });
     }
   };
 
   return (
     <ProtectedRoute requiredRole={UserRole.EMPLOYEE}>
-      <DegradedModeBanner />
-      <div style={{ minHeight: '100vh', paddingBottom: '2rem' }}>
-        <header style={{
-          backgroundColor: 'white',
-          padding: '1rem',
-          borderBottom: '1px solid #eee',
-          position: 'sticky',
-          top: 0,
-          zIndex: 10
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: '600' }}>My Orders</h1>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                onClick={() => router.push('/menu')}
-                style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: '#0070f3',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem',
-                  fontWeight: '500'
-                }}
-              >
-                New Order
-              </button>
-              <button
-                onClick={logout}
-                style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: '#f5f5f5',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.9rem'
-                }}
-              >
-                Logout
-              </button>
+      <EmployeeLayout>
+        <DegradedModeBanner />
+
+        {/* Success Message */}
+        {success && (
+          <div className="mx-4 mt-4 p-4 bg-success-50 border border-success-300 text-success-700 rounded-lg">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5" />
+              <p className="text-sm font-semibold">Order placed successfully!</p>
             </div>
           </div>
-        </header>
-
-        {success && (
-          <div style={{
-            margin: '1rem',
-            padding: '1rem',
-            backgroundColor: '#d4edda',
-            color: '#155724',
-            borderRadius: '8px',
-            fontSize: '0.9rem'
-          }}>
-            ✓ Order placed successfully!
-          </div>
         )}
 
+        {/* Error Display */}
         {error && !loading && (
-          <div style={{
-            margin: '1rem',
-            padding: '1rem',
-            backgroundColor: '#fff3cd',
-            color: '#856404',
-            borderRadius: '8px',
-            fontSize: '0.9rem'
-          }}>
-            {error}
+          <div className="mx-4 mt-4">
+            <Error message={error} />
           </div>
         )}
 
-        {loading ? (
-          <div style={{ padding: '2rem', textAlign: 'center' }}>
-            <p>Loading orders...</p>
+        {/* Calendar - Compact View */}
+        {!loading && orders.length > 0 && (
+          <div className="px-4 mt-4">
+            <OrderCalendar
+              orders={orders}
+              selectedDate={selectedDate}
+              onDateSelect={setSelectedDate}
+            />
           </div>
-        ) : orders.length === 0 ? (
-          <div style={{
-            padding: '2rem',
-            textAlign: 'center',
-            backgroundColor: 'white',
-            margin: '1rem',
-            borderRadius: '8px'
-          }}>
-            <p style={{ marginBottom: '1rem' }}>No orders yet.</p>
-            <button
-              onClick={() => router.push('/menu')}
-              style={{
-                padding: '0.75rem 1.5rem',
-                backgroundColor: '#0070f3',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '1rem',
-                fontWeight: '500'
-              }}
-            >
-              Place Your First Order
-            </button>
+        )}
+
+        {/* Orders List */}
+        {loading ? (
+          <div className="flex-1 flex items-center justify-center">
+            <Loading message="Loading orders..." />
+          </div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center px-4">
+            <div className="bg-surface border border-surface-dark rounded-lg p-8 w-full max-w-md">
+              <Empty
+                message={selectedDate ? 'No orders on this date' : 'No orders yet'}
+                description={
+                  selectedDate
+                    ? 'Try selecting a different date'
+                    : 'Place your first order to get started'
+                }
+              />
+              {!selectedDate && (
+                <div className="mt-6 text-center">
+                  <button
+                    onClick={() => router.push('/menu')}
+                    className="px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors font-semibold min-h-[44px]"
+                  >
+                    Place Your First Order
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         ) : (
-          <div style={{ padding: '1rem' }}>
-            {orders.map((order) => {
-              const statusStyle = getStatusColor(order.status);
-              return (
-                <div
-                  key={order.id}
-                  style={{
-                    backgroundColor: 'white',
-                    padding: '1.5rem',
-                    borderRadius: '8px',
-                    marginBottom: '1rem',
-                    border: '1px solid #eee'
-                  }}
-                >
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'start',
-                    marginBottom: '1rem'
-                  }}>
-                    <div>
-                      <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.25rem' }}>
-                        {new Date(order.orderDate).toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </p>
-                      <p style={{ fontSize: '0.85rem', color: '#999' }}>
-                        Order #{order.id.substring(0, 8)}
-                      </p>
-                    </div>
-                    <span style={{
-                      padding: '0.25rem 0.75rem',
-                      borderRadius: '4px',
-                      backgroundColor: statusStyle.bg,
-                      color: statusStyle.color,
-                      fontSize: '0.85rem',
-                      fontWeight: '500'
-                    }}>
-                      {order.status}
-                    </span>
-                  </div>
+          <div className="px-4 py-4 space-y-3">
+            {filteredOrders.map((order) => {
+              const statusInfo = getStatusInfo(order.status);
+              const StatusIcon = statusInfo.icon;
+              const isExpanded = expandedOrders.has(order.id);
 
-                  <div style={{ marginBottom: '1rem' }}>
-                    <div style={{
-                      padding: '0.75rem',
-                      backgroundColor: '#f9f9f9',
-                      borderRadius: '4px',
-                      marginBottom: '0.75rem'
-                    }}>
-                      <p style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
-                        {order.packName}
-                      </p>
-                      <p style={{ fontSize: '0.85rem', color: '#666' }}>
+              return (
+                <CollapsibleSection
+                  key={order.id}
+                  title={
+                    <div className="flex items-center justify-between w-full pr-2">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-gray-600" />
+                        <span className="font-semibold">{formatOrderDate(order.orderDate)}</span>
+                        <span className="text-sm text-gray-500 font-normal">
+                          {order.totalAmount.toFixed(2)} TND
+                        </span>
+                      </div>
+                      <div className={`px-2 py-1 rounded text-xs font-semibold border flex items-center gap-1 ${statusInfo.className}`}>
+                        <StatusIcon className="w-3 h-3" />
+                        {order.status}
+                      </div>
+                    </div>
+                  }
+                  defaultOpen={isExpanded}
+                  headerClassName="py-3"
+                >
+                  <div className="space-y-3 pt-2">
+                    {/* Pack Info */}
+                    <div className="bg-surface-light rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Package className="w-4 h-4 text-primary-600" />
+                        <p className="font-semibold text-gray-900">{order.packName}</p>
+                      </div>
+                      <p className="text-sm text-gray-600">
                         {order.packPrice.toFixed(2)} TND
                       </p>
                     </div>
-                    <div style={{ paddingLeft: '0.5rem' }}>
+
+                    {/* Order Items */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        Your Selection
+                      </p>
                       {order.items.map((item) => (
                         <div
                           key={item.id}
-                          style={{
-                            padding: '0.5rem 0',
-                            borderBottom: '1px solid #f0f0f0'
-                          }}
+                          className="py-2 border-b border-surface-dark last:border-0"
                         >
-                          <p style={{ fontSize: '0.9rem', color: '#666' }}>
-                            <span style={{ fontWeight: '500' }}>{item.componentName}:</span>{' '}
+                          <p className="text-sm text-gray-700 font-normal">
+                            <span className="font-medium text-gray-900">{item.componentName}:</span>{' '}
                             {item.variantName}
                           </p>
                         </div>
                       ))}
                     </div>
-                  </div>
 
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    paddingTop: '1rem',
-                    borderTop: '2px solid #eee'
-                  }}>
-                    <span style={{ fontWeight: '600' }}>Total:</span>
-                    <span style={{ fontSize: '1.25rem', fontWeight: '600', color: '#0070f3' }}>
-                      {order.totalAmount.toFixed(2)} TND
-                    </span>
+                    {/* Status Description */}
+                    <div className="bg-background rounded-lg p-3 border border-surface-dark">
+                      <div className="flex items-center gap-2">
+                        <StatusIcon className="w-4 h-4 text-gray-600" />
+                        <p className="text-sm text-gray-600 font-normal">
+                          {statusInfo.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Total */}
+                    <div className="flex justify-between items-center pt-2 border-t border-surface-dark">
+                      <span className="font-semibold text-gray-900">Total:</span>
+                      <span className="text-xl font-semibold text-primary-600">
+                        {order.totalAmount.toFixed(2)} TND
+                      </span>
+                    </div>
                   </div>
-                </div>
+                </CollapsibleSection>
               );
             })}
           </div>
         )}
-      </div>
+      </EmployeeLayout>
     </ProtectedRoute>
   );
 }
 
 export default function OrdersPage() {
   return (
-    <Suspense fallback={
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <p>Loading...</p>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <Loading message="Loading..." />
+        </div>
+      }
+    >
       <OrdersContent />
     </Suspense>
   );

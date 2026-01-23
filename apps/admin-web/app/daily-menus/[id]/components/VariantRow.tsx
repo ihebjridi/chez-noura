@@ -23,14 +23,14 @@ export function VariantRow({
   return (
     <div
       className={`flex items-center gap-4 p-3 border rounded ${
-        selected ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200'
+        selected ? 'bg-warning-50 border-warning-300' : 'bg-surface border-surface-dark'
       } ${isLocked ? 'opacity-60' : ''} ${isUpdating ? 'opacity-50' : ''}`}
     >
       <ToggleSwitch
         checked={selected}
         onChange={onToggle}
         disabled={isLocked || isUpdating}
-        color="green"
+        color="primary"
       />
       <div className="flex-1 font-medium">{variant.name}</div>
       <div className="flex items-center gap-2">
@@ -39,19 +39,19 @@ export function VariantRow({
           type="number"
           min="0"
           value={stock}
-          onChange={(e) => onStockChange(parseInt(e.target.value) || 0)}
+          onChange={(e) => onStockChange(parseInt(e.target.value) || 50)}
           disabled={isLocked}
           required={!selected}
-          placeholder="0"
+          placeholder="50"
           className={`w-20 px-2 py-1 border rounded ${
             isLocked
-              ? 'bg-gray-100 border-gray-300 text-gray-600 cursor-not-allowed'
-              : 'bg-white border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500'
+              ? 'bg-surface-light border-surface-dark text-gray-600 cursor-not-allowed'
+              : 'bg-background border-surface-dark focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
           }`}
         />
         {isUpdating && <span className="text-xs text-gray-500">Updating...</span>}
         {selected && !isLocked && (
-          <span className="text-xs text-amber-600" title="Stock changes are local only. Backend doesn't support updates.">
+          <span className="text-xs text-primary-600" title="Stock changes are local only. Backend doesn't support updates.">
             (Local edit)
           </span>
         )}

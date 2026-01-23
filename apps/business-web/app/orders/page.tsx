@@ -1,18 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ProtectedRoute } from '../../components/protected-route';
-import { useAuth } from '../../contexts/auth-context';
+import { useState, useEffect, useMemo } from 'react';
 import { apiClient } from '../../lib/api-client';
-import { OrderDto, UserRole, OrderStatus } from '@contracts/core';
-import Link from 'next/link';
+import { OrderDto, OrderStatus } from '@contracts/core';
+import { Loading } from '../../components/ui/loading';
+import { Error } from '../../components/ui/error';
+import { Empty } from '../../components/ui/empty';
+import { ChevronDown, ChevronUp, Users } from 'lucide-react';
 
 export default function OrdersPage() {
-  const { logout } = useAuth();
   const [orders, setOrders] = useState<OrderDto[]>([]);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [expandedDate, setExpandedDate] = useState<string | null>(null);
+  const [expandedEmployeeId, setExpandedEmployeeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [dateFilter, setDateFilter] = useState<'today' | 'tomorrow' | 'all' | 'custom'>('today');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [customDate, setCustomDate] = useState('');
+
+  const today = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
 
   useEffect(() => {
     loadOrders();
@@ -31,143 +39,345 @@ export default function OrdersPage() {
     }
   };
 
+  const filteredOrders = useMemo(() => {
+    if (dateFilter === 'today') {
+      return orders.filter((order) => order.orderDate.split('T')[0] === today);
+    } else if (dateFilter === 'tomorrow') {
+      return orders.filter((order) => order.orderDate.split('T')[0] === tomorrow);
+    } else if (dateFilter === 'custom' && customDate) {
+      return orders.filter((order) => order.orderDate.split('T')[0] === customDate);
+    } else if (dateFilter === 'all') {
+      return orders;
+    }
+    return orders;
+  }, [orders, dateFilter, customDate, today, tomorrow]);
+
+  // Group orders by date, then by employee
+  const groupedOrders = useMemo(() => {
+    const byDate: Record<string, Record<string, OrderDto[]>> = {};
+    
+    filteredOrders.forEach((order) => {
+      const dateKey = order.orderDate.split('T')[0];
+      if (!byDate[dateKey]) {
+        byDate[dateKey] = {};
+      }
+      if (!byDate[dateKey][order.employeeId]) {
+        byDate[dateKey][order.employeeId] = [];
+      }
+      byDate[dateKey][order.employeeId].push(order);
+    });
+
+    // Sort dates descending
+    const sortedDates = Object.keys(byDate).sort((a, b) => 
+      new Date(b).getTime() - new Date(a).getTime()
+    );
+
+    return { byDate, sortedDates };
+  }, [filteredOrders]);
+
+  const getStatusBadgeColor = (status: OrderStatus) => {
+    switch (status) {
+      case OrderStatus.LOCKED:
+        return 'bg-success-50 text-success-700 border-success-300';
+      case OrderStatus.CREATED:
+        return 'bg-blue-50 text-blue-700 border-blue-300';
+      case OrderStatus.CANCELLED:
+        return 'bg-destructive/10 text-destructive border-destructive/30';
+      default:
+        return 'bg-secondary-100 text-secondary-700 border-secondary-300';
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
   return (
-    <ProtectedRoute requiredRole={UserRole.BUSINESS_ADMIN}>
-      <div style={{ padding: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <div>
-            <Link href="/dashboard" style={{ marginRight: '1rem', textDecoration: 'none' }}>← Dashboard</Link>
-            <h1 style={{ display: 'inline', marginLeft: '1rem' }}>Orders Overview</h1>
-          </div>
-          <button
-            onClick={logout}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: '#ccc',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            Logout
-          </button>
-        </div>
-
-        {error && (
-          <div style={{
-            padding: '0.75rem',
-            backgroundColor: '#fee',
-            color: '#c33',
-            borderRadius: '4px',
-            marginBottom: '1rem'
-          }}>
-            {error}
-          </div>
-        )}
-
-        {loading ? (
-          <p>Loading orders...</p>
-        ) : orders.length === 0 ? (
-          <div style={{
-            padding: '2rem',
-            textAlign: 'center',
-            border: '1px solid #ddd',
-            borderRadius: '8px',
-            backgroundColor: 'white'
-          }}>
-            <p>No orders found.</p>
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gap: '1rem' }}>
-            {orders.map((order) => (
-              <div
-                key={order.id}
-                style={{
-                  padding: '1.5rem',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  backgroundColor: 'white',
-                }}
+    <div className="p-4 sm:p-6 lg:p-8">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900 mb-4">Orders</h1>
+        
+        {/* Date Filter Tabs */}
+        <div className="bg-surface border border-surface-dark rounded-lg p-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => {
+                setDateFilter('today');
+                setCustomDate('');
+              }}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                dateFilter === 'today'
+                  ? 'bg-primary-50 text-primary-700 border-2 border-primary-500'
+                  : 'bg-surface-light text-gray-700 hover:bg-surface-dark border-2 border-transparent'
+              }`}
+            >
+              Today
+            </button>
+            <button
+              onClick={() => {
+                setDateFilter('tomorrow');
+                setCustomDate('');
+              }}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                dateFilter === 'tomorrow'
+                  ? 'bg-primary-50 text-primary-700 border-2 border-primary-500'
+                  : 'bg-surface-light text-gray-700 hover:bg-surface-dark border-2 border-transparent'
+              }`}
+            >
+              Tomorrow
+            </button>
+            <button
+              onClick={() => {
+                setDateFilter('all');
+                setCustomDate('');
+              }}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                dateFilter === 'all'
+                  ? 'bg-primary-50 text-primary-700 border-2 border-primary-500'
+                  : 'bg-surface-light text-gray-700 hover:bg-surface-dark border-2 border-transparent'
+              }`}
+            >
+              All Orders
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowDatePicker(!showDatePicker)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors border-2 ${
+                  dateFilter === 'custom'
+                    ? 'bg-primary-50 text-primary-700 border-primary-500'
+                    : 'bg-surface-light text-gray-700 hover:bg-surface-dark border-transparent'
+                }`}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-                      <h3 style={{ margin: 0 }}>Order {order.id.substring(0, 8)}...</h3>
-                      <span style={{
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '4px',
-                        backgroundColor: order.status === OrderStatus.LOCKED ? '#d4edda' : order.status === OrderStatus.CREATED ? '#fff3cd' : '#f8d7da',
-                        color: order.status === OrderStatus.LOCKED ? '#155724' : order.status === OrderStatus.CREATED ? '#856404' : '#721c24',
-                        fontSize: '0.9rem'
-                      }}>
-                        {order.status}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
-                      <strong>Date:</strong> {new Date(order.orderDate).toLocaleDateString()}
-                    </div>
-                    <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
-                      <strong>Employee:</strong> {order.employeeName} ({order.employeeEmail})
-                    </div>
-                    <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
-                      <strong>Pack:</strong> {order.packName} - {order.packPrice.toFixed(2)} TND
-                    </div>
-                    <div style={{ fontSize: '1rem', fontWeight: 'bold', marginTop: '0.5rem' }}>
-                      Total: {order.totalAmount.toFixed(2)} TND
+                {customDate ? new Date(customDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Custom Date'}
+              </button>
+              {showDatePicker && (
+                <div className="absolute top-full mt-2 left-0 bg-surface border border-surface-dark rounded-lg shadow-lg p-3 z-50">
+                  <input
+                    type="date"
+                    value={customDate}
+                    onChange={(e) => {
+                      const selectedDate = e.target.value;
+                      setCustomDate(selectedDate);
+                      if (selectedDate) {
+                        setDateFilter('custom');
+                      }
+                      setShowDatePicker(false);
+                    }}
+                    className="px-3 py-2 border border-surface-dark rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-background"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="mb-4">
+          <Error message={error} onRetry={loadOrders} />
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading && (
+        <div className="bg-surface border border-surface-dark rounded-lg p-12">
+          <Loading message="Loading orders..." />
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && filteredOrders.length === 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-12">
+          <Empty
+            message="No orders found"
+            description="No orders match the selected filter criteria."
+          />
+        </div>
+      )}
+
+      {/* Grouped Orders by Date and Employee */}
+      {!loading && filteredOrders.length > 0 && (
+        <div className="space-y-6">
+          {groupedOrders.sortedDates.map((dateKey) => {
+            const employeesForDate = groupedOrders.byDate[dateKey];
+            const totalOrdersForDate = Object.values(employeesForDate).reduce(
+              (sum, orders) => sum + orders.length,
+              0
+            );
+            const totalAmountForDate = filteredOrders
+              .filter((o) => o.orderDate.split('T')[0] === dateKey)
+              .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+
+            return (
+              <div key={dateKey} className="bg-surface border border-surface-dark rounded-lg overflow-hidden">
+                {/* Date Header */}
+                <button
+                  onClick={() => setExpandedDate(expandedDate === dateKey ? null : dateKey)}
+                  className="w-full px-6 py-4 bg-surface-light hover:bg-surface-dark transition-colors flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-4">
+                    {expandedDate === dateKey ? (
+                      <ChevronUp className="w-5 h-5 text-gray-600" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-gray-600" />
+                    )}
+                    <div className="text-left">
+                      <h3 className="text-lg font-semibold text-gray-900">{formatDate(dateKey)}</h3>
+                      <p className="text-sm text-gray-600">
+                        {totalOrdersForDate} order{totalOrdersForDate !== 1 ? 's' : ''} • {totalAmountForDate.toFixed(2)} TND
+                      </p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      backgroundColor: expandedOrderId === order.id ? '#666' : '#0070f3',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '0.875rem'
-                    }}
-                  >
-                    {expandedOrderId === order.id ? 'Hide Details' : 'Show Details'}
-                  </button>
-                </div>
+                </button>
 
-                {expandedOrderId === order.id && (
-                  <div style={{
-                    marginTop: '1rem',
-                    paddingTop: '1rem',
-                    borderTop: '1px solid #eee'
-                  }}>
-                    <h4 style={{ marginBottom: '0.75rem', fontSize: '1rem' }}>Component Selections:</h4>
-                    <div style={{ display: 'grid', gap: '0.5rem' }}>
-                      {order.items.map((item) => (
-                        <div
-                          key={item.id}
-                          style={{
-                            padding: '0.75rem',
-                            backgroundColor: '#f9f9f9',
-                            borderRadius: '4px',
-                            border: '1px solid #eee'
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                              <strong>{item.componentName}</strong>
+                {/* Employees for this date */}
+                {expandedDate === dateKey && (
+                  <div className="p-6 space-y-4">
+                    {Object.entries(employeesForDate).map(([employeeId, employeeOrders]) => {
+                      const employee = employeeOrders[0];
+                      const employeeTotal = employeeOrders.reduce(
+                        (sum, order) => sum + (order.totalAmount || 0),
+                        0
+                      );
+
+                      return (
+                        <div key={employeeId} className="border border-surface-dark rounded-lg overflow-hidden">
+                          {/* Employee Header */}
+                          <button
+                            onClick={() =>
+                              setExpandedEmployeeId(
+                                expandedEmployeeId === employeeId ? null : employeeId
+                              )
+                            }
+                            className="w-full px-4 py-3 bg-primary-50 hover:bg-primary-100 transition-colors flex items-center justify-between"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Users className="w-5 h-5 text-primary-600" />
+                              <div className="text-left">
+                                <p className="font-semibold text-gray-900">
+                                  {employee.employeeName}
+                                </p>
+                                <p className="text-sm text-gray-600">{employee.employeeEmail}</p>
+                              </div>
                             </div>
-                            <div style={{ color: '#666' }}>
-                              {item.variantName}
+                            <div className="flex items-center gap-4">
+                              <div className="text-right">
+                                <p className="text-sm font-semibold text-gray-900">
+                                  {employeeOrders.length} order{employeeOrders.length !== 1 ? 's' : ''}
+                                </p>
+                                <p className="text-xs text-gray-600">
+                                  {employeeTotal.toFixed(2)} TND
+                                </p>
+                              </div>
+                              {expandedEmployeeId === employeeId ? (
+                                <ChevronUp className="w-5 h-5 text-gray-600" />
+                              ) : (
+                                <ChevronDown className="w-5 h-5 text-gray-600" />
+                              )}
                             </div>
-                          </div>
+                          </button>
+
+                          {/* Orders for this employee */}
+                          {expandedEmployeeId === employeeId && (
+                            <div className="p-4 space-y-3 bg-surface">
+                              {employeeOrders.map((order) => (
+                                <div
+                                  key={order.id}
+                                  className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+                                >
+                                  <div className="flex justify-between items-start mb-3">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-3 mb-2">
+                                        <h4 className="text-sm font-semibold text-gray-900">
+                                          Order #{order.id.substring(0, 8)}
+                                        </h4>
+                                        <span
+                                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(
+                                            order.status
+                                          )}`}
+                                        >
+                                          {order.status}
+                                        </span>
+                                      </div>
+                                      <p className="text-sm text-gray-600 mb-1">
+                                        <strong>Pack:</strong> {order.packName} - {order.packPrice.toFixed(2)} TND
+                                      </p>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-lg font-semibold text-gray-900">
+                                        {order.totalAmount.toFixed(2)} TND
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {/* Expandable Order Details */}
+                                  <button
+                                    onClick={() =>
+                                      setExpandedOrderId(
+                                        expandedOrderId === order.id ? null : order.id
+                                      )
+                                    }
+                                    className="w-full text-left text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+                                  >
+                                    {expandedOrderId === order.id ? (
+                                      <>
+                                        <ChevronUp className="w-3 h-3" />
+                                        Hide Details
+                                      </>
+                                    ) : (
+                                      <>
+                                        <ChevronDown className="w-3 h-3" />
+                                        Show Details
+                                      </>
+                                    )}
+                                  </button>
+
+                                  {expandedOrderId === order.id && (
+                                    <div className="mt-3 pt-3 border-t border-surface-dark">
+                                      <h5 className="text-xs font-semibold text-gray-700 mb-2">
+                                        Component Selections:
+                                      </h5>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {order.items.map((item) => (
+                                          <div
+                                            key={item.id}
+                                            className="p-2 bg-surface rounded border border-surface-dark"
+                                          >
+                                            <div className="flex justify-between items-center">
+                                              <span className="text-xs font-medium text-gray-900">
+                                                {item.componentName}
+                                              </span>
+                                              <span className="text-xs text-gray-600">
+                                                {item.variantName}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </ProtectedRoute>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

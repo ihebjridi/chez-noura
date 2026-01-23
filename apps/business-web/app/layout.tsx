@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { AuthProvider } from '../contexts/auth-context';
+import { PageWrapper } from '../components/layouts/PageWrapper';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -14,8 +15,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <AuthProvider>{children}</AuthProvider>
+      <body className="bg-[#FAFAF9] min-h-screen">
+        <AuthProvider>
+          <PageWrapper>{children}</PageWrapper>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -1,18 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ProtectedRoute } from '../../components/protected-route';
-import { useAuth } from '../../contexts/auth-context';
 import { apiClient } from '../../lib/api-client';
-import { BusinessDto, CreateBusinessDto, UserRole } from '@contracts/core';
-import Link from 'next/link';
-import { Logo } from '../../components/logo';
+import { BusinessDto, CreateBusinessDto } from '@contracts/core';
 import { Loading } from '../../components/ui/loading';
 import { Empty } from '../../components/ui/empty';
 import { Error } from '../../components/ui/error';
 
 export default function BusinessesPage() {
-  const { logout, user } = useAuth();
   const [businesses, setBusinesses] = useState<BusinessDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -51,140 +46,124 @@ export default function BusinessesPage() {
       setFormData({ name: '', email: '', phone: '', address: '', adminEmail: '' });
       await loadBusinesses();
       
-      // Show success message with admin credentials
-      alert(
-        `Business created successfully!\n\n` +
-        `Admin Email: ${result.adminCredentials.email}\n` +
-        `Temporary Password: ${result.adminCredentials.temporaryPassword}\n\n` +
-        `Please save these credentials securely.`
-      );
+      // Store credentials for display (we'll show inline instead of alert)
+      setError(`Business created! Admin: ${result.adminCredentials.email}, Password: ${result.adminCredentials.temporaryPassword} - Save these credentials securely.`);
     } catch (err: any) {
       setError(err.message || 'Failed to create business');
     }
   };
 
   return (
-    <ProtectedRoute requiredRole={UserRole.SUPER_ADMIN}>
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-white border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center gap-4">
-                <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">
-                  ← Dashboard
-                </Link>
-                <Logo />
-              </div>
-              <div className="flex items-center gap-4">
-                {user && (
-                  <span className="text-sm text-gray-600">{user.email}</span>
-                )}
-                <button
-                  onClick={logout}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-                >
-                  Logout
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900">Businesses</h1>
+        <p className="mt-1 text-sm text-gray-600 font-normal">Manage businesses and their administrators</p>
+      </div>
 
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Businesses</h1>
-              <p className="mt-1 text-gray-600">Manage businesses and their administrators</p>
-            </div>
-            <button
-              onClick={() => setShowCreateForm(!showCreateForm)}
-              className="px-4 py-2 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 transition-colors"
-            >
-              {showCreateForm ? 'Cancel' : '+ New Business'}
-            </button>
-          </div>
+      {error && (
+        <div className="mb-6">
+          <Error message={error} onRetry={loadBusinesses} />
+        </div>
+      )}
 
-          {error && (
-            <div className="mb-6">
-              <Error message={error} onRetry={loadBusinesses} />
+      {/* Inline Create Form */}
+      <div className="mb-6 bg-surface border border-surface-dark rounded-lg">
+        <button
+          onClick={() => setShowCreateForm(!showCreateForm)}
+          className="w-full px-6 py-4 flex justify-between items-center text-left hover:bg-surface-light transition-colors"
+        >
+          <span className="font-semibold">Create New Business</span>
+          <span className="text-gray-500">{showCreateForm ? '−' : '+'}</span>
+        </button>
+        {showCreateForm && (
+          <div className="px-6 py-4 border-t border-surface-dark">
+            <form onSubmit={handleCreate}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      required
+                      className="w-full px-3 py-2 border border-surface-dark rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-background"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      required
+                      className="w-full px-3 py-2 border border-surface-dark rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-background"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="w-full px-3 py-2 border border-surface-dark rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-background"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Admin Email *
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.adminEmail}
+                      onChange={(e) => setFormData({ ...formData, adminEmail: e.target.value })}
+                      required
+                      placeholder="Email for the business admin user"
+                      className="w-full px-3 py-2 border border-surface-dark rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-background"
+                    />
+                    <p className="mt-1 text-xs text-gray-500 font-normal">
+                      A temporary password will be generated for this admin user
+                    </p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Address
+                    </label>
+                    <textarea
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-surface-dark rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-background"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition-colors"
+                  >
+                    Create Business
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateForm(false);
+                      setFormData({ name: '', email: '', phone: '', address: '', adminEmail: '' });
+                    }}
+                    className="px-4 py-2 bg-surface text-gray-700 font-medium rounded-lg hover:bg-surface-dark transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
             </div>
           )}
-
-          {showCreateForm && (
-            <form onSubmit={handleCreate} className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Create Business</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Admin Email *
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.adminEmail}
-                    onChange={(e) => setFormData({ ...formData, adminEmail: e.target.value })}
-                    required
-                    placeholder="Email for the business admin user"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    A temporary password will be generated for this admin user
-                  </p>
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Address
-                  </label>
-                  <textarea
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  />
-                </div>
-              </div>
-              <button
-                type="submit"
-                className="mt-4 px-4 py-2 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 transition-colors"
-              >
-                Create Business
-              </button>
-            </form>
-          )}
+      </div>
 
           {loading ? (
             <Loading message="Loading businesses..." />
@@ -198,14 +177,14 @@ export default function BusinessesPage() {
               {businesses.map((business) => (
                 <div
                   key={business.id}
-                  className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow"
+                  className="bg-surface border border-surface-dark rounded-lg p-6 hover:shadow-sm transition-shadow"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <h3 className="text-lg font-semibold text-gray-900">{business.name}</h3>
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                       business.status === 'ACTIVE' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
+                        ? 'bg-success-50 text-success-700' 
+                        : 'bg-surface-light text-secondary-700'
                     }`}>
                       {business.status}
                     </span>
@@ -239,8 +218,6 @@ export default function BusinessesPage() {
               ))}
             </div>
           )}
-        </main>
-      </div>
-    </ProtectedRoute>
+    </div>
   );
 }

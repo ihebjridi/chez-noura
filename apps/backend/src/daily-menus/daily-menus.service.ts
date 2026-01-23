@@ -192,7 +192,7 @@ export class DailyMenusService {
       data: {
         dailyMenuId: id,
         variantId: addVariantDto.variantId,
-        initialStock: addVariantDto.initialStock,
+        initialStock: addVariantDto.initialStock ?? 50,
       },
       include: {
         variant: {
@@ -363,6 +363,27 @@ export class DailyMenusService {
     });
 
     return this.mapToDto(updated);
+  }
+
+  async delete(id: string): Promise<void> {
+    const menu = await this.prisma.dailyMenu.findUnique({
+      where: { id },
+    });
+
+    if (!menu) {
+      throw new NotFoundException(`Daily menu with ID ${id} not found`);
+    }
+
+    // Only allow deletion of DRAFT menus
+    if (menu.status !== 'DRAFT') {
+      throw new BadRequestException(
+        `Cannot delete menu with status ${menu.status}. Only DRAFT menus can be deleted.`,
+      );
+    }
+
+    await this.prisma.dailyMenu.delete({
+      where: { id },
+    });
   }
 
   private mapToDto(menu: any): DailyMenuDto {

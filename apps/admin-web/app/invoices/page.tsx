@@ -1,19 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ProtectedRoute } from '../../components/protected-route';
-import { useAuth } from '../../contexts/auth-context';
 import { apiClient } from '../../lib/api-client';
 import {
   InvoiceSummaryDto,
   InvoiceDto,
   InvoiceStatus,
-  UserRole,
 } from '@contracts/core';
-import Link from 'next/link';
+import { Loading } from '../../components/ui/loading';
+import { Error } from '../../components/ui/error';
+import { Empty } from '../../components/ui/empty';
+import { ArrowLeft } from 'lucide-react';
 
 export default function InvoicesPage() {
-  const { logout } = useAuth();
   const [invoices, setInvoices] = useState<InvoiceSummaryDto[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceDto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,424 +73,209 @@ export default function InvoicesPage() {
   const getStatusColor = (status: InvoiceStatus) => {
     switch (status) {
       case InvoiceStatus.PAID:
-        return { bg: '#d4edda', color: '#155724' };
+        return 'bg-success-50 text-success-700';
       case InvoiceStatus.ISSUED:
-        return { bg: '#fff3cd', color: '#856404' };
+        return 'bg-success-50 text-success-700';
       case InvoiceStatus.DRAFT:
-        return { bg: '#d1ecf1', color: '#0c5460' };
+        return 'bg-blue-50 text-blue-700';
       default:
-        return { bg: '#f5f5f5', color: '#666' };
+        return 'bg-gray-100 text-gray-800'; // Status color - keep as is
     }
   };
 
   return (
-    <ProtectedRoute requiredRole={UserRole.SUPER_ADMIN}>
-      <div style={{ padding: '2rem' }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '2rem',
-          }}
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900">Invoices</h1>
+        <p className="mt-1 text-sm text-gray-600 font-normal">Manage business invoices</p>
+      </div>
+
+      {error && (
+        <div className="mb-4">
+          <Error message={error} onRetry={() => setError('')} />
+        </div>
+      )}
+
+      {/* Inline Generate Form */}
+      <div className="mb-6 bg-surface border border-surface-dark rounded-lg">
+        <button
+          onClick={() => setShowGenerateForm(!showGenerateForm)}
+          className="w-full px-6 py-4 flex justify-between items-center text-left hover:bg-surface-light transition-colors"
         >
-          <div>
-            <Link
-              href="/dashboard"
-              style={{ marginRight: '1rem', textDecoration: 'none' }}
-            >
-              ← Dashboard
-            </Link>
-            <h1 style={{ display: 'inline', marginLeft: '1rem' }}>Invoices</h1>
+          <span className="font-semibold">Generate Invoices</span>
+          <span className="text-gray-500">{showGenerateForm ? '−' : '+'}</span>
+        </button>
+        {showGenerateForm && (
+          <div className="px-6 py-4 border-t border-surface-dark">
+            <form onSubmit={handleGenerate}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Period Start *
+                  </label>
+                  <input
+                    type="date"
+                    value={generateStart}
+                    onChange={(e) => setGenerateStart(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-surface-dark rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-background"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Period End *
+                  </label>
+                  <input
+                    type="date"
+                    value={generateEnd}
+                    onChange={(e) => setGenerateEnd(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-surface-dark rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-background"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-2 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Generating...' : 'Generate'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowGenerateForm(false);
+                    setGenerateStart('');
+                    setGenerateEnd('');
+                  }}
+                  className="px-4 py-2 bg-surface text-gray-700 font-medium rounded-lg hover:bg-surface-dark transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
-          <div>
-            <button
-              onClick={() => setShowGenerateForm(!showGenerateForm)}
-              style={{
-                padding: '0.5rem 1rem',
-                marginRight: '1rem',
-                backgroundColor: '#0070f3',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-              }}
-            >
-              {showGenerateForm ? 'Cancel' : '+ Generate Invoices'}
-            </button>
-            <button
-              onClick={logout}
-              style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: '#ccc',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-              }}
-            >
-              Logout
-            </button>
+        )}
+      </div>
+
+      {selectedInvoice ? (
+        <div>
+          <button
+            onClick={() => setSelectedInvoice(null)}
+            className="mb-4 flex items-center gap-2 px-4 py-2 bg-secondary-400 text-white rounded-lg hover:bg-secondary-500 transition-colors font-medium"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to List
+          </button>
+          <div className="bg-surface border border-surface-dark rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">Invoice {selectedInvoice.invoiceNumber}</h2>
+            <div className="space-y-2 mb-6">
+              <p className="font-normal"><strong>Business:</strong> {selectedInvoice.businessName} ({selectedInvoice.businessEmail})</p>
+              <p className="font-normal"><strong>Period:</strong> {selectedInvoice.periodStart} to {selectedInvoice.periodEnd}</p>
+              <p className="font-normal">
+                <strong>Status:</strong>{' '}
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedInvoice.status)}`}>
+                  {selectedInvoice.status}
+                </span>
+              </p>
+              <p className="font-normal"><strong>Due Date:</strong> {selectedInvoice.dueDate}</p>
+              {selectedInvoice.issuedAt && (
+                <p className="font-normal"><strong>Issued At:</strong> {new Date(selectedInvoice.issuedAt).toLocaleString()}</p>
+              )}
+              {selectedInvoice.paidAt && (
+                <p className="font-normal"><strong>Paid At:</strong> {new Date(selectedInvoice.paidAt).toLocaleString()}</p>
+              )}
+            </div>
+            <div className="mb-6 space-y-1">
+              <p className="font-normal"><strong>Subtotal:</strong> {selectedInvoice.subtotal.toFixed(2)} TND</p>
+              {selectedInvoice.tax && (
+                <p className="font-normal"><strong>Tax:</strong> {selectedInvoice.tax.toFixed(2)} TND</p>
+              )}
+              <p className="font-normal"><strong>Total:</strong> {selectedInvoice.total.toFixed(2)} TND</p>
+            </div>
+            <h3 className="font-semibold mb-4">Items</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-surface-dark">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pack</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Date</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-surface divide-y divide-surface-dark">
+                  {selectedInvoice.items.map((item) => (
+                    <tr key={item.id} className="hover:bg-surface-light">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.packName}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(item.orderDate).toLocaleDateString()}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{item.quantity}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{item.unitPrice.toFixed(2)} TND</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{item.totalPrice.toFixed(2)} TND</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-
-        {error && (
-          <div
-            style={{
-              padding: '0.75rem',
-              backgroundColor: '#fee',
-              color: '#c33',
-              borderRadius: '4px',
-              marginBottom: '1rem',
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        {showGenerateForm && (
-          <form
-            onSubmit={handleGenerate}
-            style={{
-              padding: '1.5rem',
-              border: '1px solid #ddd',
-              borderRadius: '8px',
-              marginBottom: '2rem',
-              backgroundColor: 'white',
-            }}
-          >
-            <h2>Generate Invoices</h2>
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem' }}>
-                Period Start (YYYY-MM-DD) *
-              </label>
-              <input
-                type="date"
-                value={generateStart}
-                onChange={(e) => setGenerateStart(e.target.value)}
-                required
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                }}
+      ) : (
+        <>
+          {loading ? (
+            <div className="bg-surface border border-surface-dark rounded-lg p-12">
+              <Loading message="Loading invoices..." />
+            </div>
+          ) : invoices.length === 0 ? (
+            <div className="bg-surface border border-surface-dark rounded-lg p-12">
+              <Empty
+                message="No invoices found"
+                description="Generate invoices for a period to get started."
               />
             </div>
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem' }}>
-                Period End (YYYY-MM-DD) *
-              </label>
-              <input
-                type="date"
-                value={generateEnd}
-                onChange={(e) => setGenerateEnd(e.target.value)}
-                required
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                }}
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: loading ? '#ccc' : '#0070f3',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-              }}
-            >
-              {loading ? 'Generating...' : 'Generate'}
-            </button>
-          </form>
-        )}
-
-        {selectedInvoice ? (
-          <div>
-            <button
-              onClick={() => setSelectedInvoice(null)}
-              style={{
-                padding: '0.5rem 1rem',
-                marginBottom: '1rem',
-                backgroundColor: '#ccc',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-              }}
-            >
-              ← Back to List
-            </button>
-            <div
-              style={{
-                padding: '1.5rem',
-                border: '1px solid #ddd',
-                borderRadius: '8px',
-                backgroundColor: 'white',
-              }}
-            >
-              <h2>Invoice {selectedInvoice.invoiceNumber}</h2>
-              <div style={{ marginBottom: '1rem' }}>
-                <p>
-                  <strong>Business:</strong> {selectedInvoice.businessName} (
-                  {selectedInvoice.businessEmail})
-                </p>
-                <p>
-                  <strong>Period:</strong> {selectedInvoice.periodStart} to{' '}
-                  {selectedInvoice.periodEnd}
-                </p>
-                <p>
-                  <strong>Status:</strong>{' '}
-                  <span
-                    style={{
-                      padding: '0.25rem 0.5rem',
-                      borderRadius: '4px',
-                      ...getStatusColor(selectedInvoice.status),
-                      fontSize: '0.9rem',
-                    }}
-                  >
-                    {selectedInvoice.status}
-                  </span>
-                </p>
-                <p>
-                  <strong>Due Date:</strong> {selectedInvoice.dueDate}
-                </p>
-                {selectedInvoice.issuedAt && (
-                  <p>
-                    <strong>Issued At:</strong>{' '}
-                    {new Date(selectedInvoice.issuedAt).toLocaleString()}
-                  </p>
-                )}
-                {selectedInvoice.paidAt && (
-                  <p>
-                    <strong>Paid At:</strong>{' '}
-                    {new Date(selectedInvoice.paidAt).toLocaleString()}
-                  </p>
-                )}
-              </div>
-              <div style={{ marginBottom: '1rem' }}>
-                <p>
-                  <strong>Subtotal:</strong> {selectedInvoice.subtotal.toFixed(2)} TND
-                </p>
-                {selectedInvoice.tax && (
-                  <p>
-                    <strong>Tax:</strong> {selectedInvoice.tax.toFixed(2)} TND
-                  </p>
-                )}
-                <p>
-                  <strong>Total:</strong> {selectedInvoice.total.toFixed(2)} TND
-                </p>
-              </div>
-              <h3>Items</h3>
-              <div style={{ overflowX: 'auto' }}>
-                <table
-                  style={{
-                    width: '100%',
-                    borderCollapse: 'collapse',
-                    marginTop: '1rem',
-                  }}
-                >
-                  <thead>
-                    <tr style={{ backgroundColor: '#f5f5f5' }}>
-                      <th
-                        style={{
-                          padding: '1rem',
-                          textAlign: 'left',
-                          borderBottom: '1px solid #ddd',
-                        }}
-                      >
-                        Pack
-                      </th>
-                      <th
-                        style={{
-                          padding: '1rem',
-                          textAlign: 'left',
-                          borderBottom: '1px solid #ddd',
-                        }}
-                      >
-                        Order Date
-                      </th>
-                      <th
-                        style={{
-                          padding: '1rem',
-                          textAlign: 'right',
-                          borderBottom: '1px solid #ddd',
-                        }}
-                      >
-                        Quantity
-                      </th>
-                      <th
-                        style={{
-                          padding: '1rem',
-                          textAlign: 'right',
-                          borderBottom: '1px solid #ddd',
-                        }}
-                      >
-                        Unit Price
-                      </th>
-                      <th
-                        style={{
-                          padding: '1rem',
-                          textAlign: 'right',
-                          borderBottom: '1px solid #ddd',
-                        }}
-                      >
-                        Total
-                      </th>
+          ) : (
+            <div className="bg-surface border border-surface-dark rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-surface-dark">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Business</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {selectedInvoice.items.map((item) => (
-                      <tr key={item.id} style={{ borderBottom: '1px solid #eee' }}>
-                        <td style={{ padding: '1rem' }}>{item.packName}</td>
-                        <td style={{ padding: '1rem' }}>
-                          {new Date(item.orderDate).toLocaleDateString()}
-                        </td>
-                        <td style={{ padding: '1rem', textAlign: 'right' }}>
-                          {item.quantity}
-                        </td>
-                        <td style={{ padding: '1rem', textAlign: 'right' }}>
-                          {item.unitPrice.toFixed(2)} TND
-                        </td>
-                        <td style={{ padding: '1rem', textAlign: 'right' }}>
-                          {item.totalPrice.toFixed(2)} TND
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <>
-            {loading ? (
-              <p>Loading invoices...</p>
-            ) : invoices.length === 0 ? (
-              <div
-                style={{
-                  padding: '2rem',
-                  textAlign: 'center',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  backgroundColor: 'white',
-                }}
-              >
-                <p>No invoices found. Generate invoices for a period to get started.</p>
-              </div>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table
-                  style={{
-                    width: '100%',
-                    borderCollapse: 'collapse',
-                    backgroundColor: 'white',
-                    borderRadius: '8px',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <thead>
-                    <tr style={{ backgroundColor: '#f5f5f5' }}>
-                      <th
-                        style={{
-                          padding: '1rem',
-                          textAlign: 'left',
-                          borderBottom: '1px solid #ddd',
-                        }}
-                      >
-                        Invoice #
-                      </th>
-                      <th
-                        style={{
-                          padding: '1rem',
-                          textAlign: 'left',
-                          borderBottom: '1px solid #ddd',
-                        }}
-                      >
-                        Business
-                      </th>
-                      <th
-                        style={{
-                          padding: '1rem',
-                          textAlign: 'left',
-                          borderBottom: '1px solid #ddd',
-                        }}
-                      >
-                        Period
-                      </th>
-                      <th
-                        style={{
-                          padding: '1rem',
-                          textAlign: 'left',
-                          borderBottom: '1px solid #ddd',
-                        }}
-                      >
-                        Status
-                      </th>
-                      <th
-                        style={{
-                          padding: '1rem',
-                          textAlign: 'right',
-                          borderBottom: '1px solid #ddd',
-                        }}
-                      >
-                        Total
-                      </th>
-                      <th
-                        style={{
-                          padding: '1rem',
-                          textAlign: 'left',
-                          borderBottom: '1px solid #ddd',
-                        }}
-                      >
-                        Due Date
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                  <tbody className="bg-surface divide-y divide-surface-dark">
                     {invoices.map((invoice) => (
                       <tr
                         key={invoice.id}
-                        style={{
-                          borderBottom: '1px solid #eee',
-                          cursor: 'pointer',
-                        }}
                         onClick={() => loadInvoiceDetail(invoice.id)}
+                        className="hover:bg-surface-light cursor-pointer"
                       >
-                        <td style={{ padding: '1rem' }}>{invoice.invoiceNumber}</td>
-                        <td style={{ padding: '1rem' }}>{invoice.businessName}</td>
-                        <td style={{ padding: '1rem' }}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{invoice.invoiceNumber}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{invoice.businessName}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {invoice.periodStart} to {invoice.periodEnd}
                         </td>
-                        <td style={{ padding: '1rem' }}>
-                          <span
-                            style={{
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '4px',
-                              ...getStatusColor(invoice.status),
-                              fontSize: '0.9rem',
-                            }}
-                          >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(invoice.status)}`}>
                             {invoice.status}
                           </span>
                         </td>
-                        <td style={{ padding: '1rem', textAlign: 'right' }}>
-                          {invoice.total.toFixed(2)} TND
-                        </td>
-                        <td style={{ padding: '1rem' }}>{invoice.dueDate}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{invoice.total.toFixed(2)} TND</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{invoice.dueDate}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            )}
-          </>
-        )}
-      </div>
-    </ProtectedRoute>
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
 }

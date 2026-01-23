@@ -2,9 +2,12 @@ import {
   Controller,
   Post,
   Get,
+  Delete,
   Param,
   Body,
   UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -104,7 +107,7 @@ export class DailyMenusController {
     @Param('id') id: string,
     @Body() addVariantDto: AddVariantToDailyMenuValidationDto,
   ): Promise<DailyMenuVariantDto> {
-    return this.dailyMenusService.addVariant(id, addVariantDto);
+    return this.dailyMenusService.addVariant(id, addVariantDto as AddVariantToDailyMenuDto);
   }
 
   @Post(':id/publish')
@@ -131,5 +134,19 @@ export class DailyMenusController {
   @ApiResponse({ status: 404, description: 'Daily menu not found' })
   async lock(@Param('id') id: string): Promise<DailyMenuDto> {
     return this.dailyMenusService.lock(id);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Delete a daily menu (DRAFT only)' })
+  @ApiResponse({
+    status: 204,
+    description: 'Daily menu deleted successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - Only DRAFT menus can be deleted' })
+  @ApiResponse({ status: 404, description: 'Daily menu not found' })
+  async delete(@Param('id') id: string): Promise<void> {
+    return this.dailyMenusService.delete(id);
   }
 }

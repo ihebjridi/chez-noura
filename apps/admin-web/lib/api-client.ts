@@ -66,7 +66,23 @@ class ApiClient {
       throw new Error(error.message || `HTTP error! status: ${response.status}`);
     }
 
-    return response.json();
+    // Handle empty responses (204 No Content or empty 200 OK)
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
+    // Check if response has content before parsing JSON
+    const text = await response.text();
+    if (!text || text.trim() === '') {
+      return undefined as T;
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      // If parsing fails, return undefined for void responses
+      return undefined as T;
+    }
   }
 
   // Auth endpoints
@@ -276,6 +292,20 @@ class ApiClient {
     return this.request<DailyMenuDto>(`/daily-menus/${id}/lock`, {
       method: 'POST',
     });
+  }
+
+  async deleteDailyMenu(id: string): Promise<void> {
+    try {
+      await this.request<void>(`/daily-menus/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (error: any) {
+      // Re-throw with a more user-friendly message if it's a 404
+      if (error.message?.includes('not found')) {
+        throw new Error('Daily menu not found or already deleted');
+      }
+      throw error;
+    }
   }
 }
 

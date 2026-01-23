@@ -7,18 +7,18 @@ interface LockedStateSummaryProps {
 
 export function LockedStateSummary({ dailyMenu }: LockedStateSummaryProps) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+    <div className="bg-surface border border-surface-dark rounded-lg p-6">
       <h2 className="text-xl font-semibold mb-4">Menu Summary</h2>
       <div className="space-y-4">
         <div>
-          <h3 className="font-medium mb-2">Total Orders</h3>
-          <p className="text-gray-600">Orders will be displayed here when available</p>
+          <h3 className="font-semibold mb-2 text-sm">Total Orders</h3>
+          <p className="text-gray-600 font-normal">Orders will be displayed here when available</p>
         </div>
         <div>
-          <h3 className="font-medium mb-2">Variant Quantity Summary</h3>
+          <h3 className="font-semibold mb-2 text-sm">Variant Quantity Summary</h3>
                 <div className="space-y-2">
                   {dailyMenu.variants.map((v) => (
-                    <div key={v.id} className="flex justify-between text-sm">
+                    <div key={v.id} className="flex justify-between text-sm font-normal">
                       <span>
                         {v.variantName} (Food Component: {v.componentName})
                       </span>
@@ -29,7 +29,7 @@ export function LockedStateSummary({ dailyMenu }: LockedStateSummaryProps) {
         </div>
         <Link
           href={`/kitchen?date=${dailyMenu.date}`}
-          className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          className="inline-block px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 transition-colors font-semibold"
         >
           View Kitchen Summary
         </Link>

@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ProtectedRoute } from '../../components/protected-route';
-import { useAuth } from '../../contexts/auth-context';
 import { apiClient } from '../../lib/api-client';
-import { PackDto, CreatePackDto, UpdatePackDto, UserRole } from '@contracts/core';
+import { PackDto, CreatePackDto, UpdatePackDto } from '@contracts/core';
 import Link from 'next/link';
+import { Error } from '../../components/ui/error';
+import { Loading } from '../../components/ui/loading';
+import { Empty } from '../../components/ui/empty';
 
 export default function PacksPage() {
-  const { logout } = useAuth();
   const [packs, setPacks] = useState<PackDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -85,212 +85,145 @@ export default function PacksPage() {
   };
 
   return (
-    <ProtectedRoute requiredRole={UserRole.SUPER_ADMIN}>
-      <div style={{ padding: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <div>
-            <Link href="/dashboard" style={{ marginRight: '1rem', textDecoration: 'none' }}>← Dashboard</Link>
-            <h1 style={{ display: 'inline', marginLeft: '1rem' }}>Packs</h1>
-          </div>
-          <div>
-            <button
-              onClick={() => {
-                setShowCreateForm(!showCreateForm);
-                cancelEdit();
-              }}
-              style={{
-                padding: '0.5rem 1rem',
-                marginRight: '1rem',
-                backgroundColor: '#0070f3',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              {showCreateForm ? 'Cancel' : '+ New Pack'}
-            </button>
-            <button
-              onClick={logout}
-              style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: '#ccc',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-
-        {error && (
-          <div style={{
-            padding: '0.75rem',
-            backgroundColor: '#fee',
-            color: '#c33',
-            borderRadius: '4px',
-            marginBottom: '1rem'
-          }}>
-            {error}
-          </div>
-        )}
-
-        {(showCreateForm || editingPack) && (
-          <form onSubmit={editingPack ? handleUpdate : handleCreate} style={{
-            padding: '1.5rem',
-            border: '1px solid #ddd',
-            borderRadius: '8px',
-            marginBottom: '2rem',
-            backgroundColor: 'white'
-          }}>
-            <h2>{editingPack ? 'Edit Pack' : 'Create Pack'}</h2>
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem' }}>Name *</label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-                style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
-              />
-            </div>
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem' }}>Price (TND) *</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                required
-                style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
-              />
-            </div>
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <input
-                  type="checkbox"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                />
-                Active
-              </label>
-            </div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                type="submit"
-                style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: '#0070f3',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-              >
-                {editingPack ? 'Update Pack' : 'Create Pack'}
-              </button>
-              {editingPack && (
-                <button
-                  type="button"
-                  onClick={cancelEdit}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    backgroundColor: '#ccc',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-              )}
-            </div>
-          </form>
-        )}
-
-        {loading ? (
-          <p>Loading packs...</p>
-        ) : packs.length === 0 ? (
-          <div style={{
-            padding: '2rem',
-            textAlign: 'center',
-            border: '1px solid #ddd',
-            borderRadius: '8px',
-            backgroundColor: 'white'
-          }}>
-            <p>No packs found. Create your first pack to get started.</p>
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gap: '1rem' }}>
-            {packs.map((pack) => (
-              <div
-                key={pack.id}
-                style={{
-                  padding: '1.5rem',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  backgroundColor: 'white',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    <h3 style={{ margin: 0 }}>{pack.name}</h3>
-                    {!pack.isActive && (
-                      <span style={{
-                        padding: '0.25rem 0.5rem',
-                        backgroundColor: '#fee',
-                        color: '#c33',
-                        borderRadius: '4px',
-                        fontSize: '0.75rem'
-                      }}>
-                        Inactive
-                      </span>
-                    )}
-                  </div>
-                  <p style={{ margin: 0, color: '#666' }}>
-                    <strong>Price:</strong> {pack.price.toFixed(2)} TND
-                  </p>
-                </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <Link
-                    href={`/packs/${pack.id}/components`}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      backgroundColor: '#0070f3',
-                      color: 'white',
-                      textDecoration: 'none',
-                      borderRadius: '4px',
-                      fontSize: '0.875rem'
-                    }}
-                  >
-                    Manage Components
-                  </Link>
-                  <button
-                    onClick={() => startEdit(pack)}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      backgroundColor: '#666',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '0.875rem'
-                    }}
-                  >
-                    Edit
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900">Packs</h1>
+        <button
+          onClick={() => {
+            setShowCreateForm(!showCreateForm);
+            cancelEdit();
+          }}
+          className="px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+        >
+          {showCreateForm ? 'Cancel' : '+ New Pack'}
+        </button>
       </div>
-    </ProtectedRoute>
+
+      {error && (
+        <div className="mb-4">
+          <Error message={error} onRetry={() => setError('')} />
+        </div>
+      )}
+
+      {/* Inline Create/Edit Form */}
+      {(showCreateForm || editingPack) && (
+        <div className="mb-6 bg-surface border border-surface-dark rounded-lg">
+          {showCreateForm && !editingPack && (
+            <div className="px-6 py-4 border-b border-surface-dark">
+              <h2 className="text-lg font-semibold">Create Pack</h2>
+            </div>
+          )}
+          {editingPack && (
+            <div className="px-6 py-4 border-b border-surface-dark">
+              <h2 className="text-lg font-semibold">Edit Pack</h2>
+            </div>
+          )}
+          {(showCreateForm || editingPack) && (
+            <form onSubmit={editingPack ? handleUpdate : handleCreate} className="p-6">
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Price (TND) *</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.price}
+              onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={formData.isActive}
+                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                className="rounded"
+              />
+              <span className="text-sm text-gray-700">Active</span>
+            </label>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              className="px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              {editingPack ? 'Update Pack' : 'Create Pack'}
+            </button>
+            {editingPack && (
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="px-4 py-2 bg-gray-400 text-white font-medium rounded-lg hover:bg-gray-500 transition-colors"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+            </form>
+          )}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="bg-surface border border-surface-dark rounded-lg p-12">
+          <Loading message="Loading packs..." />
+        </div>
+      ) : packs.length === 0 ? (
+        <div className="bg-surface border border-surface-dark rounded-lg p-12">
+          <Empty
+            message="No packs found"
+            description="Create your first pack to get started."
+          />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {packs.map((pack) => (
+            <div
+              key={pack.id}
+              className="bg-surface border border-surface-dark rounded-lg p-6 flex justify-between items-center hover:shadow-sm transition-shadow"
+            >
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-lg font-semibold text-gray-900">{pack.name}</h3>
+                  {!pack.isActive && (
+                    <span className="px-2 py-1 text-xs font-medium bg-surface-light text-gray-800 rounded-full">
+                      Inactive
+                    </span>
+                  )}
+                </div>
+                <p className="text-gray-600 font-normal">
+                  <strong>Price:</strong> {pack.price.toFixed(2)} TND
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Link
+                  href={`/packs/${pack.id}/components`}
+                  className="px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors"
+                >
+                  Manage Components
+                </Link>
+                <button
+                  onClick={() => startEdit(pack)}
+                  className="px-4 py-2 bg-secondary-400 text-white text-sm font-medium rounded-lg hover:bg-secondary-500 transition-colors"
+                >
+                  Edit
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

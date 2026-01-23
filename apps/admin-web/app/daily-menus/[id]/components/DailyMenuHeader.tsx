@@ -8,6 +8,7 @@ interface DailyMenuHeaderProps {
   canLock: boolean;
   onPublishClick: () => void;
   onLockClick: () => void;
+  onDeleteClick: () => void;
   onLogout: () => void;
 }
 
@@ -17,6 +18,7 @@ export function DailyMenuHeader({
   canLock,
   onPublishClick,
   onLockClick,
+  onDeleteClick,
   onLogout,
 }: DailyMenuHeaderProps) {
   const formatDate = (dateString: string) => {
@@ -41,7 +43,7 @@ export function DailyMenuHeader({
       </Link>
       <div className="flex justify-between items-start mb-6">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Daily Menu Editor</h1>
+          <h1 className="text-2xl font-semibold mb-2">Daily Menu Editor</h1>
           <div className="flex items-center gap-4 text-gray-600">
             <span className="font-medium">{formatDate(dailyMenu.date)}</span>
             <StatusBadge status={dailyMenu.status} />
@@ -50,24 +52,32 @@ export function DailyMenuHeader({
         </div>
         <div className="flex gap-2">
           {isDraft && (
-            <button
-              onClick={onPublishClick}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-            >
-              Publish Menu
-            </button>
+            <>
+              <button
+                onClick={onPublishClick}
+                className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 transition-colors font-semibold"
+              >
+                Publish Menu
+              </button>
+              <button
+                onClick={onDeleteClick}
+                className="px-4 py-2 bg-destructive text-white rounded hover:bg-destructive-hover transition-colors font-medium"
+              >
+                Delete Menu
+              </button>
+            </>
           )}
           {canLock && (
             <button
               onClick={onLockClick}
-              className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors"
+              className="px-4 py-2 bg-warning-400 text-white rounded hover:bg-warning-500 transition-colors font-medium"
             >
-              Lock Menu
+              Close Orders
             </button>
           )}
           <button
             onClick={onLogout}
-            className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors"
+            className="px-4 py-2 bg-secondary-400 text-white rounded hover:bg-secondary-500 transition-colors font-medium"
           >
             Logout
           </button>

@@ -30,27 +30,27 @@ export function PackVariantsManager({
   const getVariantStock = (variantId: string) => {
     // If variant is already in daily menu, use its stock
     if (existingVariantStocks.has(variantId)) {
-      return existingVariantStocks.get(variantId) || 0;
+      return existingVariantStocks.get(variantId) || 50;
     }
     // Otherwise use local state (for new variants)
-    return variantStocks.get(variantId) || 0;
+    return variantStocks.get(variantId) || 50;
   };
 
   return (
-    <div className="ml-12 mt-3 mb-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+    <div className="ml-12 mt-3 mb-3 p-4 bg-surface-light border border-surface-dark rounded-lg">
       <h3 className="font-semibold text-lg mb-4">{packName} - Variants</h3>
       <div className="space-y-6">
         {foodComponents.map((foodComponent) => {
           const variants = foodComponentVariants.get(foodComponent.componentId) || [];
 
           return (
-            <div key={foodComponent.componentId} className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0">
+            <div key={foodComponent.componentId} className="border-b border-surface-dark pb-4 last:border-b-0 last:pb-0">
               <div className="mb-3">
                 <h4 className="font-semibold">{foodComponent.componentName}</h4>
-                {foodComponent.required && <span className="text-xs text-red-600">(Required)</span>}
+                {foodComponent.required && <span className="text-xs text-destructive">(Required)</span>}
               </div>
               {variants.length === 0 ? (
-                <p className="text-gray-500 text-sm">No variants available for this food component</p>
+                <p className="text-gray-600 text-sm font-normal">No variants available for this food component</p>
               ) : (
                 <div className="space-y-2 ml-4">
                   {variants.map((variant) => {

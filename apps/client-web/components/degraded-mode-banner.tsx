@@ -41,22 +41,7 @@ export function DegradedModeBanner() {
   }
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: '#fff3cd',
-        color: '#856404',
-        padding: '0.75rem 1rem',
-        borderBottom: '2px solid #ffc107',
-        zIndex: 1000,
-        textAlign: 'center',
-        fontSize: '0.9rem',
-        fontWeight: '500',
-      }}
-    >
+    <div className="fixed top-0 left-0 right-0 bg-warning-50 text-warning-800 px-4 py-3 border-b-2 border-warning-300 z-[1000] text-center text-sm md:text-base font-medium">
       ⚠️ Backend is currently unavailable. You are viewing cached data. New orders cannot be placed at this time.
     </div>
   );

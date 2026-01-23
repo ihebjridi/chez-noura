@@ -1,150 +1,269 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ProtectedRoute } from '../../components/protected-route';
-import { UserRole } from '@contracts/core';
-import { Logo } from '../../components/logo';
-import { useAuth } from '../../contexts/auth-context';
+import { apiClient } from '../../lib/api-client';
+import { Loading } from '../../components/ui/loading';
+import { Error } from '../../components/ui/error';
+import {
+  Building2,
+  Package,
+  ShoppingCart,
+  FileText,
+  Calendar,
+  ChefHat,
+  TrendingUp,
+  Users,
+  Plus,
+  ArrowRight,
+} from 'lucide-react';
+
+interface DashboardStats {
+  totalBusinesses: number;
+  totalPacks: number;
+  todayOrders: number;
+  totalInvoices: number;
+  todayRevenue: number;
+}
 
 export default function DashboardPage() {
-  const { logout, user } = useAuth();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
+
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      setError('');
+      setLoading(true);
+
+      const [businesses, packs, orders, invoices] = await Promise.all([
+        apiClient.getBusinesses(),
+        apiClient.getPacks(),
+        apiClient.getAdminOrders(),
+        apiClient.getAdminInvoices(),
+      ]);
+
+      const today = new Date().toISOString().split('T')[0];
+      const todayOrders = orders.filter(
+        (order) => order.createdAt?.split('T')[0] === today
+      );
+
+      // Calculate today's revenue from today's orders
+      const todayRevenue = todayOrders.reduce((sum, order) => {
+        return sum + (order.totalAmount || 0);
+      }, 0);
+
+      setStats({
+        totalBusinesses: businesses.length,
+        totalPacks: packs.length,
+        todayOrders: todayOrders.length,
+        totalInvoices: invoices.length,
+        todayRevenue,
+      });
+    } catch (err: any) {
+      setError(err.message || 'Failed to load dashboard stats');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const quickActions = [
+    {
+      title: 'Create Daily Menu',
+      description: 'Set up today\'s menu and manage stock',
+      href: '/',
+      icon: Calendar,
+      color: 'bg-primary-100 text-primary-600',
+    },
+    {
+      title: 'Add New Business',
+      description: 'Register a new business client',
+      href: '/businesses',
+      icon: Building2,
+      color: 'bg-blue-100 text-blue-600',
+    },
+    {
+      title: 'Create Pack',
+      description: 'Add a new Iftar pack to the catalog',
+      href: '/packs',
+      icon: Package,
+      color: 'bg-emerald-100 text-emerald-600',
+    },
+    {
+      title: 'View Orders',
+      description: 'Monitor today\'s orders and status',
+      href: '/orders',
+      icon: ShoppingCart,
+      color: 'bg-purple-100 text-purple-600',
+    },
+    {
+      title: 'Kitchen Summary',
+      description: 'View kitchen operations and summaries',
+      href: '/kitchen',
+      icon: ChefHat,
+      color: 'bg-orange-100 text-orange-600',
+    },
+    {
+      title: 'Manage Invoices',
+      description: 'Generate and view invoices',
+      href: '/invoices',
+      icon: FileText,
+      color: 'bg-slate-100 text-slate-600',
+    },
+  ];
+
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8">
+        <Loading message="Loading dashboard..." />
+      </div>
+    );
+  }
 
   return (
-    <ProtectedRoute requiredRole={UserRole.SUPER_ADMIN}>
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-white border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <Logo />
-              <div className="flex items-center gap-4">
-                {user && (
-                  <span className="text-sm text-gray-600">{user.email}</span>
-                )}
-                <button
-                  onClick={logout}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-                >
-                  Logout
-                </button>
+    <div className="p-4 sm:p-6 lg:p-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+        <p className="mt-2 text-gray-600">Overview of your platform operations</p>
+      </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="mb-6">
+          <Error message={error} onRetry={loadStats} />
+        </div>
+      )}
+
+      {/* Stats Grid */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-surface border border-surface-dark rounded-lg p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Businesses</p>
+                <p className="text-3xl font-semibold text-gray-900 mt-2">{stats.totalBusinesses}</p>
+              </div>
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Building2 className="w-6 h-6 text-blue-600" />
               </div>
             </div>
           </div>
-        </header>
 
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Super Admin Dashboard</h1>
-            <p className="mt-2 text-gray-600">Manage businesses, meals, orders, and operations</p>
+          <div className="bg-surface border border-surface-dark rounded-lg p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Packs</p>
+                <p className="text-3xl font-semibold text-gray-900 mt-2">{stats.totalPacks}</p>
+              </div>
+              <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <Package className="w-6 h-6 text-emerald-600" />
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Link
-              href="/businesses"
-              className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900">Businesses</h2>
+          <div className="bg-surface border border-surface-dark rounded-lg p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Today's Orders</p>
+                <p className="text-3xl font-semibold text-gray-900 mt-2">{stats.todayOrders}</p>
               </div>
-              <p className="text-gray-600">Manage businesses and their admins</p>
-            </Link>
-
-            <Link
-              href="/packs"
-              className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900">Packs</h2>
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <ShoppingCart className="w-6 h-6 text-purple-600" />
               </div>
-              <p className="text-gray-600">Manage Iftar packs and pricing</p>
-            </Link>
+            </div>
+          </div>
 
-            <Link
-              href="/food-components"
-              className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900">Food Components</h2>
+          <div className="bg-surface border border-surface-dark rounded-lg p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Today's Revenue</p>
+                <p className="text-3xl font-semibold text-gray-900 mt-2">
+                  {stats.todayRevenue.toLocaleString('en-US', {
+                    style: 'currency',
+                    currency: 'TND',
+                    minimumFractionDigits: 0,
+                  })}
+                </p>
               </div>
-              <p className="text-gray-600">Manage food components and variants</p>
-            </Link>
-
-            <Link
-              href="/daily-menus"
-              className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900">Daily Menus</h2>
+              <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-amber-600" />
               </div>
-              <p className="text-gray-600">Publish daily menus and manage stock</p>
-            </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
-            <Link
-              href="/orders"
-              className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
+      {/* Quick Actions Section */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold text-gray-900">Quick Actions</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <Link
+                key={action.href}
+                href={action.href}
+                className="group block p-6 bg-surface border border-surface-dark rounded-lg hover:border-primary-300 hover:shadow-sm transition-all"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className={`w-12 h-12 ${action.color} rounded-lg flex items-center justify-center`}>
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-amber-600 transition-colors" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900">Orders</h2>
-              </div>
-              <p className="text-gray-600">View all orders</p>
-            </Link>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{action.title}</h3>
+                <p className="text-sm text-gray-600">{action.description}</p>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
 
-            <Link
-              href="/kitchen"
-              className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900">Kitchen Operations</h2>
+      {/* Additional Stats */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-surface border border-surface-dark rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
+                <FileText className="w-5 h-5 text-slate-600" />
               </div>
-              <p className="text-gray-600">Daily summaries and day locking</p>
-            </Link>
-
+              <h3 className="text-lg font-semibold text-gray-900">Total Invoices</h3>
+            </div>
+            <p className="text-3xl font-semibold text-gray-900">{stats.totalInvoices}</p>
             <Link
               href="/invoices"
-              className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all"
+              className="mt-4 inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-700"
             >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900">Invoices</h2>
-              </div>
-              <p className="text-gray-600">Manage invoices and billing</p>
+              View all invoices
+              <ArrowRight className="w-4 h-4 ml-1" />
             </Link>
           </div>
-        </main>
-      </div>
-    </ProtectedRoute>
+
+          <div className="bg-surface border border-surface-dark rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 text-purple-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Active Businesses</h3>
+            </div>
+            <p className="text-3xl font-semibold text-gray-900">{stats.totalBusinesses}</p>
+            <Link
+              href="/businesses"
+              className="mt-4 inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-700"
+            >
+              Manage businesses
+              <ArrowRight className="w-4 h-4 ml-1" />
+            </Link>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

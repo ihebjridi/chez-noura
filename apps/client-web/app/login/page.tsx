@@ -33,8 +33,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-sm border border-gray-200 p-6 md:p-8">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
+      <div className="w-full max-w-md bg-surface border border-surface-dark rounded-lg shadow-sm p-6 md:p-8">
         <div className="mb-6 md:mb-8 text-center">
           <Logo className="justify-center mb-2" />
           <p className="text-xs md:text-sm text-gray-600 mt-2">Employee Ordering</p>
@@ -52,13 +52,13 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="your.email@company.com"
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-base"
+              className="w-full px-3 py-2.5 border border-surface-dark rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-base bg-background"
             />
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3">
-              <p className="text-sm text-red-800">{error}</p>
+            <div className="bg-warning-50 border border-warning-300 rounded-md p-3">
+              <p className="text-sm text-warning-800 font-normal">{error}</p>
             </div>
           )}
 

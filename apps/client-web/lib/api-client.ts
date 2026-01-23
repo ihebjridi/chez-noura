@@ -5,6 +5,8 @@ import {
   CreateOrderDto,
   OrderDto,
   AvailablePackDto,
+  EmployeeMenuDto,
+  CreateEmployeeOrderDto,
 } from '@contracts/core';
 import { readOnlyFallback } from './readonly-fallback';
 
@@ -158,6 +160,78 @@ class ApiClient {
           return cached;
         }
         throw new Error('Backend is unavailable and no cached data found. Please try again later.');
+      }
+      throw error;
+    }
+  }
+
+  // Employee endpoints (new pack-based ordering)
+  /**
+   * Get published daily menu for a specific date
+   * Returns menu with available packs, components, and variants (stock > 0)
+   */
+  async getEmployeeMenu(date: string): Promise<EmployeeMenuDto> {
+    try {
+      const menu = await this.request<EmployeeMenuDto>(`/employee/menu?date=${date}`, {}, true);
+      return menu;
+    } catch (error: any) {
+      if (error.message === 'BACKEND_DEGRADED') {
+        throw new Error('Backend is unavailable. Please try again later.');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new employee order using dailyMenuId
+   * Uses the new pack-based ordering system
+   */
+  async createEmployeeOrder(data: CreateEmployeeOrderDto): Promise<OrderDto> {
+    // Never use cache for write operations
+    if (this.degradedMode) {
+      throw new Error('Backend is unavailable. Orders cannot be placed at this time. Please try again later.');
+    }
+    
+    try {
+      const order = await this.request<OrderDto>('/employee/orders', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      
+      // Update cached orders after successful creation
+      const cachedOrders = readOnlyFallback.getCachedOrders() || [];
+      readOnlyFallback.cacheOrders([order, ...cachedOrders]);
+      
+      return order;
+    } catch (error: any) {
+      if (error.message === 'BACKEND_DEGRADED') {
+        throw new Error('Backend is unavailable. Orders cannot be placed at this time. Please try again later.');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get today's order for the current employee
+   * Returns null if no order exists for today
+   */
+  async getTodayOrder(): Promise<OrderDto | null> {
+    try {
+      const order = await this.request<OrderDto | null>('/employee/orders/today', {}, true);
+      return order;
+    } catch (error: any) {
+      // If backend is degraded, try to return cached data
+      if (error.message === 'BACKEND_DEGRADED') {
+        const cached = readOnlyFallback.getCachedOrders();
+        if (cached) {
+          const today = new Date().toISOString().split('T')[0];
+          const todayOrder = cached.find((o) => o.orderDate === today);
+          if (todayOrder) {
+            console.warn('Using cached today order - backend is degraded');
+            return todayOrder;
+          }
+        }
+        return null;
       }
       throw error;
     }

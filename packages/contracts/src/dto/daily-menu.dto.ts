@@ -54,7 +54,7 @@ export interface AddPackToDailyMenuDto {
 
 export interface AddVariantToDailyMenuDto {
   variantId: string;
-  initialStock: number;
+  initialStock?: number;
 }
 
 export interface PublishDailyMenuResponseDto {
