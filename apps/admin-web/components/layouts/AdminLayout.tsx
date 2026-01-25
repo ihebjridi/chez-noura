@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   LogOut,
+  LayoutDashboard,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -22,6 +23,7 @@ interface AdminLayoutProps {
 }
 
 const navigation = [
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, current: false },
   { name: 'Menus', href: '/', icon: Calendar, current: false },
   { name: 'Businesses', href: '/businesses', icon: Building2, current: false },
   { name: 'Packs', href: '/packs', icon: Package, current: false },

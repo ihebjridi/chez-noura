@@ -346,7 +346,7 @@ export default function MenuPage() {
                                       !isDisabled && handleVariantSelect(component.id, variant.id)
                                     }
                                     disabled={isDisabled}
-                                    className={`w-full text-left p-3 rounded transition-all min-h-[44px] ${
+                                    className={`relative z-10 w-full text-left p-3 rounded transition-all min-h-[44px] ${
                                       isSelected
                                         ? 'border-2 border-primary-500 bg-primary-50'
                                         : 'border-2 border-surface-dark hover:border-primary-300'
