@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FileStorageService } from '../common/services/file-storage.service';
+import { MailingService } from '../common/services/mailing.service';
 import {
   OrderSummaryDto,
   TokenPayload,
@@ -29,6 +30,7 @@ export class BusinessesService {
     @Inject(forwardRef(() => ActivityLogsService))
     private activityLogsService: ActivityLogsService,
     private fileStorageService: FileStorageService,
+    private mailingService: MailingService,
   ) {}
 
   /**
@@ -126,6 +128,18 @@ export class BusinessesService {
     } catch (error) {
       // Don't fail business creation if logging fails
       console.error('Failed to log business creation activity:', error);
+    }
+
+    // Send welcome email to business admin
+    try {
+      await this.mailingService.sendBusinessWelcomeEmail(
+        createBusinessDto.adminEmail,
+        result.business.name,
+        temporaryPassword,
+      );
+    } catch (error) {
+      // Don't fail business creation if email fails
+      console.error('Failed to send welcome email:', error);
     }
 
     return {
@@ -453,6 +467,17 @@ export class BusinessesService {
     } catch (error) {
       // Don't fail password reset if logging fails
       console.error('Failed to log password reset activity:', error);
+    }
+
+    // Send password reset email
+    try {
+      await this.mailingService.sendPasswordResetEmail(
+        adminUser.email,
+        temporaryPassword,
+      );
+    } catch (error) {
+      // Don't fail password reset if email fails
+      console.error('Failed to send password reset email:', error);
     }
 
     return {

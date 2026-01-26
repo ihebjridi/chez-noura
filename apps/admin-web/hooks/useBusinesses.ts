@@ -22,10 +22,10 @@ export function useBusinesses() {
     }
   }, []);
 
-  const createBusiness = useCallback(async (data: CreateBusinessDto) => {
+  const createBusiness = useCallback(async (data: CreateBusinessDto, logoFile?: File) => {
     try {
       setError('');
-      const result = await apiClient.createBusiness(data);
+      const result = await apiClient.createBusiness(data, logoFile);
       await loadBusinesses();
       return result;
     } catch (err: any) {

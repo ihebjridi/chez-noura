@@ -23,7 +23,7 @@ This package provides everything needed to safely operate the B2B corporate cate
    - Fallback to cached data when backend is down
    - Visual degraded mode indicator
    - Prevents new orders during degradation (safety)
-   - Files: `apps/client-web/lib/readonly-fallback.ts`, `apps/client-web/lib/api-client.ts`
+   - Files: `apps/employee-web/lib/readonly-fallback.ts`, `apps/employee-web/lib/api-client.ts`
 
 4. **Manual Cutoff Override** (Already Implemented)
    - `POST /system/ordering/lock` - Lock ordering manually
@@ -157,7 +157,7 @@ scripts/
   ├── dry-run-e2e.ts          # End-to-end test
   └── failure-scenarios.ts    # Failure tests
 
-apps/client-web/
+apps/employee-web/
   ├── lib/
   │   ├── api-client.ts           # Enhanced with fallback
   │   └── readonly-fallback.ts    # Caching service

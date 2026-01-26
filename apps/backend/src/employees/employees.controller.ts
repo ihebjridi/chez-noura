@@ -14,8 +14,8 @@ import {
   ApiBearerAuth,
   ApiQuery,
 } from '@nestjs/swagger';
-import { JwtAuthGuard, RolesGuard } from '../auth/guards';
-import { Roles, CurrentUser } from '../auth/decorators';
+import { JwtAuthGuard, RolesGuard, BusinessScopeGuard } from '../auth/guards';
+import { Roles, BusinessScoped, CurrentUser } from '../auth/decorators';
 import { UserRole, TokenPayload, EmployeeMenuDto, OrderDto, BusinessDto } from '@contracts/core';
 import { EmployeeMenuService } from './employee-menu.service';
 import { EmployeeOrdersService } from './employee-orders.service';
@@ -25,7 +25,7 @@ import { BusinessesService } from '../businesses/businesses.service';
 @ApiTags('employee')
 @ApiBearerAuth('JWT-auth')
 @Controller('employee')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, BusinessScopeGuard)
 export class EmployeesController {
   constructor(
     private readonly employeeMenuService: EmployeeMenuService,
@@ -57,6 +57,7 @@ export class EmployeesController {
 
   @Post('orders')
   @Roles(UserRole.EMPLOYEE)
+  @BusinessScoped()
   @ApiOperation({ summary: 'Create a new order (one per employee per day)' })
   @ApiResponse({
     status: 201,
@@ -75,6 +76,7 @@ export class EmployeesController {
 
   @Get('orders/today')
   @Roles(UserRole.EMPLOYEE)
+  @BusinessScoped()
   @ApiOperation({ summary: 'Get today\'s order for the current employee' })
   @ApiResponse({
     status: 200,
@@ -90,6 +92,7 @@ export class EmployeesController {
 
   @Get('business')
   @Roles(UserRole.EMPLOYEE)
+  @BusinessScoped()
   @ApiOperation({ summary: 'Get the employee\'s affiliated business information' })
   @ApiResponse({
     status: 200,
@@ -103,6 +106,8 @@ export class EmployeesController {
     if (!user.businessId) {
       throw new BadRequestException('Employee is not associated with a business');
     }
+    // BusinessScopeGuard ensures user.businessId is valid and matches user's business
+    // Service layer will return 404 if business doesn't exist
     return this.businessesService.findOne(user.businessId);
   }
 }

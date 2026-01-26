@@ -16,8 +16,8 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { InvoicesService } from './invoices.service';
-import { JwtAuthGuard, RolesGuard } from '../auth/guards';
-import { Roles, CurrentUser } from '../auth/decorators';
+import { JwtAuthGuard, RolesGuard, BusinessScopeGuard } from '../auth/guards';
+import { Roles, BusinessScoped, CurrentUser } from '../auth/decorators';
 import {
   InvoiceDto,
   InvoiceSummaryDto,
@@ -28,7 +28,7 @@ import {
 @ApiTags('invoices')
 @ApiBearerAuth('JWT-auth')
 @Controller('invoices')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, BusinessScopeGuard)
 export class InvoicesController {
   constructor(private readonly invoicesService: InvoicesService) {}
 
@@ -85,6 +85,7 @@ export class InvoicesController {
 
   @Get('business')
   @Roles(UserRole.BUSINESS_ADMIN)
+  @BusinessScoped()
   @ApiOperation({ summary: 'Get invoices for current business' })
   @ApiResponse({
     status: 200,
@@ -99,6 +100,7 @@ export class InvoicesController {
 
   @Get(':id')
   @Roles(UserRole.SUPER_ADMIN, UserRole.BUSINESS_ADMIN)
+  @BusinessScoped()
   @ApiOperation({ summary: 'Get invoice by ID (scoped to business for BUSINESS_ADMIN)' })
   @ApiParam({ name: 'id', description: 'Invoice ID' })
   @ApiResponse({

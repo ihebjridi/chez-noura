@@ -17,6 +17,8 @@ import { apiClient } from '../../lib/api-client';
 import { formatDateTime } from '../../lib/date-utils';
 import { Trash2, ChevronDown, ChevronRight, Activity } from 'lucide-react';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
 export default function BusinessesPage() {
   const { businesses, loading, error, loadBusinesses, createBusiness, deleteBusiness, setError } = useBusinesses();
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -24,6 +26,8 @@ export default function BusinessesPage() {
     name: '',
     adminEmail: '',
   });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [generatingPassword, setGeneratingPassword] = useState<string | null>(null);
   const [deletingBusiness, setDeletingBusiness] = useState<string | null>(null);
   const [businessToDelete, setBusinessToDelete] = useState<{ id: string; name: string } | null>(null);
@@ -40,13 +44,27 @@ export default function BusinessesPage() {
     e.preventDefault();
     try {
       setError('');
-      const result = await createBusiness(formData);
+      const result = await createBusiness(formData, logoFile || undefined);
       setShowCreateForm(false);
       setFormData({ name: '', adminEmail: '' });
+      setLogoFile(null);
+      setLogoPreview(null);
       // Show success message with credentials
       setError(`Business created! Admin: ${result.adminCredentials.email}, Password: ${result.adminCredentials.temporaryPassword} - Save these credentials securely.`);
     } catch (err: any) {
       // Error is already set by the hook
+    }
+  };
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -167,6 +185,8 @@ export default function BusinessesPage() {
         onCancel={() => {
           setShowCreateForm(false);
           setFormData({ name: '', adminEmail: '' });
+          setLogoFile(null);
+          setLogoPreview(null);
         }}
         submitLabel="Create Business"
       >
@@ -217,6 +237,23 @@ export default function BusinessesPage() {
               placeholder="Business address"
             />
           </FormField>
+          <FormField label="Logo (Optional)" className="md:col-span-2">
+            <input
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              onChange={handleLogoChange}
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+            />
+            {logoPreview && (
+              <div className="mt-2">
+                <img
+                  src={logoPreview}
+                  alt="Logo preview"
+                  className="w-32 h-32 object-contain rounded-md border border-surface-dark bg-white"
+                />
+              </div>
+            )}
+          </FormField>
         </div>
       </CollapsibleForm>
 
@@ -234,6 +271,15 @@ export default function BusinessesPage() {
               key={business.id}
               className="bg-surface border border-surface-dark rounded-lg p-6 hover:shadow-sm transition-shadow"
             >
+              {business.logoUrl && (
+                <div className="mb-4 flex justify-center">
+                  <img
+                    src={`${API_BASE_URL}${business.logoUrl}`}
+                    alt={business.name}
+                    className="h-20 w-auto object-contain"
+                  />
+                </div>
+              )}
               <div className="flex items-start justify-between mb-3">
                 <h3 className="text-lg font-semibold text-gray-900 flex-1">{business.name}</h3>
                 <div className="flex items-center gap-2">

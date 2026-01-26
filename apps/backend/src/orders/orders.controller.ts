@@ -15,20 +15,21 @@ import {
   ApiHeader,
 } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
-import { JwtAuthGuard, RolesGuard } from '../auth/guards';
-import { Roles, CurrentUser } from '../auth/decorators';
+import { JwtAuthGuard, RolesGuard, BusinessScopeGuard } from '../auth/guards';
+import { Roles, BusinessScoped, CurrentUser } from '../auth/decorators';
 import { OrderDto, TokenPayload, UserRole } from '@contracts/core';
 import { CreateOrderDto } from './dto/create-order.dto';
 
 @ApiTags('orders')
 @ApiBearerAuth('JWT-auth')
 @Controller('orders')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, BusinessScopeGuard)
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
   @Roles(UserRole.EMPLOYEE)
+  @BusinessScoped()
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 requests per minute
   @ApiOperation({ summary: 'Create a new order (idempotent)' })
   @ApiHeader({
@@ -53,6 +54,7 @@ export class OrdersController {
 
   @Get('me')
   @Roles(UserRole.EMPLOYEE)
+  @BusinessScoped()
   @ApiOperation({ summary: 'Get current employee orders' })
   @ApiResponse({
     status: 200,
@@ -65,6 +67,7 @@ export class OrdersController {
 
   @Get('business')
   @Roles(UserRole.BUSINESS_ADMIN, UserRole.SUPER_ADMIN)
+  @BusinessScoped()
   @ApiOperation({ summary: 'Get business orders (scoped to user business)' })
   @ApiResponse({
     status: 200,

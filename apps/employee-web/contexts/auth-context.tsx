@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const userData = await apiClient.getCurrentUser();
       
-      // Only allow EMPLOYEE in client-web
+      // Only allow EMPLOYEE in employee-web
       if (userData.role !== UserRole.EMPLOYEE) {
         logout();
         return;

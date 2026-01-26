@@ -86,9 +86,9 @@ services:
       retries: 3
       start_period: 40s
 
-  client-web:
-    image: ${CLIENT_WEB_IMAGE:-ghcr.io/${GITHUB_USERNAME}/chez-noura-client-web:latest}
-    container_name: chez-noura-client-web-prod
+  employee-web:
+    image: ${EMPLOYEE_WEB_IMAGE:-ghcr.io/${GITHUB_USERNAME}/chez-noura-employee-web:latest}
+    container_name: chez-noura-employee-web-prod
     restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.chez-noura.com}

@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { OrderingCutoffService } from './services/ordering-cutoff.service';
 import { OrderingLockService } from './services/ordering-lock.service';
 import { FileStorageService } from './services/file-storage.service';
+import { MailingService } from './services/mailing.service';
 
 @Module({
-  providers: [OrderingCutoffService, OrderingLockService, FileStorageService],
-  exports: [OrderingCutoffService, OrderingLockService, FileStorageService],
+  providers: [OrderingCutoffService, OrderingLockService, FileStorageService, MailingService],
+  exports: [OrderingCutoffService, OrderingLockService, FileStorageService, MailingService],
 })
 export class CommonModule {}

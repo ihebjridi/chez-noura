@@ -35,6 +35,35 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   CORS_ORIGINS?: string;
+
+  // Email/SMTP Configuration (all optional - email service will be disabled if not configured)
+  @IsString()
+  @IsOptional()
+  SMTP_HOST?: string;
+
+  @IsNumberString()
+  @IsOptional()
+  SMTP_PORT?: string;
+
+  @IsString()
+  @IsOptional()
+  SMTP_USER?: string;
+
+  @IsString()
+  @IsOptional()
+  SMTP_PASSWORD?: string;
+
+  @IsString()
+  @IsOptional()
+  SMTP_FROM_EMAIL?: string;
+
+  @IsString()
+  @IsOptional()
+  SMTP_FROM_NAME?: string;
+
+  @IsString()
+  @IsOptional()
+  SMTP_SECURE?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {

@@ -6,6 +6,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailingService } from '../common/services/mailing.service';
 import {
   EmployeeDto,
   TokenPayload,
@@ -18,7 +19,10 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class EmployeeManagementService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailingService: MailingService,
+  ) {}
 
   /**
    * List all employees for the authenticated business
@@ -116,6 +120,19 @@ export class EmployeeManagementService {
 
         return employee;
       });
+
+      // Send invitation email to employee
+      try {
+        await this.mailingService.sendEmployeeInvitationEmail(
+          createDto.email,
+          createDto.firstName,
+          createDto.lastName,
+          business.name,
+        );
+      } catch (error) {
+        // Don't fail employee creation if email fails
+        console.error('Failed to send employee invitation email:', error);
+      }
 
       return this.mapToDto(result);
     } catch (error) {

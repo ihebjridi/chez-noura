@@ -48,8 +48,9 @@ class ApiClient {
     options: RequestInit = {},
   ): Promise<T> {
     const token = this.getAuthToken();
+    const isFormData = options.body instanceof FormData;
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(options.headers as Record<string, string>),
     };
 
@@ -162,23 +163,43 @@ class ApiClient {
     return this.request<BusinessDto>(`/businesses/${id}`);
   }
 
-  async createBusiness(data: CreateBusinessDto): Promise<{
+  async createBusiness(data: CreateBusinessDto, logoFile?: File): Promise<{
     business: BusinessDto;
     adminCredentials: { email: string; temporaryPassword: string };
   }> {
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
+    if (logoFile) {
+      formData.append('logo', logoFile);
+    }
+
     return this.request<{
       business: BusinessDto;
       adminCredentials: { email: string; temporaryPassword: string };
     }>('/businesses', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: formData,
     });
   }
 
-  async updateBusiness(id: string, data: UpdateBusinessDto): Promise<BusinessDto> {
+  async updateBusiness(id: string, data: UpdateBusinessDto, logoFile?: File): Promise<BusinessDto> {
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
+    if (logoFile) {
+      formData.append('logo', logoFile);
+    }
+
     return this.request<BusinessDto>(`/businesses/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify(data),
+      body: formData,
     });
   }
 
@@ -263,17 +284,37 @@ class ApiClient {
     return this.request<VariantDto[]>(`/components/${componentId}/variants`);
   }
 
-  async createVariant(componentId: string, data: Omit<CreateVariantDto, 'componentId'>): Promise<VariantDto> {
+  async createVariant(componentId: string, data: Omit<CreateVariantDto, 'componentId'>, imageFile?: File): Promise<VariantDto> {
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+
     return this.request<VariantDto>(`/components/${componentId}/variants`, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: formData,
     });
   }
 
-  async updateVariant(variantId: string, data: UpdateVariantDto): Promise<VariantDto> {
+  async updateVariant(variantId: string, data: UpdateVariantDto, imageFile?: File): Promise<VariantDto> {
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+
     return this.request<VariantDto>(`/variants/${variantId}`, {
       method: 'PATCH',
-      body: JSON.stringify(data),
+      body: formData,
     });
   }
 

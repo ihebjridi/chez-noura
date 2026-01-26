@@ -96,9 +96,9 @@ curl -X POST http://localhost:3000/ops/lock-day?date=2024-03-15 \
 5. When backend recovers, normal operation resumes
 
 **Files:**
-- `apps/client-web/lib/readonly-fallback.ts` - Caching service
-- `apps/client-web/lib/api-client.ts` - Enhanced with fallback logic
-- `apps/client-web/components/degraded-mode-banner.tsx` - Visual indicator
+- `apps/employee-web/lib/readonly-fallback.ts` - Caching service
+- `apps/employee-web/lib/api-client.ts` - Enhanced with fallback logic
+- `apps/employee-web/components/degraded-mode-banner.tsx` - Visual indicator
 
 ## Daily Operations
 
@@ -248,7 +248,7 @@ chez-noura/
 │   ├── dry-run-e2e.ts          # End-to-end flow test
 │   └── failure-scenarios.ts     # Failure scenario tests
 ├── apps/
-│   └── client-web/
+│   └── employee-web/
 │       ├── lib/
 │       │   ├── api-client.ts           # Enhanced with fallback
 │       │   └── readonly-fallback.ts    # Caching service

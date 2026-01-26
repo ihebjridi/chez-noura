@@ -40,9 +40,9 @@ jobs:
             context: .
             dockerfile: apps/business-web/Dockerfile
             build-args: NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL || 'https://api.chez-noura.com' }}
-          - name: client-web
+          - name: employee-web
             context: .
-            dockerfile: apps/client-web/Dockerfile
+            dockerfile: apps/employee-web/Dockerfile
             build-args: NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL || 'https://api.chez-noura.com' }}
 
     steps:

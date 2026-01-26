@@ -27,6 +27,8 @@ type VariantFormData = {
   isActive: boolean;
 };
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
 export default function FoodComponentVariantsPage() {
   const params = useParams();
   const foodComponentId = params.id as string;
@@ -42,6 +44,8 @@ export default function FoodComponentVariantsPage() {
     stockQuantity: 0,
     isActive: true,
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (foodComponentId) {
@@ -71,9 +75,11 @@ export default function FoodComponentVariantsPage() {
     e.preventDefault();
     try {
       setError('');
-      await apiClient.createVariant(foodComponentId, formData);
+      await apiClient.createVariant(foodComponentId, formData, imageFile || undefined);
       setShowCreateForm(false);
       setFormData({ name: '', stockQuantity: 0, isActive: true });
+      setImageFile(null);
+      setImagePreview(null);
       await loadData();
     } catch (err: any) {
       setError(err.message || 'Failed to create variant');
@@ -90,9 +96,11 @@ export default function FoodComponentVariantsPage() {
         stockQuantity: formData.stockQuantity,
         isActive: formData.isActive,
       };
-      await apiClient.updateVariant(editingVariant.id, updateData);
+      await apiClient.updateVariant(editingVariant.id, updateData, imageFile || undefined);
       setEditingVariant(null);
       setFormData({ name: '', stockQuantity: 0, isActive: true });
+      setImageFile(null);
+      setImagePreview(null);
       await loadData();
     } catch (err: any) {
       setError(err.message || 'Failed to update variant');
@@ -106,12 +114,28 @@ export default function FoodComponentVariantsPage() {
       stockQuantity: variant.stockQuantity,
       isActive: variant.isActive,
     });
+    setImageFile(null);
+    setImagePreview(variant.imageUrl ? `${API_BASE_URL}${variant.imageUrl}` : null);
     setShowCreateForm(false);
   };
 
   const cancelEdit = () => {
     setEditingVariant(null);
     setFormData({ name: '', stockQuantity: 0, isActive: true });
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const quickUpdateStock = async (variantId: string, newStock: number) => {
@@ -189,6 +213,23 @@ export default function FoodComponentVariantsPage() {
                   onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                 />
               </FormField>
+              <FormField label="Image">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  onChange={handleImageChange}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                />
+                {imagePreview && (
+                  <div className="mt-2">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-32 h-32 object-cover rounded-md border border-surface-dark"
+                    />
+                  </div>
+                )}
+              </FormField>
             </div>
             <div className="flex gap-2 mt-4">
               <Button type="submit" variant="primary">
@@ -222,6 +263,7 @@ export default function FoodComponentVariantsPage() {
             <table className="w-full">
               <thead className="bg-surface-light">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -237,6 +279,19 @@ export default function FoodComponentVariantsPage() {
                       key={variant.id}
                       className={`hover:bg-surface-light ${isOutOfStock ? 'bg-error-50' : ''}`}
                     >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {variant.imageUrl ? (
+                          <img
+                            src={`${API_BASE_URL}${variant.imageUrl}`}
+                            alt={variant.name}
+                            className="w-16 h-16 object-cover rounded-md border border-surface-dark"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 bg-surface-light border border-surface-dark rounded-md flex items-center justify-center text-xs text-gray-400">
+                            No image
+                          </div>
+                        )}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{variant.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`font-bold ${

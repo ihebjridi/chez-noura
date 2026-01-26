@@ -41,17 +41,17 @@ jobs:
             set -e
             
             # Navigate to deployment directory
-            cd ${{ secrets.VPS_DEPLOY_PATH || '~/chez-noura' }}
+            cd ${{ secrets.VPS_DEPLOY_PATH || '~/chez-noura-catering' }}
             
             # Login to GHCR
-            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             # Set image tags
             IMAGE_TAG="${{ github.event.inputs.image_tag || 'latest' }}"
             export BACKEND_IMAGE=ghcr.io/${{ github.repository_owner }}/chez-noura-backend:${IMAGE_TAG}
             export ADMIN_WEB_IMAGE=ghcr.io/${{ github.repository_owner }}/chez-noura-admin-web:${IMAGE_TAG}
             export BUSINESS_WEB_IMAGE=ghcr.io/${{ github.repository_owner }}/chez-noura-business-web:${IMAGE_TAG}
-            export CLIENT_WEB_IMAGE=ghcr.io/${{ github.repository_owner }}/chez-noura-client-web:${IMAGE_TAG}
+            export EMPLOYEE_WEB_IMAGE=ghcr.io/${{ github.repository_owner }}/chez-noura-employee-web:${IMAGE_TAG}
             
             # Pull latest images
             docker compose -f docker-compose.prod.yml pull

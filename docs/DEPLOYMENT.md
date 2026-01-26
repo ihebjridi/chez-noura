@@ -156,7 +156,7 @@ GITHUB_USERNAME=your-github-username
 BACKEND_IMAGE=ghcr.io/your-github-username/chez-noura-backend:latest
 ADMIN_WEB_IMAGE=ghcr.io/your-github-username/chez-noura-admin-web:latest
 BUSINESS_WEB_IMAGE=ghcr.io/your-github-username/chez-noura-business-web:latest
-CLIENT_WEB_IMAGE=ghcr.io/your-github-username/chez-noura-client-web:latest
+CLIENT_WEB_IMAGE=ghcr.io/your-github-username/chez-noura-employee-web:latest
 
 # Database Configuration
 POSTGRES_USER=postgres
