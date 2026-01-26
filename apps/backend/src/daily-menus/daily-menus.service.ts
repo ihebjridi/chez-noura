@@ -16,8 +16,10 @@ export class DailyMenusService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createDto: CreateDailyMenuDto): Promise<DailyMenuDto> {
-    const date = new Date(createDto.date);
-    date.setHours(0, 0, 0, 0);
+    // Parse date string (YYYY-MM-DD) as local date, not UTC
+    // This prevents timezone issues where "2024-01-26" becomes "2024-01-25"
+    const [year, month, day] = createDto.date.split('-').map(Number);
+    const date = new Date(year, month - 1, day, 0, 0, 0, 0);
 
     // Check if menu already exists for this date
     const existing = await this.prisma.dailyMenu.findUnique({
@@ -75,8 +77,9 @@ export class DailyMenusService {
   }
 
   async findByDate(date: string): Promise<DailyMenuWithDetailsDto | null> {
-    const dateObj = new Date(date);
-    dateObj.setHours(0, 0, 0, 0);
+    // Parse date string (YYYY-MM-DD) as local date, not UTC
+    const [year, month, day] = date.split('-').map(Number);
+    const dateObj = new Date(year, month - 1, day, 0, 0, 0, 0);
 
     const menu = await this.prisma.dailyMenu.findUnique({
       where: { date: dateObj },
@@ -430,9 +433,17 @@ export class DailyMenusService {
   }
 
   private mapToDto(menu: any): DailyMenuDto {
+    // Format date as YYYY-MM-DD in local timezone, not UTC
+    // This ensures the date matches what was originally sent (e.g., "2024-01-26" stays "2024-01-26")
+    const date = menu.date instanceof Date ? menu.date : new Date(menu.date);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+
     return {
       id: menu.id,
-      date: menu.date.toISOString().split('T')[0],
+      date: dateString,
       status: menu.status as any,
       publishedAt: menu.publishedAt ? menu.publishedAt.toISOString() : undefined,
       createdAt: menu.createdAt.toISOString(),

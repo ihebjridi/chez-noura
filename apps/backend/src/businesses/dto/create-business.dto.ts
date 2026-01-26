@@ -13,10 +13,10 @@ export class CreateBusinessDtoClass implements CreateBusinessDto {
   @IsString()
   legalName?: string;
 
-  @ApiProperty({ description: 'Business email (must be unique)' })
-  @IsNotEmpty()
+  @ApiPropertyOptional({ description: 'Business email (must be unique, defaults to adminEmail if not provided)' })
+  @IsOptional()
   @IsEmail()
-  email: string;
+  email?: string;
 
   @ApiPropertyOptional({ description: 'Business phone number' })
   @IsOptional()

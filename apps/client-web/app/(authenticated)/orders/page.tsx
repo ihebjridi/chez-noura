@@ -10,7 +10,6 @@ import { Error } from '../../../components/ui/error';
 import { CollapsibleSection } from '../../../components/layouts/CollapsibleSection';
 import { CheckCircle, Clock, X, Package, Calendar } from 'lucide-react';
 import { getTodayISO, getTomorrowISO, formatDateToISO } from '../../../lib/date-utils';
-import { getTodayISO, getTomorrowISO, formatDateToISO } from '../../../lib/date-utils';
 
 function OrdersContent() {
   const router = useRouter();
@@ -93,7 +92,6 @@ function OrdersContent() {
       const weekStart = new Date(orderDate);
       weekStart.setDate(orderDate.getDate() - orderDate.getDay()); // Start from Sunday
       
-      const { formatDateToISO } = await import('../../../lib/date-utils');
       const weekKey = formatDateToISO(weekStart);
       
       if (!grouped[weekKey]) {

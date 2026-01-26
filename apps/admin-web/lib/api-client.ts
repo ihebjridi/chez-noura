@@ -32,6 +32,7 @@ import {
   AddPackToDailyMenuDto,
   AddVariantToDailyMenuDto,
   PublishDailyMenuResponseDto,
+  ActivityLogDto,
 } from '@contracts/core';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -185,6 +186,30 @@ class ApiClient {
     return this.request<BusinessDto>(`/businesses/${id}/disable`, {
       method: 'PATCH',
     });
+  }
+
+  async generateBusinessAdminPassword(businessId: string): Promise<{
+    email: string;
+    temporaryPassword: string;
+  }> {
+    return this.request<{
+      email: string;
+      temporaryPassword: string;
+    }>(`/businesses/${businessId}/generate-password`, {
+      method: 'POST',
+    });
+  }
+
+  async deleteBusiness(id: string): Promise<void> {
+    return this.request<void>(`/businesses/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Activity Log endpoints
+  async getActivityLogsByBusiness(businessId: string, limit?: number): Promise<ActivityLogDto[]> {
+    const query = limit ? `?limit=${limit}` : '';
+    return this.request<ActivityLogDto[]>(`/activity-logs/business/${businessId}${query}`);
   }
 
   // Pack endpoints

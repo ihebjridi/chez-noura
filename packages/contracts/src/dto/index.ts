@@ -14,3 +14,4 @@ export * from './variant.dto';
 export * from './daily-menu.dto';
 export * from './employee-menu.dto';
 export * from './employee-order.dto';
+export * from './activity-log.dto';

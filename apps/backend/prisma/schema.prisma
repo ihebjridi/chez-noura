@@ -49,8 +49,9 @@ model User {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  business Business? @relation(fields: [businessId], references: [id])
-  employee Employee? @relation(fields: [employeeId], references: [id])
+  business     Business?      @relation(fields: [businessId], references: [id])
+  employee     Employee?      @relation(fields: [employeeId], references: [id])
+  activityLogs ActivityLog[]
 
   @@index([email])
   @@index([businessId])
@@ -67,10 +68,11 @@ model Business {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
-  users     User[]
-  employees Employee[]
-  orders    Order[]
-  invoices  Invoice[]
+  users        User[]
+  employees    Employee[]
+  orders       Order[]
+  invoices     Invoice[]
+  activityLogs ActivityLog[]
 
   @@index([email])
   @@index([name])
@@ -324,4 +326,24 @@ model DayLock {
   updatedAt DateTime @updatedAt
 
   @@index([lockDate])
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String? // User who performed the action (optional for system actions)
+  businessId String? // Business associated with the action
+  action    String   // Action type (e.g., 'LOGIN', 'PASSWORD_RESET', 'BUSINESS_CREATED', etc.)
+  details   String? // Additional details in JSON format
+  ipAddress String? // IP address of the user
+  userAgent String? // User agent string
+  createdAt DateTime @default(now())
+
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  business Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([businessId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([businessId, createdAt])
 }

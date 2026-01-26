@@ -34,12 +34,24 @@ export function useBusinesses() {
     }
   }, [loadBusinesses]);
 
+  const deleteBusiness = useCallback(async (id: string) => {
+    try {
+      setError('');
+      await apiClient.deleteBusiness(id);
+      await loadBusinesses();
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete business');
+      throw err;
+    }
+  }, [loadBusinesses]);
+
   return {
     businesses,
     loading,
     error,
     loadBusinesses,
     createBusiness,
+    deleteBusiness,
     setError,
   };
 }

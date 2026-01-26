@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Inject, forwardRef } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
@@ -10,6 +10,7 @@ import {
   TokenPayload,
   UserRole,
 } from '@contracts/core';
+import { ActivityLogsService } from '../activity-logs/activity-logs.service';
 
 /**
  * AuthService handles authentication logic
@@ -19,6 +20,8 @@ export class AuthService {
   constructor(
     private jwtService: JwtService,
     private prisma: PrismaService,
+    @Inject(forwardRef(() => ActivityLogsService))
+    private activityLogsService?: ActivityLogsService,
   ) {}
 
   /**
@@ -92,6 +95,21 @@ export class AuthService {
     const refreshToken = this.jwtService.sign(payload, {
       expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
     });
+
+    // Log login activity for BUSINESS_ADMIN users
+    if (user.role === UserRole.BUSINESS_ADMIN && this.activityLogsService) {
+      try {
+        await this.activityLogsService.create({
+          userId: user.id,
+          businessId: user.businessId,
+          action: 'LOGIN',
+          details: JSON.stringify({ email: user.email }),
+        });
+      } catch (error) {
+        // Don't fail login if logging fails
+        console.error('Failed to log login activity:', error);
+      }
+    }
 
     return {
       accessToken,

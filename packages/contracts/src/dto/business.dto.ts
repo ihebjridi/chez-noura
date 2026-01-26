@@ -21,7 +21,7 @@ export interface BusinessDto {
 export interface CreateBusinessDto {
   name: string;
   legalName?: string;
-  email: string;
+  email?: string; // Optional - defaults to adminEmail if not provided
   phone?: string;
   address?: string;
   adminEmail: string; // Email for the business admin user

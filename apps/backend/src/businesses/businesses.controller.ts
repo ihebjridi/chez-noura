@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   UseGuards,
@@ -122,6 +123,43 @@ export class BusinessesController {
     @CurrentUser() user: TokenPayload,
   ): Promise<BusinessDto> {
     return this.businessesService.disable(id);
+  }
+
+  @Post(':id/generate-password')
+  @Roles(UserRole.SUPER_ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Generate a new password for business admin' })
+  @ApiParam({ name: 'id', description: 'Business ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'New password generated successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Business or admin user not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - SUPER_ADMIN only' })
+  async generatePassword(
+    @Param('id') id: string,
+    @CurrentUser() user: TokenPayload,
+  ): Promise<{ email: string; temporaryPassword: string }> {
+    return this.businessesService.generateNewPassword(id, user);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.SUPER_ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete a business (only if no related records exist)' })
+  @ApiParam({ name: 'id', description: 'Business ID' })
+  @ApiResponse({
+    status: 204,
+    description: 'Business deleted successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Cannot delete: business has related records' })
+  @ApiResponse({ status: 404, description: 'Business not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - SUPER_ADMIN only' })
+  async delete(
+    @Param('id') id: string,
+    @CurrentUser() user: TokenPayload,
+  ): Promise<void> {
+    return this.businessesService.delete(id, user);
   }
 }
 

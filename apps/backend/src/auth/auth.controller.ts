@@ -22,9 +22,11 @@ import {
 import { LoginRequestDto } from './dto/login-request.dto';
 import { EmployeeLoginDto } from './dto/employee-login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ActivityLogInterceptor } from '../activity-logs/interceptors';
 
 @ApiTags('auth')
 @Controller('auth')
+@UseInterceptors(ActivityLogInterceptor)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

@@ -3,6 +3,8 @@ import {
   BadRequestException,
   NotFoundException,
   ConflictException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -16,10 +18,15 @@ import {
 } from '@contracts/core';
 import * as bcrypt from 'bcryptjs';
 import { Prisma } from '@prisma/client';
+import { ActivityLogsService } from '../activity-logs/activity-logs.service';
 
 @Injectable()
 export class BusinessesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => ActivityLogsService))
+    private activityLogsService: ActivityLogsService,
+  ) {}
 
   /**
    * Create a new business with a BUSINESS_ADMIN user
@@ -38,9 +45,12 @@ export class BusinessesService {
       throw new ConflictException('Business name already exists');
     }
 
+    // Use adminEmail as business email if not provided
+    const businessEmail = createBusinessDto.email || createBusinessDto.adminEmail;
+
     // Check if business email already exists
     const existingByEmail = await this.prisma.business.findUnique({
-      where: { email: createBusinessDto.email },
+      where: { email: businessEmail },
     });
 
     if (existingByEmail) {
@@ -67,7 +77,7 @@ export class BusinessesService {
         data: {
           name: createBusinessDto.name,
           legalName: createBusinessDto.legalName,
-          email: createBusinessDto.email,
+          email: businessEmail,
           phone: createBusinessDto.phone,
           address: createBusinessDto.address,
           status: EntityStatus.ACTIVE,
@@ -89,6 +99,22 @@ export class BusinessesService {
         adminUser,
       };
     });
+
+    // Log business creation activity
+    try {
+      await this.activityLogsService.create({
+        userId: user.userId,
+        businessId: result.business.id,
+        action: 'BUSINESS_CREATED',
+        details: JSON.stringify({
+          businessName: result.business.name,
+          adminEmail: createBusinessDto.adminEmail,
+        }),
+      });
+    } catch (error) {
+      // Don't fail business creation if logging fails
+      console.error('Failed to log business creation activity:', error);
+    }
 
     return {
       business: this.mapToDto(result.business),
@@ -218,6 +244,60 @@ export class BusinessesService {
   }
 
   /**
+   * Delete a business
+   * Only allowed if there are no related records (users, employees, orders, invoices)
+   */
+  async delete(id: string, user: TokenPayload): Promise<void> {
+    const business = await this.prisma.business.findUnique({
+      where: { id },
+    });
+
+    if (!business) {
+      throw new NotFoundException(`Business with ID ${id} not found`);
+    }
+
+    // Check for related records
+    const [users, employees, orders, invoices] = await Promise.all([
+      this.prisma.user.count({ where: { businessId: id } }),
+      this.prisma.employee.count({ where: { businessId: id } }),
+      this.prisma.order.count({ where: { businessId: id } }),
+      this.prisma.invoice.count({ where: { businessId: id } }),
+    ]);
+
+    if (users > 0 || employees > 0 || orders > 0 || invoices > 0) {
+      const reasons = [];
+      if (users > 0) reasons.push(`${users} user(s)`);
+      if (employees > 0) reasons.push(`${employees} employee(s)`);
+      if (orders > 0) reasons.push(`${orders} order(s)`);
+      if (invoices > 0) reasons.push(`${invoices} invoice(s)`);
+      throw new BadRequestException(
+        `Cannot delete business: it has ${reasons.join(', ')}. Please remove all related records first or disable the business instead.`,
+      );
+    }
+
+    // Delete the business
+    await this.prisma.business.delete({
+      where: { id },
+    });
+
+    // Log deletion activity
+    try {
+      await this.activityLogsService.create({
+        userId: user.userId,
+        businessId: id,
+        action: 'BUSINESS_DELETED',
+        details: JSON.stringify({
+          businessName: business.name,
+          businessEmail: business.email,
+        }),
+      });
+    } catch (error) {
+      // Don't fail deletion if logging fails
+      console.error('Failed to log business deletion activity:', error);
+    }
+  }
+
+  /**
    * Check if a business is active
    */
   async isBusinessActive(businessId: string): Promise<boolean> {
@@ -283,6 +363,66 @@ export class BusinessesService {
       status: business.status as EntityStatus,
       createdAt: business.createdAt.toISOString(),
       updatedAt: business.updatedAt.toISOString(),
+    };
+  }
+
+  /**
+   * Generate a new password for business admin
+   */
+  async generateNewPassword(
+    businessId: string,
+    user: TokenPayload,
+  ): Promise<{ email: string; temporaryPassword: string }> {
+    // Find the business
+    const business = await this.prisma.business.findUnique({
+      where: { id: businessId },
+    });
+
+    if (!business) {
+      throw new NotFoundException(`Business with ID ${businessId} not found`);
+    }
+
+    // Find the business admin user
+    const adminUser = await this.prisma.user.findFirst({
+      where: {
+        businessId: businessId,
+        role: UserRole.BUSINESS_ADMIN,
+      },
+    });
+
+    if (!adminUser) {
+      throw new NotFoundException('Business admin user not found');
+    }
+
+    // Generate new temporary password
+    const temporaryPassword = this.generateTemporaryPassword();
+    const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+
+    // Update password
+    await this.prisma.user.update({
+      where: { id: adminUser.id },
+      data: { password: hashedPassword },
+    });
+
+    // Log password generation activity
+    try {
+      await this.activityLogsService.create({
+        userId: user.userId,
+        businessId: businessId,
+        action: 'PASSWORD_RESET',
+        details: JSON.stringify({
+          adminEmail: adminUser.email,
+          resetBy: user.userId,
+        }),
+      });
+    } catch (error) {
+      // Don't fail password reset if logging fails
+      console.error('Failed to log password reset activity:', error);
+    }
+
+    return {
+      email: adminUser.email,
+      temporaryPassword,
     };
   }
 
