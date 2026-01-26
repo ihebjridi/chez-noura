@@ -18,6 +18,10 @@ RUN pnpm install --frozen-lockfile
 # Build stage
 FROM base AS build
 
+# Accept DATABASE_URL as build argument (for prisma generate)
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL}
+
 # Copy all source files
 COPY . .
 
