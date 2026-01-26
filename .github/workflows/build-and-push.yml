@@ -35,15 +35,12 @@ jobs:
           - name: admin-web
             context: .
             dockerfile: apps/admin-web/Dockerfile
-            build-args: NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL || 'https://api.chez-noura.com' }}
           - name: business-web
             context: .
             dockerfile: apps/business-web/Dockerfile
-            build-args: NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL || 'https://api.chez-noura.com' }}
           - name: employee-web
             context: .
             dockerfile: apps/employee-web/Dockerfile
-            build-args: NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL || 'https://api.chez-noura.com' }}
 
     steps:
       - name: Checkout repository
@@ -72,6 +69,19 @@ jobs:
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
 
+      - name: Prepare build args
+        id: prepare-args
+        run: |
+          if [ "${{ matrix.service.name }}" != "backend" ]; then
+            API_URL="${{ secrets.NEXT_PUBLIC_API_URL }}"
+            if [ -z "$API_URL" ]; then
+              API_URL="https://api.chez-noura.com"
+            fi
+            echo "build_args=NEXT_PUBLIC_API_URL=$API_URL" >> $GITHUB_OUTPUT
+          else
+            echo "build_args=" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -82,8 +92,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          build-args: |
-            ${{ matrix.service.build-args }}
+          build-args: ${{ steps.prepare-args.outputs.build_args }}
 
       - name: Image digest
         run: echo ${{ steps.meta.outputs.digest }}
