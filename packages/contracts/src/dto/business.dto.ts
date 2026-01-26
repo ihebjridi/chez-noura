@@ -10,6 +10,7 @@ export interface BusinessDto {
   email: string;
   phone?: string;
   address?: string;
+  logoUrl?: string;
   status: EntityStatus;
   createdAt: string;
   updatedAt: string;
@@ -24,6 +25,7 @@ export interface CreateBusinessDto {
   email?: string; // Optional - defaults to adminEmail if not provided
   phone?: string;
   address?: string;
+  logoUrl?: string;
   adminEmail: string; // Email for the business admin user
 }
 
@@ -36,5 +38,6 @@ export interface UpdateBusinessDto {
   email?: string;
   phone?: string;
   address?: string;
+  logoUrl?: string;
   status?: EntityStatus;
 }

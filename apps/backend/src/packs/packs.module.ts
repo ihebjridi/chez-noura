@@ -5,9 +5,10 @@ import { ComponentsService } from './components.service';
 import { ComponentsController } from './components.controller';
 import { VariantsController } from './variants.controller';
 import { PrismaModule } from '../prisma/prisma.module';
+import { CommonModule } from '../common/common.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, CommonModule],
   controllers: [PacksController, ComponentsController, VariantsController],
   providers: [PacksService, ComponentsService],
   exports: [PacksService, ComponentsService],

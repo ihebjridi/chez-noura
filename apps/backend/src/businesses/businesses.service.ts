@@ -7,6 +7,7 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { FileStorageService } from '../common/services/file-storage.service';
 import {
   OrderSummaryDto,
   TokenPayload,
@@ -19,6 +20,7 @@ import {
 import * as bcrypt from 'bcryptjs';
 import { Prisma } from '@prisma/client';
 import { ActivityLogsService } from '../activity-logs/activity-logs.service';
+import { Express } from 'express';
 
 @Injectable()
 export class BusinessesService {
@@ -26,6 +28,7 @@ export class BusinessesService {
     private prisma: PrismaService,
     @Inject(forwardRef(() => ActivityLogsService))
     private activityLogsService: ActivityLogsService,
+    private fileStorageService: FileStorageService,
   ) {}
 
   /**
@@ -35,6 +38,7 @@ export class BusinessesService {
   async create(
     createBusinessDto: CreateBusinessDto,
     user: TokenPayload,
+    logoFile?: Express.Multer.File,
   ): Promise<{ business: BusinessDto; adminCredentials: { email: string; temporaryPassword: string } }> {
     // Check if business name already exists
     const existingByName = await this.prisma.business.findUnique({
@@ -70,6 +74,13 @@ export class BusinessesService {
     const temporaryPassword = this.generateTemporaryPassword();
     const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
 
+    // Upload logo if provided
+    let logoUrl: string | undefined;
+    if (logoFile) {
+      const uploadResult = await this.fileStorageService.uploadBusinessLogo(logoFile);
+      logoUrl = uploadResult.url;
+    }
+
     // Use transaction to create business and admin user atomically
     const result = await this.prisma.$transaction(async (tx) => {
       // Create business
@@ -80,6 +91,7 @@ export class BusinessesService {
           email: businessEmail,
           phone: createBusinessDto.phone,
           address: createBusinessDto.address,
+          logoUrl,
           status: EntityStatus.ACTIVE,
         },
       });
@@ -159,6 +171,7 @@ export class BusinessesService {
   async update(
     id: string,
     updateBusinessDto: UpdateBusinessDto,
+    logoFile?: Express.Multer.File,
   ): Promise<BusinessDto> {
     // Check if business exists
     const existing = await this.prisma.business.findUnique({
@@ -191,6 +204,26 @@ export class BusinessesService {
       }
     }
 
+    // Handle logo upload
+    let logoUrl: string | undefined = existing.logoUrl || undefined;
+    if (logoFile) {
+      // Delete old logo if it exists
+      if (existing.logoUrl) {
+        await this.fileStorageService.deleteFile(existing.logoUrl);
+      }
+      // Upload new logo
+      const uploadResult = await this.fileStorageService.uploadBusinessLogo(logoFile);
+      logoUrl = uploadResult.url;
+    } else if (updateBusinessDto.logoUrl === null || updateBusinessDto.logoUrl === '') {
+      // Explicitly remove logo if logoUrl is set to null/empty
+      if (existing.logoUrl) {
+        await this.fileStorageService.deleteFile(existing.logoUrl);
+      }
+      logoUrl = null;
+    } else if (updateBusinessDto.logoUrl !== undefined) {
+      logoUrl = updateBusinessDto.logoUrl;
+    }
+
     try {
       const updated = await this.prisma.business.update({
         where: { id },
@@ -200,6 +233,7 @@ export class BusinessesService {
           email: updateBusinessDto.email,
           phone: updateBusinessDto.phone,
           address: updateBusinessDto.address,
+          logoUrl,
           status: updateBusinessDto.status,
         },
       });
@@ -360,6 +394,7 @@ export class BusinessesService {
       email: business.email,
       phone: business.phone || undefined,
       address: business.address || undefined,
+      logoUrl: business.logoUrl || undefined,
       status: business.status as EntityStatus,
       createdAt: business.createdAt.toISOString(),
       updatedAt: business.updatedAt.toISOString(),

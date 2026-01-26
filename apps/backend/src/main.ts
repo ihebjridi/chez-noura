@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, HttpStatus } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 import { AppModule } from './app.module';
 import { validateEnv } from './common/config/env.validation';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
@@ -15,7 +17,12 @@ async function bootstrap() {
     process.exit(1);
   }
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Serve static files from uploads directory
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/uploads/',
+  });
 
   // Add request ID middleware
   app.use(new RequestIdMiddleware().use.bind(new RequestIdMiddleware()));

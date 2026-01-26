@@ -9,13 +9,17 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { BusinessesService } from './businesses.service';
 import { JwtAuthGuard, RolesGuard, BusinessScopeGuard } from '../auth/guards';
@@ -40,6 +44,8 @@ export class BusinessesController {
   @Post()
   @Roles(UserRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(FileInterceptor('logo'))
+  @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Create a new business with admin user' })
   @ApiResponse({
     status: 201,
@@ -51,11 +57,12 @@ export class BusinessesController {
   async create(
     @Body() createBusinessDto: CreateBusinessDtoClass,
     @CurrentUser() user: TokenPayload,
+    @UploadedFile() logoFile?: Express.Multer.File,
   ): Promise<{
     business: BusinessDto;
     adminCredentials: { email: string; temporaryPassword: string };
   }> {
-    return this.businessesService.create(createBusinessDto, user);
+    return this.businessesService.create(createBusinessDto, user, logoFile);
   }
 
   @Get()
@@ -89,6 +96,8 @@ export class BusinessesController {
 
   @Patch(':id')
   @Roles(UserRole.SUPER_ADMIN)
+  @UseInterceptors(FileInterceptor('logo'))
+  @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Update a business' })
   @ApiParam({ name: 'id', description: 'Business ID' })
   @ApiResponse({
@@ -102,8 +111,9 @@ export class BusinessesController {
     @Param('id') id: string,
     @Body() updateBusinessDto: UpdateBusinessDto,
     @CurrentUser() user: TokenPayload,
+    @UploadedFile() logoFile?: Express.Multer.File,
   ): Promise<BusinessDto> {
-    return this.businessesService.update(id, updateBusinessDto);
+    return this.businessesService.update(id, updateBusinessDto, logoFile);
   }
 
   @Patch(':id/disable')

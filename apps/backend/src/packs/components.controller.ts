@@ -6,13 +6,17 @@ import {
   Body,
   Param,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { ComponentsService } from './components.service';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards';
@@ -63,6 +67,8 @@ export class ComponentsController {
 
   @Post(':id/variants')
   @Roles(UserRole.SUPER_ADMIN)
+  @UseInterceptors(FileInterceptor('image'))
+  @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Create a variant for a component' })
   @ApiParam({ name: 'id', description: 'Component ID' })
   @ApiResponse({
@@ -76,8 +82,9 @@ export class ComponentsController {
     @Param('id') componentId: string,
     @Body() createVariantDto: CreateVariantDtoClass,
     @CurrentUser() user: TokenPayload,
+    @UploadedFile() imageFile?: Express.Multer.File,
   ): Promise<VariantDto> {
-    return this.componentsService.createVariant(componentId, createVariantDto, user);
+    return this.componentsService.createVariant(componentId, createVariantDto, user, imageFile);
   }
 
   @Get(':id/variants')

@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { FileStorageService } from '../common/services/file-storage.service';
 import {
   ComponentDto,
   CreateComponentDto,
@@ -15,10 +16,14 @@ import {
   UserRole,
 } from '@contracts/core';
 import { Prisma } from '@prisma/client';
+import { Express } from 'express';
 
 @Injectable()
 export class ComponentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private fileStorageService: FileStorageService,
+  ) {}
 
   /**
    * Create a new component
@@ -62,6 +67,7 @@ export class ComponentsService {
     componentId: string,
     createVariantDto: { name: string; stockQuantity: number; isActive?: boolean },
     user: TokenPayload,
+    imageFile?: Express.Multer.File,
   ): Promise<VariantDto> {
     if (user.role !== UserRole.SUPER_ADMIN) {
       throw new ForbiddenException('Only SUPER_ADMIN can create variants');
@@ -92,12 +98,20 @@ export class ComponentsService {
       );
     }
 
+    // Upload image if provided
+    let imageUrl: string | undefined;
+    if (imageFile) {
+      const uploadResult = await this.fileStorageService.uploadVariantImage(imageFile);
+      imageUrl = uploadResult.url;
+    }
+
     const variant = await this.prisma.variant.create({
       data: {
         componentId,
         name: createVariantDto.name,
         stockQuantity: createVariantDto.stockQuantity,
         isActive: createVariantDto.isActive ?? true,
+        imageUrl,
       },
       include: {
         component: true,
@@ -115,6 +129,7 @@ export class ComponentsService {
     variantId: string,
     updateVariantDto: UpdateVariantDto,
     user: TokenPayload,
+    imageFile?: Express.Multer.File,
   ): Promise<VariantDto> {
     if (user.role !== UserRole.SUPER_ADMIN) {
       throw new ForbiddenException('Only SUPER_ADMIN can update variants');
@@ -162,6 +177,23 @@ export class ComponentsService {
 
     if (updateVariantDto.isActive !== undefined) {
       updateData.isActive = updateVariantDto.isActive;
+    }
+
+    // Handle image upload
+    if (imageFile) {
+      // Delete old image if it exists
+      if (existingVariant.imageUrl) {
+        await this.fileStorageService.deleteFile(existingVariant.imageUrl);
+      }
+      // Upload new image
+      const uploadResult = await this.fileStorageService.uploadVariantImage(imageFile);
+      updateData.imageUrl = uploadResult.url;
+    } else if (updateVariantDto.imageUrl === null || updateVariantDto.imageUrl === '') {
+      // Explicitly remove image if imageUrl is set to null/empty
+      if (existingVariant.imageUrl) {
+        await this.fileStorageService.deleteFile(existingVariant.imageUrl);
+      }
+      updateData.imageUrl = null;
     }
 
     const updatedVariant = await this.prisma.variant.update({
@@ -216,6 +248,7 @@ export class ComponentsService {
       componentName: variant.component.name,
       name: variant.name,
       stockQuantity: variant.stockQuantity,
+      imageUrl: variant.imageUrl || undefined,
       isActive: variant.isActive,
       createdAt: variant.createdAt.toISOString(),
       updatedAt: variant.updatedAt.toISOString(),

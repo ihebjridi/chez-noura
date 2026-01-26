@@ -4,13 +4,17 @@ import {
   Body,
   Param,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { ComponentsService } from './components.service';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards';
@@ -31,6 +35,8 @@ export class VariantsController {
 
   @Patch(':id')
   @Roles(UserRole.SUPER_ADMIN)
+  @UseInterceptors(FileInterceptor('image'))
+  @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Update a variant' })
   @ApiParam({ name: 'id', description: 'Variant ID' })
   @ApiResponse({
@@ -44,7 +50,8 @@ export class VariantsController {
     @Param('id') variantId: string,
     @Body() updateVariantDto: UpdateVariantDtoClass,
     @CurrentUser() user: TokenPayload,
+    @UploadedFile() imageFile?: Express.Multer.File,
   ): Promise<VariantDto> {
-    return this.componentsService.updateVariant(variantId, updateVariantDto, user);
+    return this.componentsService.updateVariant(variantId, updateVariantDto, user, imageFile);
   }
 }
