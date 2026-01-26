@@ -46,12 +46,27 @@ async function bootstrap() {
   );
 
   // Enable CORS for frontend applications
+  const allowedOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim())
+    : [
+        'http://localhost:3001', // admin-web (dev)
+        'http://localhost:3002', // business-web (dev)
+        'http://localhost:3003', // client-web (dev)
+        'https://admin.chez-noura.com', // admin-web (prod)
+        'https://business.chez-noura.com', // business-web (prod)
+        'https://client.chez-noura.com', // client-web (prod)
+      ];
+
   app.enableCors({
-    origin: [
-      'http://localhost:3001', // admin-web
-      'http://localhost:3002', // business-web
-      'http://localhost:3003', // client-web
-    ],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id', 'X-Idempotency-Key'],

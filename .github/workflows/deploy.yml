@@ -1,0 +1,72 @@
+name: Deploy to VPS
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+      image_tag:
+        description: 'Image tag to deploy (leave empty for latest)'
+        required: false
+        type: string
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT || 22 }}
+          script: |
+            set -e
+            
+            # Navigate to deployment directory
+            cd ${{ secrets.VPS_DEPLOY_PATH || '~/chez-noura' }}
+            
+            # Login to GHCR
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Set image tags
+            IMAGE_TAG="${{ github.event.inputs.image_tag || 'latest' }}"
+            export BACKEND_IMAGE=ghcr.io/${{ github.repository_owner }}/chez-noura-backend:${IMAGE_TAG}
+            export ADMIN_WEB_IMAGE=ghcr.io/${{ github.repository_owner }}/chez-noura-admin-web:${IMAGE_TAG}
+            export BUSINESS_WEB_IMAGE=ghcr.io/${{ github.repository_owner }}/chez-noura-business-web:${IMAGE_TAG}
+            export CLIENT_WEB_IMAGE=ghcr.io/${{ github.repository_owner }}/chez-noura-client-web:${IMAGE_TAG}
+            
+            # Pull latest images
+            docker compose -f docker-compose.prod.yml pull
+            
+            # Run database migrations
+            docker compose -f docker-compose.prod.yml run --rm backend pnpm --filter backend prisma migrate deploy || true
+            
+            # Restart services
+            docker compose -f docker-compose.prod.yml up -d
+            
+            # Wait for services to be healthy
+            echo "Waiting for services to be healthy..."
+            sleep 30
+            
+            # Health check
+            docker compose -f docker-compose.prod.yml ps
+            
+            echo "Deployment completed successfully!"
