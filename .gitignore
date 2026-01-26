@@ -2,6 +2,9 @@
 node_modules/
 .pnp
 .pnp.js
+# pnpm-specific
+.pnpm-store/
+.pnpm/
 
 # Testing
 coverage/
