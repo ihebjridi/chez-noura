@@ -103,6 +103,19 @@ export class EmployeeOrdersService {
       );
     }
 
+    // Validate that the dailyMenu date is today - orders can only be placed for today's menu
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const menuDate = new Date(dailyMenu.date);
+    menuDate.setHours(0, 0, 0, 0);
+
+    if (menuDate.getTime() !== today.getTime()) {
+      throw new BadRequestException(
+        'Orders can only be placed for today\'s menu. The selected menu is for a different date.',
+      );
+    }
+
     // Validate pack belongs to DailyMenu
     const dailyMenuPack = dailyMenu.packs.find((p) => p.packId === createOrderDto.packId);
     if (!dailyMenuPack) {
@@ -318,7 +331,7 @@ export class EmployeeOrdersService {
       throw new BadRequestException('Employee ID not found');
     }
 
-    // Get today's date (start of day)
+    // Get today's date (start of day) - using same approach as createOrder
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -369,11 +382,8 @@ export class EmployeeOrdersService {
       },
     });
 
-    if (!order) {
-      return null;
-    }
-
-    return this.mapOrderToDto(order);
+    // Return null if no order found (explicit null for proper JSON serialization)
+    return order ? this.mapOrderToDto(order) : null;
   }
 
   private mapOrderToDto(order: any): OrderDto {

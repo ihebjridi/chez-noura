@@ -14,6 +14,7 @@ import { Loading } from '../../../components/ui/loading';
 import { Error } from '../../../components/ui/error';
 import { EmployeeLayout } from '../../../components/layouts/EmployeeLayout';
 import { Clock, CheckCircle } from 'lucide-react';
+import { getTodayISO } from '../../../lib/date-utils';
 
 function OrderConfirmContent() {
   const router = useRouter();
@@ -24,7 +25,7 @@ function OrderConfirmContent() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const orderDate = searchParams.get('date') || new Date().toISOString().split('T')[0];
+  const orderDate = searchParams.get('date') || getTodayISO();
   const dailyMenuIdParam = searchParams.get('dailyMenuId');
   const packIdParam = searchParams.get('packId');
   const itemsParam = searchParams.get('items');

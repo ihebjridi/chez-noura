@@ -206,6 +206,49 @@ export class DailyMenusService {
     return this.mapVariantToDto(dailyMenuVariant);
   }
 
+  async removeVariant(id: string, variantId: string): Promise<void> {
+    const menu = await this.prisma.dailyMenu.findUnique({
+      where: { id },
+    });
+
+    if (!menu) {
+      throw new NotFoundException(`Daily menu with ID ${id} not found`);
+    }
+
+    // Only allow removal from DRAFT menus
+    if (menu.status !== 'DRAFT') {
+      throw new BadRequestException(
+        `Cannot remove variant from menu with status ${menu.status}. Only DRAFT menus allow variant removal.`,
+      );
+    }
+
+    // Check if variant exists in the menu
+    const dailyMenuVariant = await this.prisma.dailyMenuVariant.findUnique({
+      where: {
+        dailyMenuId_variantId: {
+          dailyMenuId: id,
+          variantId: variantId,
+        },
+      },
+    });
+
+    if (!dailyMenuVariant) {
+      throw new NotFoundException(
+        `Variant with ID ${variantId} is not associated with this daily menu`,
+      );
+    }
+
+    // Delete the variant from the menu
+    await this.prisma.dailyMenuVariant.delete({
+      where: {
+        dailyMenuId_variantId: {
+          dailyMenuId: id,
+          variantId: variantId,
+        },
+      },
+    });
+  }
+
   async publish(id: string): Promise<PublishDailyMenuResponseDto> {
     return await this.prisma.$transaction(async (tx) => {
       const menu = await tx.dailyMenu.findUnique({

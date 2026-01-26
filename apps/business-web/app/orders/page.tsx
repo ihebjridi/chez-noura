@@ -15,12 +15,9 @@ export default function OrdersPage() {
   const [expandedEmployeeId, setExpandedEmployeeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [dateFilter, setDateFilter] = useState<'today' | 'tomorrow' | 'all' | 'custom'>('today');
+  const [dateFilter, setDateFilter] = useState<'all' | 'custom'>('all');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [customDate, setCustomDate] = useState('');
-
-  const today = new Date().toISOString().split('T')[0];
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
 
   useEffect(() => {
     loadOrders();
@@ -40,17 +37,13 @@ export default function OrdersPage() {
   };
 
   const filteredOrders = useMemo(() => {
-    if (dateFilter === 'today') {
-      return orders.filter((order) => order.orderDate.split('T')[0] === today);
-    } else if (dateFilter === 'tomorrow') {
-      return orders.filter((order) => order.orderDate.split('T')[0] === tomorrow);
-    } else if (dateFilter === 'custom' && customDate) {
+    if (dateFilter === 'custom' && customDate) {
       return orders.filter((order) => order.orderDate.split('T')[0] === customDate);
     } else if (dateFilter === 'all') {
       return orders;
     }
     return orders;
-  }, [orders, dateFilter, customDate, today, tomorrow]);
+  }, [orders, dateFilter, customDate]);
 
   // Group orders by date, then by employee
   const groupedOrders = useMemo(() => {
@@ -107,32 +100,6 @@ export default function OrdersPage() {
         {/* Date Filter Tabs */}
         <div className="bg-surface border border-surface-dark rounded-lg p-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => {
-                setDateFilter('today');
-                setCustomDate('');
-              }}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                dateFilter === 'today'
-                  ? 'bg-primary-50 text-primary-700 border-2 border-primary-500'
-                  : 'bg-surface-light text-gray-700 hover:bg-surface-dark border-2 border-transparent'
-              }`}
-            >
-              Today
-            </button>
-            <button
-              onClick={() => {
-                setDateFilter('tomorrow');
-                setCustomDate('');
-              }}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                dateFilter === 'tomorrow'
-                  ? 'bg-primary-50 text-primary-700 border-2 border-primary-500'
-                  : 'bg-surface-light text-gray-700 hover:bg-surface-dark border-2 border-transparent'
-              }`}
-            >
-              Tomorrow
-            </button>
             <button
               onClick={() => {
                 setDateFilter('all');

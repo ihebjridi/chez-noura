@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrderingCutoffService } from '../common/services/ordering-cutoff.service';
 import { EmployeeMenuDto, AvailablePackDto, AvailableComponentDto, AvailableVariantDto } from '@contracts/core';
@@ -11,13 +11,25 @@ export class EmployeeMenuService {
   ) {}
 
   /**
-   * Get PUBLISHED DailyMenu for a specific date
+   * Get DailyMenu for a specific date (published or unpublished)
    * Returns menu with available packs, components, and variants (stock > 0)
-   * Returns 404 if no menu is published
+   * Returns 404 if no menu exists for the date
+   * The status field indicates if the menu is published and available for ordering
    */
   async getMenuByDate(date: string): Promise<EmployeeMenuDto> {
     const dateObj = new Date(date);
     dateObj.setHours(0, 0, 0, 0);
+
+    // Validate that the requested date is not in the past
+    // Orders can only be placed for today's menu, so past menus should not be accessible
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (dateObj.getTime() < today.getTime()) {
+      throw new BadRequestException(
+        'Menus for past dates are read-only and cannot be accessed for ordering. Orders can only be placed for today\'s menu.',
+      );
+    }
 
     const dailyMenu = await this.prisma.dailyMenu.findUnique({
       where: { date: dateObj },
@@ -54,9 +66,7 @@ export class EmployeeMenuService {
       throw new NotFoundException(`No menu found for date ${date}`);
     }
 
-    if (dailyMenu.status !== 'PUBLISHED') {
-      throw new NotFoundException(`No published menu found for date ${date}. Current status: ${dailyMenu.status}`);
-    }
+    // Return menu even if not published - status field will indicate availability
 
     // Build variant map by component ID for quick lookup
     const variantMapByComponent = new Map<string, AvailableVariantDto[]>();

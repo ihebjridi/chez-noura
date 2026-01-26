@@ -1,17 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { apiClient } from '../../lib/api-client';
+import { usePacks } from '../../hooks/usePacks';
 import { PackDto, CreatePackDto, UpdatePackDto } from '@contracts/core';
 import Link from 'next/link';
 import { Error } from '../../components/ui/error';
 import { Loading } from '../../components/ui/loading';
 import { Empty } from '../../components/ui/empty';
+import { PageHeader } from '../../components/ui/page-header';
+import { CollapsibleForm } from '../../components/ui/collapsible-form';
+import { FormField } from '../../components/ui/form-field';
+import { Input } from '../../components/ui/input';
+import { Checkbox } from '../../components/ui/checkbox';
+import { Button } from '../../components/ui/button';
 
 export default function PacksPage() {
-  const [packs, setPacks] = useState<PackDto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { packs, loading, error, loadPacks, createPack, updatePack, setError } = usePacks();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingPack, setEditingPack] = useState<PackDto | null>(null);
   const [formData, setFormData] = useState<CreatePackDto>({
@@ -22,31 +26,17 @@ export default function PacksPage() {
 
   useEffect(() => {
     loadPacks();
-  }, []);
-
-  const loadPacks = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const data = await apiClient.getPacks();
-      setPacks(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load packs');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [loadPacks]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setError('');
-      await apiClient.createPack(formData);
+      await createPack(formData);
       setShowCreateForm(false);
       setFormData({ name: '', price: 0, isActive: true });
-      await loadPacks();
     } catch (err: any) {
-      setError(err.message || 'Failed to create pack');
+      // Error is already set by the hook
     }
   };
 
@@ -60,12 +50,11 @@ export default function PacksPage() {
         price: formData.price,
         isActive: formData.isActive,
       };
-      await apiClient.updatePack(editingPack.id, updateData);
+      await updatePack(editingPack.id, updateData);
       setEditingPack(null);
       setFormData({ name: '', price: 0, isActive: true });
-      await loadPacks();
     } catch (err: any) {
-      setError(err.message || 'Failed to update pack');
+      // Error is already set by the hook
     }
   };
 
@@ -86,18 +75,19 @@ export default function PacksPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Packs</h1>
-        <button
-          onClick={() => {
-            setShowCreateForm(!showCreateForm);
-            cancelEdit();
-          }}
-          className="px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
-        >
-          {showCreateForm ? 'Cancel' : '+ New Pack'}
-        </button>
-      </div>
+      <PageHeader
+        title="Packs"
+        action={
+          <Button
+            onClick={() => {
+              setShowCreateForm(!showCreateForm);
+              cancelEdit();
+            }}
+          >
+            {showCreateForm ? 'Cancel' : '+ New Pack'}
+          </Button>
+        }
+      />
 
       {error && (
         <div className="mb-4">
@@ -105,7 +95,6 @@ export default function PacksPage() {
         </div>
       )}
 
-      {/* Inline Create/Edit Form */}
       {(showCreateForm || editingPack) && (
         <div className="mb-6 bg-surface border border-surface-dark rounded-lg">
           {showCreateForm && !editingPack && (
@@ -120,56 +109,43 @@ export default function PacksPage() {
           )}
           {(showCreateForm || editingPack) && (
             <form onSubmit={editingPack ? handleUpdate : handleCreate} className="p-6">
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Price (TND) *</label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={formData.price}
-              onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-          </div>
-          <div className="mb-4">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={formData.isActive}
-                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                className="rounded"
-              />
-              <span className="text-sm text-gray-700">Active</span>
-            </label>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              className="px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              {editingPack ? 'Update Pack' : 'Create Pack'}
-            </button>
-            {editingPack && (
-              <button
-                type="button"
-                onClick={cancelEdit}
-                className="px-4 py-2 bg-gray-400 text-white font-medium rounded-lg hover:bg-gray-500 transition-colors"
-              >
-                Cancel
-              </button>
-            )}
-          </div>
+              <div className="space-y-4">
+                <FormField label="Name" required>
+                  <Input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                  />
+                </FormField>
+                <FormField label="Price (TND)" required>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                    required
+                  />
+                </FormField>
+                <FormField label="">
+                  <Checkbox
+                    label="Active"
+                    checked={formData.isActive}
+                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  />
+                </FormField>
+              </div>
+              <div className="flex gap-2 mt-4">
+                <Button type="submit" variant="primary">
+                  {editingPack ? 'Update Pack' : 'Create Pack'}
+                </Button>
+                {editingPack && (
+                  <Button type="button" variant="ghost" onClick={cancelEdit}>
+                    Cancel
+                  </Button>
+                )}
+              </div>
             </form>
           )}
         </div>
@@ -207,18 +183,14 @@ export default function PacksPage() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Link
-                  href={`/packs/${pack.id}/components`}
-                  className="px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors"
-                >
-                  Manage Components
+                <Link href={`/packs/${pack.id}/components`}>
+                  <Button variant="primary" size="sm">
+                    Manage Components
+                  </Button>
                 </Link>
-                <button
-                  onClick={() => startEdit(pack)}
-                  className="px-4 py-2 bg-secondary-400 text-white text-sm font-medium rounded-lg hover:bg-secondary-500 transition-colors"
-                >
+                <Button variant="secondary" size="sm" onClick={() => startEdit(pack)}>
                   Edit
-                </button>
+                </Button>
               </div>
             </div>
           ))}

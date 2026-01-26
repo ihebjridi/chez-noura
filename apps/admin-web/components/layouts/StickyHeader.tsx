@@ -1,14 +1,18 @@
 'use client';
 
 import { useState } from 'react';
+import { Calendar } from 'lucide-react';
 import { StatusBadge } from '../../app/daily-menus/[id]/components/StatusBadge';
-import { DailyMenuStatus } from '@contracts/core';
+import { DailyMenuStatus, DailyMenuDto } from '@contracts/core';
+import { MenuCalendar } from '../../app/components/MenuCalendar';
+import { getTodayISO, getTomorrowISO } from '../../lib/date-utils';
 
 interface StickyHeaderProps {
   selectedDate: string;
   onDateChange: (date: string) => void;
   status?: DailyMenuStatus;
   context?: string;
+  menus?: DailyMenuDto[];
   children?: React.ReactNode;
 }
 
@@ -17,12 +21,18 @@ export function StickyHeader({
   onDateChange,
   status,
   context,
+  menus = [],
   children,
 }: StickyHeaderProps) {
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
 
-  const today = new Date().toISOString().split('T')[0];
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const today = getTodayISO();
+  const tomorrow = getTomorrowISO();
+  
+  const handleDateSelect = (date: string) => {
+    onDateChange(date);
+    setShowCalendar(false);
+  };
 
   const formatDateDisplay = (dateString: string) => {
     const date = new Date(dateString);
@@ -58,46 +68,34 @@ export function StickyHeader({
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Date Selector */}
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <button
-              onClick={() => onDateChange(today)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                selectedDate === today
-                  ? 'bg-primary-50 text-primary-700 border-2 border-primary-500'
-                  : 'bg-surface-light text-gray-700 hover:bg-surface-dark border-2 border-transparent'
-              }`}
-            >
-              Today
-            </button>
-            <button
-              onClick={() => onDateChange(tomorrow)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                selectedDate === tomorrow
-                  ? 'bg-primary-50 text-primary-700 border-2 border-primary-500'
-                  : 'bg-surface-light text-gray-700 hover:bg-surface-dark border-2 border-transparent'
-              }`}
-            >
-              Tomorrow
-            </button>
             <div className="relative">
               <button
-                onClick={() => setShowDatePicker(!showDatePicker)}
-                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-surface-light text-gray-700 hover:bg-surface-dark transition-colors border-2 border-transparent whitespace-nowrap"
+                onClick={() => setShowCalendar(!showCalendar)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+                  showCalendar
+                    ? 'bg-primary-50 text-primary-700 border-2 border-primary-500'
+                    : 'bg-surface-light text-gray-700 hover:bg-surface-dark border-2 border-transparent'
+                }`}
               >
-                Other Date
+                <Calendar className="w-4 h-4" />
+                Calendar
               </button>
-              {showDatePicker && (
-                <div className="absolute top-full mt-2 right-0 bg-surface border border-surface-dark rounded-lg shadow-lg p-3 z-50">
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => {
-                      onDateChange(e.target.value);
-                      setShowDatePicker(false);
-                    }}
-                    min={today}
-                    className="px-3 py-2 border border-surface-dark rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-background"
+              {showCalendar && (
+                <>
+                  {/* Backdrop */}
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowCalendar(false)}
                   />
-                </div>
+                  {/* Calendar Popover */}
+                  <div className="absolute top-full mt-2 left-0 bg-surface border border-surface-dark rounded-lg shadow-xl z-50 min-w-[350px]">
+                    <MenuCalendar
+                      menus={menus}
+                      selectedDate={selectedDate}
+                      onDateSelect={handleDateSelect}
+                    />
+                  </div>
+                </>
               )}
             </div>
           </div>

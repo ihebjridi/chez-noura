@@ -4,6 +4,7 @@ import {
   Get,
   Delete,
   Param,
+  Query,
   Body,
   UseGuards,
   HttpCode,
@@ -14,6 +15,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { DailyMenusService } from './daily-menus.service';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards';
@@ -57,12 +59,22 @@ export class DailyMenusController {
 
   @Get()
   @Roles(UserRole.SUPER_ADMIN)
-  @ApiOperation({ summary: 'Get all daily menus' })
+  @ApiOperation({ summary: 'Get all daily menus or a specific menu by date' })
+  @ApiQuery({
+    name: 'date',
+    description: 'Optional date in YYYY-MM-DD format to get a specific menu with details',
+    required: false,
+    example: '2024-01-15',
+  })
   @ApiResponse({
     status: 200,
-    description: 'List of daily menus',
+    description: 'List of daily menus (or array with single menu with details if date provided)',
   })
-  async findAll(): Promise<DailyMenuDto[]> {
+  async findAll(@Query('date') date?: string): Promise<DailyMenuDto[] | DailyMenuWithDetailsDto[]> {
+    if (date) {
+      const menu = await this.dailyMenusService.findByDate(date);
+      return menu ? [menu] : [];
+    }
     return this.dailyMenusService.findAll();
   }
 
@@ -108,6 +120,23 @@ export class DailyMenusController {
     @Body() addVariantDto: AddVariantToDailyMenuValidationDto,
   ): Promise<DailyMenuVariantDto> {
     return this.dailyMenusService.addVariant(id, addVariantDto as AddVariantToDailyMenuDto);
+  }
+
+  @Delete(':id/variants/:variantId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Remove a variant from daily menu (DRAFT only)' })
+  @ApiResponse({
+    status: 204,
+    description: 'Variant removed from daily menu successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - Only DRAFT menus allow variant removal' })
+  @ApiResponse({ status: 404, description: 'Daily menu or variant not found' })
+  async removeVariant(
+    @Param('id') id: string,
+    @Param('variantId') variantId: string,
+  ): Promise<void> {
+    return this.dailyMenusService.removeVariant(id, variantId);
   }
 
   @Post(':id/publish')

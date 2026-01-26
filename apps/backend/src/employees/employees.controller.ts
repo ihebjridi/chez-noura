@@ -5,6 +5,7 @@ import {
   Query,
   Body,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -15,10 +16,11 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards';
 import { Roles, CurrentUser } from '../auth/decorators';
-import { UserRole, TokenPayload, EmployeeMenuDto, OrderDto } from '@contracts/core';
+import { UserRole, TokenPayload, EmployeeMenuDto, OrderDto, BusinessDto } from '@contracts/core';
 import { EmployeeMenuService } from './employee-menu.service';
 import { EmployeeOrdersService } from './employee-orders.service';
 import { CreateEmployeeOrderDto } from './dto/create-employee-order.dto';
+import { BusinessesService } from '../businesses/businesses.service';
 
 @ApiTags('employee')
 @ApiBearerAuth('JWT-auth')
@@ -28,11 +30,12 @@ export class EmployeesController {
   constructor(
     private readonly employeeMenuService: EmployeeMenuService,
     private readonly employeeOrdersService: EmployeeOrdersService,
+    private readonly businessesService: BusinessesService,
   ) {}
 
   @Get('menu')
   @Roles(UserRole.EMPLOYEE)
-  @ApiOperation({ summary: 'Get published daily menu for a specific date' })
+  @ApiOperation({ summary: 'Get daily menu for a specific date (published or unpublished)' })
   @ApiQuery({
     name: 'date',
     description: 'Date in YYYY-MM-DD format',
@@ -41,9 +44,9 @@ export class EmployeesController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Published daily menu with available packs, components, and variants',
+    description: 'Daily menu with available packs, components, and variants. Status field indicates if menu is published.',
   })
-  @ApiResponse({ status: 404, description: 'No published menu found for the date' })
+  @ApiResponse({ status: 404, description: 'No menu found for the date' })
   @ApiResponse({ status: 403, description: 'Forbidden - EMPLOYEE only' })
   async getMenu(
     @Query('date') date: string,
@@ -75,12 +78,31 @@ export class EmployeesController {
   @ApiOperation({ summary: 'Get today\'s order for the current employee' })
   @ApiResponse({
     status: 200,
-    description: 'Today\'s order if exists, otherwise null',
+    description: 'Today\'s order if exists, otherwise null. Returns OrderDto or null.',
   })
   @ApiResponse({ status: 403, description: 'Forbidden - EMPLOYEE only' })
   async getTodayOrder(
     @CurrentUser() user: TokenPayload,
   ): Promise<OrderDto | null> {
-    return this.employeeOrdersService.getTodayOrder(user);
+    const order = await this.employeeOrdersService.getTodayOrder(user);
+    return order;
+  }
+
+  @Get('business')
+  @Roles(UserRole.EMPLOYEE)
+  @ApiOperation({ summary: 'Get the employee\'s affiliated business information' })
+  @ApiResponse({
+    status: 200,
+    description: 'Business information',
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden - EMPLOYEE only' })
+  @ApiResponse({ status: 404, description: 'Business not found' })
+  async getMyBusiness(
+    @CurrentUser() user: TokenPayload,
+  ): Promise<BusinessDto> {
+    if (!user.businessId) {
+      throw new BadRequestException('Employee is not associated with a business');
+    }
+    return this.businessesService.findOne(user.businessId);
   }
 }

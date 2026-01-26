@@ -253,8 +253,9 @@ class ApiClient {
   }
 
   // Daily Menu endpoints
-  async getDailyMenus(): Promise<DailyMenuDto[]> {
-    return this.request<DailyMenuDto[]>('/daily-menus');
+  async getDailyMenus(date?: string): Promise<DailyMenuDto[] | DailyMenuWithDetailsDto[]> {
+    const query = date ? `?date=${date}` : '';
+    return this.request<DailyMenuDto[] | DailyMenuWithDetailsDto[]>(`/daily-menus${query}`);
   }
 
   async getDailyMenuById(id: string): Promise<DailyMenuWithDetailsDto> {
@@ -279,6 +280,12 @@ class ApiClient {
     return this.request<any>(`/daily-menus/${dailyMenuId}/variants`, {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  async removeVariantFromDailyMenu(dailyMenuId: string, variantId: string): Promise<void> {
+    return this.request<void>(`/daily-menus/${dailyMenuId}/variants/${variantId}`, {
+      method: 'DELETE',
     });
   }
 

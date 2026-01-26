@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { OrderDto } from '@contracts/core';
+import { getTodayISO, formatDateToISO } from '../lib/date-utils';
 
 interface OrderCalendarProps {
   orders: OrderDto[];
@@ -52,7 +53,7 @@ export function OrderCalendar({
         currentMonth.getMonth(),
         day,
       );
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = formatDateToISO(date);
       days.push({
         date: day,
         fullDate: dateStr,
@@ -68,7 +69,7 @@ export function OrderCalendar({
     year: 'numeric',
   });
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayISO();
 
   const handlePreviousMonth = () => {
     setCurrentMonth(

@@ -7,6 +7,7 @@ import { DeleteConfirmModal } from '../daily-menus/[id]/components/DeleteConfirm
 
 interface QuickActionsBarProps {
   dailyMenu: DailyMenuWithDetailsDto | null;
+  isReadOnly?: boolean;
   onPublish: () => void;
   onLock: () => void;
   onDelete: () => void;
@@ -20,6 +21,7 @@ interface QuickActionsBarProps {
 
 export function QuickActionsBar({
   dailyMenu,
+  isReadOnly = false,
   onPublish,
   onLock,
   onDelete,
@@ -44,6 +46,19 @@ export function QuickActionsBar({
     hour: '2-digit',
     minute: '2-digit',
   });
+
+  // If read-only (past menu), hide all actions
+  if (isReadOnly) {
+    return (
+      <InlineToolbar
+        info={
+          <span className="text-sm text-gray-600">
+            This is a past menu and is read-only. No modifications are allowed.
+          </span>
+        }
+      />
+    );
+  }
 
   return (
     <>

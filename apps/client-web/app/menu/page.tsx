@@ -21,6 +21,7 @@ import { CutoffCountdown } from '../../components/cutoff-countdown';
 import { EmployeeLayout } from '../../components/layouts/EmployeeLayout';
 import { CollapsibleSection } from '../../components/layouts/CollapsibleSection';
 import { CheckCircle, Clock, X, Package, AlertCircle } from 'lucide-react';
+import { getTodayISO } from '../../lib/date-utils';
 
 export default function MenuPage() {
   const { user } = useAuth();
@@ -34,7 +35,7 @@ export default function MenuPage() {
   const [todayOrder, setTodayOrder] = useState<OrderDto | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [today] = useState(() => new Date().toISOString().split('T')[0]);
+  const [today] = useState(() => getTodayISO());
 
   useEffect(() => {
     loadMenu();
@@ -45,11 +46,24 @@ export default function MenuPage() {
     try {
       setLoading(true);
       setError('');
+      
+      // Ensure we're always using today's date (defense against any date manipulation)
+      const currentToday = getTodayISO();
+      if (today !== currentToday) {
+        // If the today constant is outdated, use current date
+        setError('Date mismatch detected. Please refresh the page.');
+        return;
+      }
+      
       const menuData = await apiClient.getEmployeeMenu(today);
       setMenu(menuData);
       setPacks(menuData.packs);
     } catch (err: any) {
-      setError(err.message || 'Failed to load menu');
+      if (err.message?.includes('past date') || err.message?.includes('read-only')) {
+        setError('This menu is for a past date. Orders can only be placed for today\'s menu.');
+      } else {
+        setError(err.message || 'Failed to load menu');
+      }
     } finally {
       setLoading(false);
     }

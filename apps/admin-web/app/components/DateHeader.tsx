@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
+import { getTodayISO, getTomorrowISO } from '../../lib/date-utils';
 
 interface DateHeaderProps {
   selectedDate: string;
@@ -12,8 +13,8 @@ interface DateHeaderProps {
 export function DateHeader({ selectedDate, onDateChange, onMenuClick }: DateHeaderProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const today = new Date().toISOString().split('T')[0];
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const today = getTodayISO();
+  const tomorrow = getTomorrowISO();
 
   const formatDateDisplay = (dateString: string) => {
     const date = new Date(dateString);

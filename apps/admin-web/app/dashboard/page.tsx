@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { apiClient } from '../../lib/api-client';
 import { Loading } from '../../components/ui/loading';
 import { Error } from '../../components/ui/error';
+import { getTodayISO } from '../../lib/date-utils';
 import {
   Building2,
   Package,
@@ -47,7 +48,7 @@ export default function DashboardPage() {
         apiClient.getAdminInvoices(),
       ]);
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayISO();
       const todayOrders = orders.filter(
         (order) => order.createdAt?.split('T')[0] === today
       );

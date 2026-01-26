@@ -24,7 +24,7 @@ interface AdminLayoutProps {
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, current: false },
-  { name: 'Menus', href: '/', icon: Calendar, current: false },
+  { name: 'Menus', href: '/menus', icon: Calendar, current: false },
   { name: 'Businesses', href: '/businesses', icon: Building2, current: false },
   { name: 'Packs', href: '/packs', icon: Package, current: false },
   { name: 'Orders', href: '/orders', icon: ShoppingCart, current: false },

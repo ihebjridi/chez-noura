@@ -9,9 +9,10 @@ import {
 import { Loading } from '../../components/ui/loading';
 import { Error } from '../../components/ui/error';
 import { Empty } from '../../components/ui/empty';
+import { getTodayISO } from '../../lib/date-utils';
 
 export default function KitchenPage() {
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(getTodayISO());
   const [summary, setSummary] = useState<KitchenSummaryDto | null>(null);
   const [businessSummary, setBusinessSummary] = useState<KitchenBusinessSummaryDto | null>(null);
   const [loading, setLoading] = useState(false);

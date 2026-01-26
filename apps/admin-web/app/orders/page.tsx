@@ -1,44 +1,60 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { apiClient } from '../../lib/api-client';
-import { OrderSummaryDto, OrderStatus } from '@contracts/core';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useOrders } from '../../hooks/useOrders';
+import { OrderDto } from '@contracts/core';
 import { Loading } from '../../components/ui/loading';
 import { Empty } from '../../components/ui/empty';
 import { Error } from '../../components/ui/error';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { PageHeader } from '../../components/ui/page-header';
+import { StatusBadge } from '../../components/ui/status-badge';
+import { formatDate, formatDateTime } from '../../lib/date-utils';
+import { ChevronDown, ChevronRight, Building2 } from 'lucide-react';
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<OrderSummaryDto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { orders, loading, error, loadOrders, setError } = useOrders();
+  const [expandedBusinesses, setExpandedBusinesses] = useState<Set<string>>(new Set());
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadOrders();
-  }, []);
+  }, [loadOrders]);
 
-  const loadOrders = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const data = await apiClient.getAdminOrders();
-      // Convert OrderDto[] to OrderSummaryDto[] format
-      const summaries: OrderSummaryDto[] = data.map((order) => ({
-        orderId: order.id,
-        employeeEmail: order.employeeEmail,
-        employeeName: order.employeeName,
-        orderDate: order.orderDate,
-        status: order.status,
-        totalAmount: order.totalAmount,
-        itemCount: order.items.length,
-      }));
-      setOrders(summaries);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load orders');
-    } finally {
-      setLoading(false);
-    }
+  // Group orders by business
+  const groupedOrders = useMemo(() => {
+    const groups = new Map<string, OrderDto[]>();
+    orders.forEach((order) => {
+      const key = order.businessName;
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(order);
+    });
+
+    // Sort orders within each group by orderDate desc
+    groups.forEach((businessOrders) => {
+      businessOrders.sort(
+        (a, b) =>
+          new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime(),
+      );
+    });
+
+    // Sort business groups alphabetically
+    return Array.from(groups.entries()).sort(([a], [b]) =>
+      a.localeCompare(b),
+    );
+  }, [orders]);
+
+  const toggleBusiness = (businessName: string) => {
+    setExpandedBusinesses((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(businessName)) {
+        newSet.delete(businessName);
+      } else {
+        newSet.add(businessName);
+      }
+      return newSet;
+    });
   };
 
   const toggleOrder = (orderId: string) => {
@@ -53,12 +69,17 @@ export default function OrdersPage() {
     });
   };
 
+  // Calculate totals for each business
+  const getBusinessTotal = (businessOrders: OrderDto[]): number => {
+    return businessOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Orders</h1>
-        <p className="mt-1 text-sm text-gray-600 font-normal">View and manage all orders</p>
-      </div>
+      <PageHeader
+        title="Orders"
+        description="View and manage all orders grouped by business"
+      />
 
       {error && (
         <div className="mb-4">
@@ -78,72 +99,234 @@ export default function OrdersPage() {
           />
         </div>
       ) : (
-        <div className="bg-surface border border-surface-dark rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-surface-dark">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-8"></th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
-                </tr>
-              </thead>
-              <tbody className="bg-surface divide-y divide-surface-dark">
-                {orders.map((order) => {
-                  const isExpanded = expandedOrders.has(order.orderId);
-                  return (
-                    <>
-                      <tr
-                        key={order.orderId}
-                        className="hover:bg-surface-light cursor-pointer"
-                        onClick={() => toggleOrder(order.orderId)}
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {isExpanded ? (
-                            <ChevronDown className="w-4 h-4 text-gray-500" />
-                          ) : (
-                            <ChevronRight className="w-4 h-4 text-gray-500" />
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{order.orderId.substring(0, 8)}...</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{order.employeeName}</div>
-                          <div className="text-sm text-gray-600 font-normal">{order.employeeEmail}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-normal">{new Date(order.orderDate).toLocaleDateString()}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            order.status === OrderStatus.LOCKED 
-                              ? 'bg-warning-50 text-warning-700' 
-                              : order.status === OrderStatus.CREATED 
-                              ? 'bg-blue-50 text-blue-700' 
-                              : 'bg-destructive/10 text-destructive'
-                          }`}>
-                            {order.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">{order.totalAmount.toFixed(2)} TND</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-center font-normal">{order.itemCount}</td>
-                      </tr>
-                      {isExpanded && (
-                        <tr>
-                          <td colSpan={7} className="px-6 py-4 bg-surface-light">
-                            <div className="text-sm text-gray-600 font-normal">
-                              Order details would be loaded here. Click to collapse.
-                            </div>
-                          </td>
-                        </tr>
+        <div className="space-y-4">
+          {groupedOrders.map(([businessName, businessOrders]) => {
+            const isBusinessExpanded = expandedBusinesses.has(businessName);
+            const businessTotal = getBusinessTotal(businessOrders);
+
+            return (
+              <div
+                key={businessName}
+                className="bg-surface border border-surface-dark rounded-lg overflow-hidden"
+              >
+                {/* Business Group Header */}
+                <div
+                  className="bg-surface-dark px-6 py-4 cursor-pointer hover:bg-surface-light transition-colors"
+                  onClick={() => toggleBusiness(businessName)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {isBusinessExpanded ? (
+                        <ChevronDown className="w-5 h-5 text-gray-500" />
+                      ) : (
+                        <ChevronRight className="w-5 h-5 text-gray-500" />
                       )}
-                    </>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      <Building2 className="w-5 h-5 text-gray-600" />
+                      <div>
+                        <h2 className="text-lg font-semibold text-gray-900">
+                          {businessName}
+                        </h2>
+                        <div className="flex items-center gap-4 mt-1">
+                          <span className="text-sm text-gray-600 font-normal">
+                            {businessOrders.length} order
+                            {businessOrders.length !== 1 ? 's' : ''}
+                          </span>
+                          <span className="text-sm font-medium text-gray-900">
+                            Total: {businessTotal.toFixed(2)} TND
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Orders Table */}
+                {isBusinessExpanded && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-surface-light">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-8"></th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Date
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Employee
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Pack
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Total
+                          </th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Items
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Created At
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-surface divide-y divide-surface-dark">
+                        {businessOrders.map((order) => {
+                          const isOrderExpanded = expandedOrders.has(order.id);
+                          return (
+                            <React.Fragment key={order.id}>
+                              <tr
+                                className="hover:bg-surface-light cursor-pointer"
+                                onClick={() => toggleOrder(order.id)}
+                              >
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  {isOrderExpanded ? (
+                                    <ChevronDown className="w-4 h-4 text-gray-500" />
+                                  ) : (
+                                    <ChevronRight className="w-4 h-4 text-gray-500" />
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                  {formatDate(order.orderDate)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {order.employeeName}
+                                  </div>
+                                  <div className="text-sm text-gray-600 font-normal">
+                                    {order.employeeEmail}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm text-gray-900 font-medium">
+                                    {order.packName}
+                                  </div>
+                                  <div className="text-sm text-gray-600 font-normal">
+                                    {order.packPrice.toFixed(2)} TND
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <StatusBadge status={order.status} />
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                                  {order.totalAmount.toFixed(2)} TND
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-center font-normal">
+                                  {order.items.length}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-normal">
+                                  {formatDateTime(order.createdAt)}
+                                </td>
+                              </tr>
+                              {isOrderExpanded && (
+                                <tr>
+                                  <td
+                                    colSpan={8}
+                                    className="px-6 py-4 bg-surface-light"
+                                  >
+                                    <div className="space-y-4">
+                                      {/* Order ID */}
+                                      <div>
+                                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                          Order ID
+                                        </span>
+                                        <p className="mt-1 text-sm text-gray-900 font-mono">
+                                          {order.id}
+                                        </p>
+                                      </div>
+
+                                      {/* Pack Details */}
+                                      <div>
+                                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                          Pack Details
+                                        </span>
+                                        <div className="mt-1 text-sm text-gray-900">
+                                          <p className="font-medium">
+                                            {order.packName}
+                                          </p>
+                                          <p className="text-gray-600">
+                                            Price: {order.packPrice.toFixed(2)}{' '}
+                                            TND
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      {/* Order Items */}
+                                      <div>
+                                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                          Order Items
+                                        </span>
+                                        <div className="mt-2 space-y-2">
+                                          {order.items.map((item) => (
+                                            <div
+                                              key={item.id}
+                                              className="flex items-center justify-between py-2 px-3 bg-surface rounded border border-surface-dark"
+                                            >
+                                              <div>
+                                                <span className="text-sm font-medium text-gray-900">
+                                                  {item.componentName}
+                                                </span>
+                                                <span className="text-sm text-gray-600 mx-2">
+                                                  →
+                                                </span>
+                                                <span className="text-sm text-gray-700">
+                                                  {item.variantName}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      {/* Order Metadata */}
+                                      <div className="grid grid-cols-2 gap-4 pt-2 border-t border-surface-dark">
+                                        <div>
+                                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Order Date
+                                          </span>
+                                          <p className="mt-1 text-sm text-gray-900">
+                                            {formatDate(order.orderDate)}
+                                          </p>
+                                        </div>
+                                        <div>
+                                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Created
+                                          </span>
+                                          <p className="mt-1 text-sm text-gray-900">
+                                            {formatDateTime(order.createdAt)}
+                                          </p>
+                                        </div>
+                                        <div>
+                                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Updated
+                                          </span>
+                                          <p className="mt-1 text-sm text-gray-900">
+                                            {formatDateTime(order.updatedAt)}
+                                          </p>
+                                        </div>
+                                        <div>
+                                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Total Amount
+                                          </span>
+                                          <p className="mt-1 text-sm font-medium text-gray-900">
+                                            {order.totalAmount.toFixed(2)} TND
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

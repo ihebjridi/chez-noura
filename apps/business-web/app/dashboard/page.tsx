@@ -9,19 +9,17 @@ import { Empty } from '../../components/ui/empty';
 import { Error } from '../../components/ui/error';
 import { Spotlight, SpotLightItem } from '../../components/ui-layouts/spotlight-cards';
 import { Users, ShoppingCart, DollarSign, TrendingUp } from 'lucide-react';
+import { getTodayISO } from '../../lib/date-utils';
 
 export default function DashboardPage() {
   const [orders, setOrders] = useState<OrderDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split('T')[0]
-  );
+  const [selectedDate, setSelectedDate] = useState(getTodayISO());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [expandedPack, setExpandedPack] = useState<string | null>(null);
 
-  const today = new Date().toISOString().split('T')[0];
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const today = getTodayISO();
 
   const formatFullDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -115,26 +113,6 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setSelectedDate(today)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedDate === today
-                  ? 'bg-primary-50 text-primary-700 border-2 border-primary-500'
-                  : 'bg-surface-light text-gray-700 hover:bg-surface-dark border-2 border-transparent'
-              }`}
-            >
-              Today
-            </button>
-            <button
-              onClick={() => setSelectedDate(tomorrow)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedDate === tomorrow
-                  ? 'bg-primary-50 text-primary-700 border-2 border-primary-500'
-                  : 'bg-surface-light text-gray-700 hover:bg-surface-dark border-2 border-transparent'
-              }`}
-            >
-              Tomorrow
-            </button>
             <div className="relative">
               <button
                 onClick={() => setShowDatePicker(!showDatePicker)}

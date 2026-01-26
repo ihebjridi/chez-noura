@@ -1,29 +1,34 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { ProtectedRoute } from '../../../../components/protected-route';
-import { useAuth } from '../../../../contexts/auth-context';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { apiClient } from '../../../../lib/api-client';
 import {
   VariantDto,
   UpdateVariantDto,
   ComponentDto,
-  UserRole,
 } from '@contracts/core';
+import { Loading } from '../../../../components/ui/loading';
+import { Error } from '../../../../components/ui/error';
+import { Empty } from '../../../../components/ui/empty';
+import { PageHeader } from '../../../../components/ui/page-header';
+import { CollapsibleForm } from '../../../../components/ui/collapsible-form';
+import { FormField } from '../../../../components/ui/form-field';
+import { Input } from '../../../../components/ui/input';
+import { Checkbox } from '../../../../components/ui/checkbox';
+import { Button } from '../../../../components/ui/button';
+import { StatusBadge } from '../../../../components/ui/status-badge';
+import { ArrowLeft } from 'lucide-react';
 
-// Form data type (without componentId since it comes from URL)
 type VariantFormData = {
   name: string;
   stockQuantity: number;
   isActive: boolean;
 };
-import Link from 'next/link';
 
 export default function FoodComponentVariantsPage() {
-  const { logout } = useAuth();
   const params = useParams();
-  const router = useRouter();
   const foodComponentId = params.id as string;
 
   const [foodComponent, setFoodComponent] = useState<ComponentDto | null>(null);
@@ -66,7 +71,6 @@ export default function FoodComponentVariantsPage() {
     e.preventDefault();
     try {
       setError('');
-      // foodComponentId is passed as URL parameter, not in form data
       await apiClient.createVariant(foodComponentId, formData);
       setShowCreateForm(false);
       setFormData({ name: '', stockQuantity: 0, isActive: true });
@@ -121,282 +125,180 @@ export default function FoodComponentVariantsPage() {
   };
 
   return (
-    <ProtectedRoute requiredRole={UserRole.SUPER_ADMIN}>
-      <div style={{ padding: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <div>
-            <Link href="/food-components" style={{ marginRight: '1rem', textDecoration: 'none' }}>← Food Components</Link>
-            <h1 style={{ display: 'inline', marginLeft: '1rem' }}>
-              {foodComponent ? `Variants: ${foodComponent.name}` : 'Food Component Variants'}
-            </h1>
-          </div>
-          <button
-            onClick={logout}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: '#ccc',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            Logout
-          </button>
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="mb-6">
+        <Link href="/food-components" className="text-primary-600 hover:text-primary-700 mb-2 inline-flex items-center gap-2">
+          <ArrowLeft className="w-4 h-4" />
+          Food Components
+        </Link>
+        <PageHeader
+          title={foodComponent ? `Variants: ${foodComponent.name}` : 'Food Component Variants'}
+        />
+      </div>
+
+      {error && (
+        <div className="mb-4">
+          <Error message={error} onRetry={() => setError('')} />
         </div>
+      )}
 
-        {error && (
-          <div style={{
-            padding: '0.75rem',
-            backgroundColor: '#fee',
-            color: '#c33',
-            borderRadius: '4px',
-            marginBottom: '1rem'
-          }}>
-            {error}
-          </div>
-        )}
+      {!showCreateForm && !editingVariant && (
+        <div className="mb-6">
+          <Button onClick={() => setShowCreateForm(true)}>
+            + New Variant
+          </Button>
+        </div>
+      )}
 
-        {(showCreateForm || editingVariant) && (
-          <form onSubmit={editingVariant ? handleUpdate : handleCreate} style={{
-            padding: '1.5rem',
-            border: '1px solid #ddd',
-            borderRadius: '8px',
-            marginBottom: '2rem',
-            backgroundColor: 'white'
-          }}>
-            <h2>{editingVariant ? 'Edit Variant' : 'Create Variant'}</h2>
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem' }}>Name *</label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-                style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
-                placeholder="e.g., Lentil Soup, Chicken Tagine"
-              />
+      {(showCreateForm || editingVariant) && (
+        <div className="mb-6 bg-surface border border-surface-dark rounded-lg">
+          {showCreateForm && !editingVariant && (
+            <div className="px-6 py-4 border-b border-surface-dark">
+              <h2 className="text-lg font-semibold">Create Variant</h2>
             </div>
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem' }}>Stock Quantity *</label>
-              <input
-                type="number"
-                min="0"
-                value={formData.stockQuantity}
-                onChange={(e) => setFormData({ ...formData, stockQuantity: parseInt(e.target.value) || 0 })}
-                required
-                style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
-              />
+          )}
+          {editingVariant && (
+            <div className="px-6 py-4 border-b border-surface-dark">
+              <h2 className="text-lg font-semibold">Edit Variant</h2>
             </div>
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <input
-                  type="checkbox"
+          )}
+          <form onSubmit={editingVariant ? handleUpdate : handleCreate} className="p-6">
+            <div className="space-y-4">
+              <FormField label="Name" required>
+                <Input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                  placeholder="e.g., Lentil Soup, Chicken Tagine"
+                />
+              </FormField>
+              <FormField label="Stock Quantity" required>
+                <Input
+                  type="number"
+                  min="0"
+                  value={formData.stockQuantity}
+                  onChange={(e) => setFormData({ ...formData, stockQuantity: parseInt(e.target.value) || 0 })}
+                  required
+                />
+              </FormField>
+              <FormField label="">
+                <Checkbox
+                  label="Active"
                   checked={formData.isActive}
                   onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                 />
-                Active
-              </label>
+              </FormField>
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                type="submit"
-                style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: '#0070f3',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-              >
+            <div className="flex gap-2 mt-4">
+              <Button type="submit" variant="primary">
                 {editingVariant ? 'Update Variant' : 'Create Variant'}
-              </button>
-              {(editingVariant || showCreateForm) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    cancelEdit();
-                    setShowCreateForm(false);
-                  }}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    backgroundColor: '#ccc',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-              )}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => {
+                cancelEdit();
+                setShowCreateForm(false);
+              }}>
+                Cancel
+              </Button>
             </div>
           </form>
-        )}
+        </div>
+      )}
 
-        {!showCreateForm && !editingVariant && (
-          <button
-            onClick={() => setShowCreateForm(true)}
-            style={{
-              padding: '0.5rem 1rem',
-              marginBottom: '1rem',
-              backgroundColor: '#0070f3',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            + New Variant
-          </button>
-        )}
-
-        {loading ? (
-          <p>Loading variants...</p>
-        ) : variants.length === 0 ? (
-          <div style={{
-            padding: '2rem',
-            textAlign: 'center',
-            border: '1px solid #ddd',
-            borderRadius: '8px',
-            backgroundColor: 'white'
-          }}>
-            <p>No variants found. Create your first variant to get started.</p>
+      {loading ? (
+        <div className="bg-surface border border-surface-dark rounded-lg p-12">
+          <Loading message="Loading variants..." />
+        </div>
+      ) : variants.length === 0 ? (
+        <div className="bg-surface border border-surface-dark rounded-lg p-12">
+          <Empty
+            message="No variants found"
+            description="Create your first variant to get started."
+          />
+        </div>
+      ) : (
+        <div className="bg-surface border border-surface-dark rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-surface-light">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quick Stock Update</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-surface divide-y divide-surface-dark">
+                {variants.map((variant) => {
+                  const isOutOfStock = variant.stockQuantity <= 0;
+                  return (
+                    <tr
+                      key={variant.id}
+                      className={`hover:bg-surface-light ${isOutOfStock ? 'bg-error-50' : ''}`}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{variant.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`font-bold ${
+                          isOutOfStock ? 'text-error-600' : 
+                          variant.stockQuantity < 10 ? 'text-warning-600' : 
+                          'text-success-600'
+                        }`}>
+                          {variant.stockQuantity}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {!variant.isActive ? (
+                          <StatusBadge status="INACTIVE" />
+                        ) : isOutOfStock ? (
+                          <StatusBadge status="OUT_OF_STOCK" />
+                        ) : (
+                          <StatusBadge status="AVAILABLE" />
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            onClick={() => quickUpdateStock(variant.id, variant.stockQuantity - 1)}
+                            disabled={variant.stockQuantity <= 0}
+                          >
+                            -1
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            onClick={() => quickUpdateStock(variant.id, variant.stockQuantity + 1)}
+                          >
+                            +1
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            onClick={() => quickUpdateStock(variant.id, variant.stockQuantity + 10)}
+                          >
+                            +10
+                          </Button>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => startEdit(variant)}
+                        >
+                          Edit
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: 'white', border: '1px solid #ddd', borderRadius: '8px' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#f5f5f5' }}>
-                <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Name</th>
-                <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Stock</th>
-                <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Status</th>
-                <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Quick Stock Update</th>
-                <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {variants.map((variant) => {
-                const isOutOfStock = variant.stockQuantity <= 0;
-                return (
-                  <tr
-                    key={variant.id}
-                    style={{
-                      borderBottom: '1px solid #eee',
-                      backgroundColor: isOutOfStock ? '#fff5f5' : 'white',
-                    }}
-                  >
-                    <td style={{ padding: '0.75rem', fontWeight: '500' }}>{variant.name}</td>
-                    <td style={{ padding: '0.75rem' }}>
-                      <span style={{
-                        fontWeight: 'bold',
-                        color: isOutOfStock ? '#c33' : variant.stockQuantity < 10 ? '#f59e0b' : '#059669'
-                      }}>
-                        {variant.stockQuantity}
-                      </span>
-                    </td>
-                    <td style={{ padding: '0.75rem' }}>
-                      {!variant.isActive ? (
-                        <span style={{
-                          padding: '0.25rem 0.5rem',
-                          backgroundColor: '#fee',
-                          color: '#c33',
-                          borderRadius: '4px',
-                          fontSize: '0.75rem'
-                        }}>
-                          Inactive
-                        </span>
-                      ) : isOutOfStock ? (
-                        <span style={{
-                          padding: '0.25rem 0.5rem',
-                          backgroundColor: '#fee',
-                          color: '#c33',
-                          borderRadius: '4px',
-                          fontSize: '0.75rem',
-                          fontWeight: 'bold'
-                        }}>
-                          Out of Stock
-                        </span>
-                      ) : (
-                        <span style={{
-                          padding: '0.25rem 0.5rem',
-                          backgroundColor: '#d1fae5',
-                          color: '#059669',
-                          borderRadius: '4px',
-                          fontSize: '0.75rem'
-                        }}>
-                          Available
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ padding: '0.75rem' }}>
-                      <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                        <button
-                          onClick={() => quickUpdateStock(variant.id, variant.stockQuantity - 1)}
-                          disabled={variant.stockQuantity <= 0}
-                          style={{
-                            padding: '0.25rem 0.5rem',
-                            backgroundColor: variant.stockQuantity <= 0 ? '#ccc' : '#dc2626',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: variant.stockQuantity <= 0 ? 'not-allowed' : 'pointer',
-                            fontSize: '0.875rem'
-                          }}
-                        >
-                          -1
-                        </button>
-                        <button
-                          onClick={() => quickUpdateStock(variant.id, variant.stockQuantity + 1)}
-                          style={{
-                            padding: '0.25rem 0.5rem',
-                            backgroundColor: '#059669',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '0.875rem'
-                          }}
-                        >
-                          +1
-                        </button>
-                        <button
-                          onClick={() => quickUpdateStock(variant.id, variant.stockQuantity + 10)}
-                          style={{
-                            padding: '0.25rem 0.5rem',
-                            backgroundColor: '#059669',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '0.875rem'
-                          }}
-                        >
-                          +10
-                        </button>
-                      </div>
-                    </td>
-                    <td style={{ padding: '0.75rem' }}>
-                      <button
-                        onClick={() => startEdit(variant)}
-                        style={{
-                          padding: '0.25rem 0.5rem',
-                          backgroundColor: '#666',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '0.875rem'
-                        }}
-                      >
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </ProtectedRoute>
+        </div>
+      )}
+    </div>
   );
 }

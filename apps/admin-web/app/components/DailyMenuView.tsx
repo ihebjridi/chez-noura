@@ -13,6 +13,7 @@ interface DailyMenuViewProps {
   updatingVariants: Set<string>;
   expandedPacks: Set<string>;
   expandedSections: Set<string>;
+  isReadOnly?: boolean;
   onPackToggle: (packId: string, checked: boolean) => void;
   onTogglePackVariants: (packId: string) => void;
   onVariantToggle: (variantId: string, checked: boolean, foodComponentId: string) => void;
@@ -29,6 +30,7 @@ export function DailyMenuView({
   updatingVariants,
   expandedPacks,
   expandedSections,
+  isReadOnly = false,
   onPackToggle,
   onTogglePackVariants,
   onVariantToggle,
@@ -40,6 +42,7 @@ export function DailyMenuView({
   }
 
   const isLocked = dailyMenu.status === DailyMenuStatus.LOCKED;
+  const isDisabled = isLocked || isReadOnly;
   const selectedPackIds = new Set(dailyMenu.packs.map((p) => p.packId));
   const selectedVariants = new Set(dailyMenu.variants.map((v) => v.variantId));
   const existingVariantStocks = new Map(
@@ -48,6 +51,14 @@ export function DailyMenuView({
 
   return (
     <div className="flex-1">
+      {isReadOnly && (
+        <div className="mb-4 p-3 bg-gray-50 border border-gray-300 rounded-lg">
+          <div className="flex items-center gap-2 text-sm text-gray-700">
+            <span className="font-semibold">Read-only mode:</span>
+            <span>This is a past menu and cannot be modified.</span>
+          </div>
+        </div>
+      )}
       <PackSelection
         packs={allPacks}
         selectedPackIds={selectedPackIds}
@@ -58,7 +69,7 @@ export function DailyMenuView({
         variantStocks={variantStocks}
         existingVariantStocks={existingVariantStocks}
         updatingVariants={updatingVariants}
-        isLocked={isLocked}
+        isLocked={isDisabled}
         isExpanded={expandedSections.has('packs')}
         onToggleSection={() => onToggleSection('packs')}
         onPackToggle={onPackToggle}

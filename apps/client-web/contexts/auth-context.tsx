@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       setUser(response.user);
-      router.push('/menu');
+      router.push('/calendar');
     } catch (error) {
       throw error;
     }

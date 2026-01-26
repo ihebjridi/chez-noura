@@ -1,0 +1,40 @@
+'use client';
+
+import React from 'react';
+import { cn } from '../../lib/utils';
+
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+}
+
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant = 'primary', size = 'md', children, ...props }, ref) => {
+    const baseStyles = 'font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2';
+    
+    const variantStyles = {
+      primary: 'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500',
+      secondary: 'bg-secondary-400 text-white hover:bg-secondary-500 focus:ring-secondary-500',
+      danger: 'bg-error-600 text-white hover:bg-error-700 focus:ring-error-500',
+      ghost: 'bg-surface text-gray-700 hover:bg-surface-dark focus:ring-gray-500',
+    };
+
+    const sizeStyles = {
+      sm: 'px-3 py-1.5 text-sm',
+      md: 'px-4 py-2 text-sm',
+      lg: 'px-6 py-3 text-base',
+    };
+
+    return (
+      <button
+        className={cn(baseStyles, variantStyles[variant], sizeStyles[size], className)}
+        ref={ref}
+        {...props}
+      >
+        {children}
+      </button>
+    );
+  }
+);
+
+Button.displayName = 'Button';

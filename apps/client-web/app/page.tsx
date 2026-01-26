@@ -12,7 +12,7 @@ export default function Home() {
   useEffect(() => {
     if (!loading) {
       if (isAuthenticated) {
-        router.push('/menu');
+        router.push('/calendar');
       } else {
         router.push('/login');
       }
