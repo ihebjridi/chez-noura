@@ -10,6 +10,7 @@
     "target": "ES2022",
     "sourceMap": true,
     "outDir": "./dist",
+    "rootDir": "./src",
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
@@ -19,6 +20,6 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false
   },
-  "include": ["src/**/*", "prisma.config.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
 }
