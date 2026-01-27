@@ -9,6 +9,7 @@ export interface OrderItemDto {
   componentName: string;
   variantId: string;
   variantName: string;
+  variantImageUrl?: string;
 }
 
 /**

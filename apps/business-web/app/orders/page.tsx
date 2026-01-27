@@ -335,13 +335,26 @@ export default function OrdersPage() {
                                             key={item.id}
                                             className="p-2 bg-surface rounded border border-surface-dark"
                                           >
-                                            <div className="flex justify-between items-center">
-                                              <span className="text-xs font-medium text-gray-900">
-                                                {item.componentName}
-                                              </span>
-                                              <span className="text-xs text-gray-600">
-                                                {item.variantName}
-                                              </span>
+                                            <div className="flex items-center gap-2">
+                                              {item.variantImageUrl ? (
+                                                <img
+                                                  src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${item.variantImageUrl}`}
+                                                  alt={item.variantName}
+                                                  className="w-10 h-10 object-cover rounded-md border border-surface-dark flex-shrink-0"
+                                                />
+                                              ) : (
+                                                <div className="w-10 h-10 bg-surface-light border border-surface-dark rounded-md flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
+                                                  No image
+                                                </div>
+                                              )}
+                                              <div className="flex-1 flex justify-between items-center">
+                                                <span className="text-xs font-medium text-gray-900">
+                                                  {item.componentName}
+                                                </span>
+                                                <span className="text-xs text-gray-600">
+                                                  {item.variantName}
+                                                </span>
+                                              </div>
                                             </div>
                                           </div>
                                         ))}

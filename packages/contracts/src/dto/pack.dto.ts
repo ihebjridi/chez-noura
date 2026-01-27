@@ -53,6 +53,7 @@ export interface AvailableVariantDto {
   name: string;
   stockQuantity: number;
   isActive: boolean;
+  imageUrl?: string;
 }
 
 export interface CreatePackComponentDto {
