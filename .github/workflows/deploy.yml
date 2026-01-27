@@ -66,7 +66,7 @@ jobs:
           if [ -n "${{ secrets.VPS_DEPLOY_PATH }}" ]; then
             echo "✓ VPS_DEPLOY_PATH: [SET]"
           else
-            echo "✗ VPS_DEPLOY_PATH: [NOT SET] (will use default: /home/ubuntu/chez-noura-catering)"
+            echo "✗ VPS_DEPLOY_PATH: [NOT SET] (will use default: /home/ubuntu/chez-noura-catering/chez-noura)"
           fi
           if [ -n "${{ secrets.GHCR_TOKEN }}" ]; then
             echo "✓ GHCR_TOKEN: [SET]"
@@ -85,11 +85,22 @@ jobs:
             set -e
             
             echo "=== Deployment Configuration ==="
-            DEPLOY_PATH="${{ secrets.VPS_DEPLOY_PATH || '/home/ubuntu/chez-noura-catering' }}"
+            DEPLOY_PATH="${{ secrets.VPS_DEPLOY_PATH || '/home/ubuntu/chez-noura-catering/chez-noura' }}"
             echo "Deployment path: $DEPLOY_PATH"
             
-            # Navigate to deployment directory
-            cd $DEPLOY_PATH
+            # Navigate to repository directory
+            cd "$DEPLOY_PATH" || { echo "Error: Failed to navigate to $DEPLOY_PATH"; exit 1; }
+            
+            # Update repository with latest changes
+            echo ""
+            echo "=== Updating Repository ==="
+            git fetch origin
+            CURRENT_BRANCH=$(git branch --show-current || echo "main")
+            git checkout main 2>/dev/null || git checkout master 2>/dev/null || git checkout "$CURRENT_BRANCH"
+            git pull origin main 2>/dev/null || git pull origin master 2>/dev/null || git pull origin "$CURRENT_BRANCH"
+            echo "Repository updated to latest version"
+            echo "Current commit: $(git rev-parse --short HEAD)"
+            echo "Current branch: $(git branch --show-current)"
             
             # Login to GHCR
             echo "Logging in to GitHub Container Registry..."
