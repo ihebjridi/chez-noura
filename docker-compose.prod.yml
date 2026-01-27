@@ -25,6 +25,7 @@ services:
     image: ${BACKEND_IMAGE:-ghcr.io/${GITHUB_USERNAME}/chez-noura-backend:latest}
     container_name: chez-noura-backend-prod
     restart: unless-stopped
+    working_dir: /app/apps/backend
     environment:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
