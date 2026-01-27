@@ -31,6 +31,7 @@ import {
   TokenPayload,
   UserRole,
   OrderSummaryDto,
+  EmployeeDto,
 } from '@contracts/core';
 import { CreateBusinessDtoClass } from './dto/create-business.dto';
 
@@ -135,6 +136,42 @@ export class BusinessesController {
     return this.businessesService.disable(id);
   }
 
+  @Patch(':id/enable')
+  @Roles(UserRole.SUPER_ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Enable a business (re-enables a disabled business)' })
+  @ApiParam({ name: 'id', description: 'Business ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Business enabled successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Business already enabled' })
+  @ApiResponse({ status: 404, description: 'Business not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - SUPER_ADMIN only' })
+  async enable(
+    @Param('id') id: string,
+    @CurrentUser() user: TokenPayload,
+  ): Promise<BusinessDto> {
+    return this.businessesService.enable(id);
+  }
+
+  @Get(':id/employees')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Get all employees for a business' })
+  @ApiParam({ name: 'id', description: 'Business ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of employees for the business',
+  })
+  @ApiResponse({ status: 404, description: 'Business not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - SUPER_ADMIN only' })
+  async getEmployees(
+    @Param('id') id: string,
+    @CurrentUser() user: TokenPayload,
+  ): Promise<EmployeeDto[]> {
+    return this.businessesService.getEmployeesByBusinessId(id);
+  }
+
   @Post(':id/generate-password')
   @Roles(UserRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.OK)
@@ -170,6 +207,24 @@ export class BusinessesController {
     @CurrentUser() user: TokenPayload,
   ): Promise<void> {
     return this.businessesService.delete(id, user);
+  }
+
+  @Delete(':id/force')
+  @Roles(UserRole.SUPER_ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Force delete a business and all related records (irreversible)' })
+  @ApiParam({ name: 'id', description: 'Business ID' })
+  @ApiResponse({
+    status: 204,
+    description: 'Business and all related records deleted successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Business not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - SUPER_ADMIN only' })
+  async forceDelete(
+    @Param('id') id: string,
+    @CurrentUser() user: TokenPayload,
+  ): Promise<void> {
+    return this.businessesService.forceDelete(id, user);
   }
 }
 

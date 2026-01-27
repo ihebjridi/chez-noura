@@ -33,6 +33,7 @@ import {
   AddVariantToDailyMenuDto,
   PublishDailyMenuResponseDto,
   ActivityLogDto,
+  EmployeeDto,
 } from '@contracts/core';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -209,6 +210,16 @@ class ApiClient {
     });
   }
 
+  async enableBusiness(id: string): Promise<BusinessDto> {
+    return this.request<BusinessDto>(`/businesses/${id}/enable`, {
+      method: 'PATCH',
+    });
+  }
+
+  async getBusinessEmployees(businessId: string): Promise<EmployeeDto[]> {
+    return this.request<EmployeeDto[]>(`/businesses/${businessId}/employees`);
+  }
+
   async generateBusinessAdminPassword(businessId: string): Promise<{
     email: string;
     temporaryPassword: string;
@@ -223,6 +234,12 @@ class ApiClient {
 
   async deleteBusiness(id: string): Promise<void> {
     return this.request<void>(`/businesses/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async forceDeleteBusiness(id: string): Promise<void> {
+    return this.request<void>(`/businesses/${id}/force`, {
       method: 'DELETE',
     });
   }

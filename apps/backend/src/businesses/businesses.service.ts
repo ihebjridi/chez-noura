@@ -17,6 +17,7 @@ import {
   CreateBusinessDto,
   UpdateBusinessDto,
   EntityStatus,
+  EmployeeDto,
 } from '@contracts/core';
 import * as bcrypt from 'bcryptjs';
 import { Prisma } from '@prisma/client';
@@ -84,6 +85,10 @@ export class BusinessesService {
     }
 
     // Use transaction to create business and admin user atomically
+    // The transaction ensures that both the business and admin user (with password) are
+    // created together and committed to the database immediately. If either operation fails,
+    // the entire transaction is rolled back, ensuring data consistency.
+    // The password is saved immediately and atomically as part of this transaction.
     const result = await this.prisma.$transaction(async (tx) => {
       // Create business
       const business = await tx.business.create({
@@ -98,7 +103,8 @@ export class BusinessesService {
         },
       });
 
-      // Create BUSINESS_ADMIN user
+      // Create BUSINESS_ADMIN user with password
+      // The password is saved immediately and atomically within this transaction
       const adminUser = await tx.user.create({
         data: {
           email: createBusinessDto.adminEmail,
@@ -292,6 +298,33 @@ export class BusinessesService {
   }
 
   /**
+   * Enable a business
+   * Re-enables a previously disabled business
+   */
+  async enable(id: string): Promise<BusinessDto> {
+    const business = await this.prisma.business.findUnique({
+      where: { id },
+    });
+
+    if (!business) {
+      throw new NotFoundException(`Business with ID ${id} not found`);
+    }
+
+    if (business.status === EntityStatus.ACTIVE) {
+      throw new BadRequestException('Business is already enabled');
+    }
+
+    const updated = await this.prisma.business.update({
+      where: { id },
+      data: {
+        status: EntityStatus.ACTIVE,
+      },
+    });
+
+    return this.mapToDto(updated);
+  }
+
+  /**
    * Delete a business
    * Only allowed if there are no related records (users, employees, orders, invoices)
    */
@@ -447,12 +480,32 @@ export class BusinessesService {
     const temporaryPassword = this.generateTemporaryPassword();
     const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
 
-    // Update password
-    await this.prisma.user.update({
-      where: { id: adminUser.id },
-      data: { password: hashedPassword },
-    });
+    // Update password in a transaction to ensure atomicity and immediate persistence
+    // The transaction ensures the password is committed to the database before proceeding
+    let updatedUser;
+    try {
+      updatedUser = await this.prisma.$transaction(async (tx) => {
+        const user = await tx.user.update({
+          where: { id: adminUser.id },
+          data: { password: hashedPassword },
+        });
 
+        // Verify update succeeded - ensure we got a user object back
+        if (!user) {
+          throw new Error('Failed to update password: user not found after update');
+        }
+
+        return user;
+      });
+    } catch (error) {
+      // If database update fails, throw error immediately - don't proceed with logging/email
+      console.error('Failed to update password in database:', error);
+      throw new BadRequestException(
+        'Failed to update password in database. Please try again.',
+      );
+    }
+
+    // Only proceed with non-critical operations after confirming password was saved
     // Log password generation activity
     try {
       await this.activityLogsService.create({
@@ -484,6 +537,131 @@ export class BusinessesService {
       email: adminUser.email,
       temporaryPassword,
     };
+  }
+
+  /**
+   * Get employees for a business by business ID
+   * SUPER_ADMIN only - allows viewing employees of any business
+   */
+  async getEmployeesByBusinessId(businessId: string): Promise<EmployeeDto[]> {
+    // Verify business exists
+    const business = await this.prisma.business.findUnique({
+      where: { id: businessId },
+    });
+
+    if (!business) {
+      throw new NotFoundException(`Business with ID ${businessId} not found`);
+    }
+
+    // Get all employees for this business
+    const employees = await this.prisma.employee.findMany({
+      where: {
+        businessId: businessId,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return employees.map((employee) => ({
+      id: employee.id,
+      email: employee.email,
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      businessId: employee.businessId,
+      status: employee.status as EntityStatus,
+      createdAt: employee.createdAt.toISOString(),
+      updatedAt: employee.updatedAt.toISOString(),
+    }));
+  }
+
+  /**
+   * Force delete a business and all related records
+   * Deletes all related data in a transaction
+   * WARNING: This is irreversible and will delete all associated data
+   */
+  async forceDelete(id: string, user: TokenPayload): Promise<void> {
+    const business = await this.prisma.business.findUnique({
+      where: { id },
+    });
+
+    if (!business) {
+      throw new NotFoundException(`Business with ID ${id} not found`);
+    }
+
+    // Log the force delete action before deletion
+    try {
+      await this.activityLogsService.create({
+        userId: user.userId,
+        businessId: id,
+        action: 'BUSINESS_FORCE_DELETED',
+        details: JSON.stringify({
+          businessName: business.name,
+          businessEmail: business.email,
+          deletedBy: user.userId,
+        }),
+      });
+    } catch (error) {
+      // Don't fail deletion if logging fails
+      console.error('Failed to log business force deletion activity:', error);
+    }
+
+    // Delete all related records in a transaction
+    await this.prisma.$transaction(async (tx) => {
+      // 1. Delete ActivityLogs (set businessId to null via onDelete: SetNull, but we'll delete them)
+      await tx.activityLog.deleteMany({
+        where: { businessId: id },
+      });
+
+      // 2. Delete InvoiceItems (via Invoice)
+      const invoices = await tx.invoice.findMany({
+        where: { businessId: id },
+        select: { id: true },
+      });
+      const invoiceIds = invoices.map((inv) => inv.id);
+      if (invoiceIds.length > 0) {
+        await tx.invoiceItem.deleteMany({
+          where: { invoiceId: { in: invoiceIds } },
+        });
+      }
+
+      // 3. Delete Invoices
+      await tx.invoice.deleteMany({
+        where: { businessId: id },
+      });
+
+      // 4. Delete OrderItems (via Order)
+      const orders = await tx.order.findMany({
+        where: { businessId: id },
+        select: { id: true },
+      });
+      const orderIds = orders.map((ord) => ord.id);
+      if (orderIds.length > 0) {
+        await tx.orderItem.deleteMany({
+          where: { orderId: { in: orderIds } },
+        });
+      }
+
+      // 5. Delete Orders
+      await tx.order.deleteMany({
+        where: { businessId: id },
+      });
+
+      // 6. Delete Users associated with this business
+      await tx.user.deleteMany({
+        where: { businessId: id },
+      });
+
+      // 7. Delete Employees
+      await tx.employee.deleteMany({
+        where: { businessId: id },
+      });
+
+      // 8. Delete Business
+      await tx.business.delete({
+        where: { id },
+      });
+    });
   }
 
   /**

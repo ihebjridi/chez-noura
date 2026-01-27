@@ -86,6 +86,7 @@ export class EmployeeMenuService {
           name: variant.name,
           stockQuantity: dailyMenuVariant.initialStock,
           isActive: variant.isActive,
+          imageUrl: variant.imageUrl || undefined,
         });
       }
     }

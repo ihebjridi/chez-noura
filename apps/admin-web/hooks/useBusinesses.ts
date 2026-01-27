@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { apiClient } from '../lib/api-client';
-import { BusinessDto, CreateBusinessDto } from '@contracts/core';
+import { BusinessDto, CreateBusinessDto, EmployeeDto } from '@contracts/core';
 
 export function useBusinesses() {
   const [businesses, setBusinesses] = useState<BusinessDto[]>([]);
@@ -45,6 +45,49 @@ export function useBusinesses() {
     }
   }, [loadBusinesses]);
 
+  const disableBusiness = useCallback(async (id: string) => {
+    try {
+      setError('');
+      await apiClient.disableBusiness(id);
+      await loadBusinesses();
+    } catch (err: any) {
+      setError(err.message || 'Failed to disable business');
+      throw err;
+    }
+  }, [loadBusinesses]);
+
+  const enableBusiness = useCallback(async (id: string) => {
+    try {
+      setError('');
+      await apiClient.enableBusiness(id);
+      await loadBusinesses();
+    } catch (err: any) {
+      setError(err.message || 'Failed to enable business');
+      throw err;
+    }
+  }, [loadBusinesses]);
+
+  const forceDeleteBusiness = useCallback(async (id: string) => {
+    try {
+      setError('');
+      await apiClient.forceDeleteBusiness(id);
+      await loadBusinesses();
+    } catch (err: any) {
+      setError(err.message || 'Failed to force delete business');
+      throw err;
+    }
+  }, [loadBusinesses]);
+
+  const getBusinessEmployees = useCallback(async (businessId: string): Promise<EmployeeDto[]> => {
+    try {
+      setError('');
+      return await apiClient.getBusinessEmployees(businessId);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load employees');
+      throw err;
+    }
+  }, []);
+
   return {
     businesses,
     loading,
@@ -52,6 +95,10 @@ export function useBusinesses() {
     loadBusinesses,
     createBusiness,
     deleteBusiness,
+    disableBusiness,
+    enableBusiness,
+    forceDeleteBusiness,
+    getBusinessEmployees,
     setError,
   };
 }

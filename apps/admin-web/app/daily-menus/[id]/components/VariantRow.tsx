@@ -1,6 +1,8 @@
 import { VariantDto } from '@contracts/core';
 import { ToggleSwitch } from './ToggleSwitch';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
 interface VariantRowProps {
   variant: VariantDto;
   selected: boolean;
@@ -32,6 +34,17 @@ export function VariantRow({
         disabled={isLocked || isUpdating}
         color="primary"
       />
+      {variant.imageUrl ? (
+        <img
+          src={`${API_BASE_URL}${variant.imageUrl}`}
+          alt={variant.name}
+          className="w-12 h-12 object-cover rounded-md border border-surface-dark flex-shrink-0"
+        />
+      ) : (
+        <div className="w-12 h-12 bg-surface-light border border-surface-dark rounded-md flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
+          No image
+        </div>
+      )}
       <div className="flex-1 font-medium">{variant.name}</div>
       <div className="flex items-center gap-2">
         <label className="text-sm text-gray-600">Stock:</label>
