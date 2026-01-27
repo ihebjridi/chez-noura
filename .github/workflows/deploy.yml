@@ -135,7 +135,8 @@ jobs:
             # Run database migrations
             echo ""
             echo "=== Running Database Migrations ==="
-            docker compose -f docker-compose.prod.yml run --rm backend pnpm prisma migrate deploy
+            docker compose -f docker-compose.prod.yml up -d postgres
+            docker compose -f docker-compose.prod.yml run --rm -w /app/apps/backend backend pnpm prisma migrate deploy
             
             # Restart services
             echo ""
