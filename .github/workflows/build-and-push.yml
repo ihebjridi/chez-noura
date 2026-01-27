@@ -46,6 +46,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Log environment variables and secrets
+        run: |
+          echo "=== Environment Variables ==="
+          echo "REGISTRY: ${{ env.REGISTRY }}"
+          echo "IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}"
+          echo "GITHUB_ACTOR: ${{ github.actor }}"
+          echo "GITHUB_REF: ${{ github.ref }}"
+          echo "GITHUB_EVENT_NAME: ${{ github.event_name }}"
+          echo "SERVICE_NAME: ${{ matrix.service.name }}"
+          echo ""
+          echo "=== Secrets Status ==="
+          if [ -n "${{ secrets.GITHUB_TOKEN }}" ]; then
+            echo "✓ GITHUB_TOKEN: [SET]"
+          else
+            echo "✗ GITHUB_TOKEN: [NOT SET]"
+          fi
+          if [ -n "${{ secrets.NEXT_PUBLIC_API_URL }}" ]; then
+            echo "✓ NEXT_PUBLIC_API_URL: [SET]"
+          else
+            echo "✗ NEXT_PUBLIC_API_URL: [NOT SET] (will use default)"
+          fi
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -72,13 +94,19 @@ jobs:
       - name: Prepare build args
         id: prepare-args
         run: |
+          echo "=== Preparing Build Args ==="
           if [ "${{ matrix.service.name }}" != "backend" ]; then
             API_URL="${{ secrets.NEXT_PUBLIC_API_URL }}"
             if [ -z "$API_URL" ]; then
               API_URL="https://api.chez-noura.com"
+              echo "Using default API_URL: $API_URL"
+            else
+              echo "Using NEXT_PUBLIC_API_URL from secrets"
             fi
             echo "build_args=NEXT_PUBLIC_API_URL=$API_URL" >> $GITHUB_OUTPUT
+            echo "Build args: NEXT_PUBLIC_API_URL=$API_URL"
           else
+            echo "No build args needed for backend"
             echo "build_args=" >> $GITHUB_OUTPUT
           fi
 

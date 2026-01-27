@@ -30,6 +30,50 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Log environment variables and secrets
+        run: |
+          echo "=== Workflow Inputs ==="
+          echo "Environment: ${{ github.event.inputs.environment || 'production' }}"
+          echo "Image Tag: ${{ github.event.inputs.image_tag || 'latest' }}"
+          echo ""
+          echo "=== Environment Variables ==="
+          echo "GITHUB_ACTOR: ${{ github.actor }}"
+          echo "GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}"
+          echo "GITHUB_REF: ${{ github.ref }}"
+          echo "GITHUB_EVENT_NAME: ${{ github.event_name }}"
+          echo ""
+          echo "=== Secrets Status ==="
+          if [ -n "${{ secrets.VPS_HOST }}" ]; then
+            echo "✓ VPS_HOST: [SET]"
+          else
+            echo "✗ VPS_HOST: [NOT SET]"
+          fi
+          if [ -n "${{ secrets.VPS_USER }}" ]; then
+            echo "✓ VPS_USER: [SET]"
+          else
+            echo "✗ VPS_USER: [NOT SET]"
+          fi
+          if [ -n "${{ secrets.VPS_SSH_KEY }}" ]; then
+            echo "✓ VPS_SSH_KEY: [SET]"
+          else
+            echo "✗ VPS_SSH_KEY: [NOT SET]"
+          fi
+          if [ -n "${{ secrets.VPS_SSH_PORT }}" ]; then
+            echo "✓ VPS_SSH_PORT: [SET]"
+          else
+            echo "✗ VPS_SSH_PORT: [NOT SET] (will use default: 22)"
+          fi
+          if [ -n "${{ secrets.VPS_DEPLOY_PATH }}" ]; then
+            echo "✓ VPS_DEPLOY_PATH: [SET]"
+          else
+            echo "✗ VPS_DEPLOY_PATH: [NOT SET] (will use default: ~/chez-noura-catering)"
+          fi
+          if [ -n "${{ secrets.GHCR_TOKEN }}" ]; then
+            echo "✓ GHCR_TOKEN: [SET]"
+          else
+            echo "✗ GHCR_TOKEN: [NOT SET]"
+          fi
+
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -40,26 +84,44 @@ jobs:
           script: |
             set -e
             
+            echo "=== Deployment Configuration ==="
+            DEPLOY_PATH="${{ secrets.VPS_DEPLOY_PATH || '~/chez-noura-catering' }}"
+            echo "Deployment path: $DEPLOY_PATH"
+            
             # Navigate to deployment directory
-            cd ${{ secrets.VPS_DEPLOY_PATH || '~/chez-noura-catering' }}
+            cd $DEPLOY_PATH
             
             # Login to GHCR
+            echo "Logging in to GitHub Container Registry..."
             echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
             # Set image tags
             IMAGE_TAG="${{ github.event.inputs.image_tag || 'latest' }}"
+            echo "Image tag: $IMAGE_TAG"
             export BACKEND_IMAGE=ghcr.io/${{ github.repository_owner }}/chez-noura-backend:${IMAGE_TAG}
             export ADMIN_WEB_IMAGE=ghcr.io/${{ github.repository_owner }}/chez-noura-admin-web:${IMAGE_TAG}
             export BUSINESS_WEB_IMAGE=ghcr.io/${{ github.repository_owner }}/chez-noura-business-web:${IMAGE_TAG}
             export EMPLOYEE_WEB_IMAGE=ghcr.io/${{ github.repository_owner }}/chez-noura-employee-web:${IMAGE_TAG}
             
+            echo "=== Image Tags ==="
+            echo "BACKEND_IMAGE: $BACKEND_IMAGE"
+            echo "ADMIN_WEB_IMAGE: $ADMIN_WEB_IMAGE"
+            echo "BUSINESS_WEB_IMAGE: $BUSINESS_WEB_IMAGE"
+            echo "EMPLOYEE_WEB_IMAGE: $EMPLOYEE_WEB_IMAGE"
+            
             # Pull latest images
+            echo ""
+            echo "=== Pulling Docker Images ==="
             docker compose -f docker-compose.prod.yml pull
             
             # Run database migrations
+            echo ""
+            echo "=== Running Database Migrations ==="
             docker compose -f docker-compose.prod.yml run --rm backend pnpm --filter backend prisma migrate deploy || true
             
             # Restart services
+            echo ""
+            echo "=== Restarting Services ==="
             docker compose -f docker-compose.prod.yml up -d
             
             # Wait for services to be healthy
