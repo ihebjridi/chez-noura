@@ -8,25 +8,24 @@ RUN apk add --no-cache openssl
 ENV CI=true
 ENV NODE_ENV=production
 
-# 1) Install all deps (needed to build)
+# Install deps (workspace)
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/contracts/package.json ./packages/contracts/package.json
 COPY apps/backend/package.json ./apps/backend/package.json
 RUN pnpm install --frozen-lockfile
 
-# 2) Copy source
+# Copy code
 COPY . .
 
-# 3) Build workspace + backend
+# Build contracts + generate prisma types + build backend
 RUN pnpm --filter "./packages/*" build \
- && cd apps/backend \
- && pnpm build
+ && pnpm -C apps/backend prisma:generate \
+ && pnpm -C apps/backend build
 
-# 4) Prune to prod deps
+# Prune to prod deps
 RUN pnpm prune --prod
 
-# 5) Ensure Prisma client is generated for the pruned prod node_modules
-# Install prisma CLI temporarily, generate, then remove it.
+# Re-generate prisma client for the pruned prod node_modules (runtime safety)
 RUN pnpm -C apps/backend add -D prisma@^7.2.0 \
  && pnpm -C apps/backend prisma:generate \
  && pnpm -C apps/backend remove prisma
