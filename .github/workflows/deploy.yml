@@ -130,7 +130,7 @@ jobs:
             # Pull latest images
             echo ""
             echo "=== Pulling Docker Images ==="
-            docker compose --env-file .env.prod-f docker-compose.prod.yml pull
+            docker compose --env-file .env.prod -f docker-compose.prod.yml pull
             
             echo ""
             echo "=== Running Database Migrations ==="
@@ -141,7 +141,7 @@ jobs:
             # Restart services
             echo ""
             echo "=== Restarting Services ==="
-            docker compose --env-file .env.prod-f docker-compose.prod.yml up -d
+            docker compose --env-file .env.prod -f docker-compose.prod.yml up -d
             
             # Wait for services to be healthy
             echo "Waiting for services to be healthy..."
