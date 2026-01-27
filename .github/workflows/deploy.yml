@@ -130,24 +130,24 @@ jobs:
             # Pull latest images
             echo ""
             echo "=== Pulling Docker Images ==="
-            docker compose -f docker-compose.prod.yml pull
+            docker compose --env-file .env.prod-f docker-compose.prod.yml pull
             
-            # Run database migrations
             echo ""
             echo "=== Running Database Migrations ==="
-            docker compose -f docker-compose.prod.yml up -d postgres
-            docker compose -f docker-compose.prod.yml run --rm -w /app/apps/backend backend pnpm prisma migrate deploy
+            docker compose --env-file .env.prod -f docker-compose.prod.yml up -d postgres
+            docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm -w /app/apps/backend backend \
+              sh -lc 'pnpm dlx prisma@7.2.0 migrate deploy --schema ./prisma/schema.prisma'
             
             # Restart services
             echo ""
             echo "=== Restarting Services ==="
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose --env-file .env.prod-f docker-compose.prod.yml up -d
             
             # Wait for services to be healthy
             echo "Waiting for services to be healthy..."
             sleep 30
             
             # Health check
-            docker compose -f docker-compose.prod.yml ps
+            docker compose --env-file .env.prod -f docker-compose.prod.yml ps
             
             echo "Deployment completed successfully!"
