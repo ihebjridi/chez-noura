@@ -30,7 +30,7 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 RUN pnpm --filter admin-web build
 
 # Production stage
-FROM node:2-alpine AS production
+FROM node:24-alpine AS production
 
 WORKDIR /app
 
