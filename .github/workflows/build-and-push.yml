@@ -98,7 +98,7 @@ jobs:
           if [ "${{ matrix.service.name }}" != "backend" ]; then
             API_URL="${{ secrets.NEXT_PUBLIC_API_URL }}"
             if [ -z "$API_URL" ]; then
-              API_URL="https://api.chez-noura.com"
+              API_URL="https://api.cheznoura.com"
               echo "Using default API_URL: $API_URL"
             else
               echo "Using NEXT_PUBLIC_API_URL from secrets"

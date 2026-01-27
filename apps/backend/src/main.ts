@@ -52,9 +52,9 @@ async function bootstrap() {
         'http://localhost:3001', // admin-web (dev)
         'http://localhost:3002', // business-web (dev)
         'http://localhost:3003', // employee-web (dev)
-        'https://admin.chez-noura.com', // admin-web (prod)
-        'https://business.chez-noura.com', // business-web (prod)
-        'https://client.chez-noura.com', // employee-web (prod)
+        'https://admin.cheznoura.com', // admin-web (prod)
+        'https://business.cheznoura.com', // business-web (prod)
+        'https://client.cheznoura.com', // employee-web (prod)
       ];
 
   app.enableCors({

@@ -54,7 +54,7 @@ services:
     container_name: chez-noura-admin-web-prod
     restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.chez-noura.com}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.cheznoura.com}
     ports:
       - '127.0.0.1:3001:3001'  # Only expose to localhost (nginx will proxy)
     depends_on:
@@ -73,7 +73,7 @@ services:
     container_name: chez-noura-business-web-prod
     restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.chez-noura.com}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.cheznoura.com}
     ports:
       - '127.0.0.1:3002:3002'  # Only expose to localhost (nginx will proxy)
     depends_on:
@@ -92,7 +92,7 @@ services:
     container_name: chez-noura-employee-web-prod
     restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.chez-noura.com}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.cheznoura.com}
     ports:
       - '127.0.0.1:3003:3003'  # Only expose to localhost (nginx will proxy)
     depends_on:
