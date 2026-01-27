@@ -25,7 +25,7 @@ import * as winston from 'winston';
   imports: [
     ThrottlerModule.forRoot([
       {
-        ttl: 600000, // 10 minutes
+        ttl: 6000000, // 100 minutes
         limit: 100, // 100 requests per minute (default)
       },
     ]),

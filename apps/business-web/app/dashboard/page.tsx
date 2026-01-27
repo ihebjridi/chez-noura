@@ -8,7 +8,7 @@ import { Loading } from '../../components/ui/loading';
 import { Empty } from '../../components/ui/empty';
 import { Error } from '../../components/ui/error';
 import { Spotlight, SpotLightItem } from '../../components/ui-layouts/spotlight-cards';
-import { Users, ShoppingCart, DollarSign, TrendingUp } from 'lucide-react';
+import { Users, ShoppingCart, DollarSign, TrendingUp, RefreshCw } from 'lucide-react';
 import { getTodayISO } from '../../lib/date-utils';
 
 export default function DashboardPage() {
@@ -18,6 +18,7 @@ export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(getTodayISO());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [expandedPack, setExpandedPack] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const today = getTodayISO();
 
@@ -35,9 +36,43 @@ export default function DashboardPage() {
     loadOrders();
   }, []);
 
-  const loadOrders = async () => {
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadOrders(false); // Silent refresh
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Refresh when page becomes visible (user switches back to tab)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadOrders(false); // Silent refresh
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  // Refresh when selected date changes (but not on initial mount)
+  useEffect(() => {
+    if (orders.length > 0 && !loading) {
+      // Only refresh if we already have orders loaded (not on initial mount)
+      loadOrders(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate]);
+
+  const loadOrders = async (showLoading: boolean = true) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
       setError('');
       const data = await apiClient.getBusinessOrders();
       setOrders(data);
@@ -45,13 +80,19 @@ export default function DashboardPage() {
       setError(err.message || 'Failed to load orders');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   const dailyOrders = useMemo(() => {
-    return orders.filter(
-      (order) => order.orderDate.split('T')[0] === selectedDate
-    );
+    // Backend returns orderDate as YYYY-MM-DD (local timezone)
+    // Extract just the date part if it includes time, otherwise use as-is
+    return orders.filter((order) => {
+      const orderDateOnly = order.orderDate.includes('T') 
+        ? order.orderDate.split('T')[0] 
+        : order.orderDate;
+      return orderDateOnly === selectedDate;
+    });
   }, [orders, selectedDate]);
 
   const packSummary = useMemo(() => {
@@ -68,9 +109,10 @@ export default function DashboardPage() {
 
     dailyOrders.forEach((order) => {
       if (!summary[order.packId]) {
+        const packPrice = typeof order.packPrice === 'string' ? parseFloat(order.packPrice) : (order.packPrice || 0);
         summary[order.packId] = {
           packName: order.packName,
-          packPrice: order.packPrice,
+          packPrice: isNaN(packPrice) ? 0 : packPrice,
           count: 0,
           orders: [],
           variantBreakdown: {},
@@ -98,7 +140,10 @@ export default function DashboardPage() {
 
   // Calculate stats
   const totalOrdersToday = dailyOrders.length;
-  const totalCostToday = dailyOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+  const totalCostToday = dailyOrders.reduce((sum, order) => {
+    const amount = typeof order.totalAmount === 'string' ? parseFloat(order.totalAmount) : (order.totalAmount || 0);
+    return sum + (isNaN(amount) ? 0 : amount);
+  }, 0);
   const uniqueEmployees = new Set(dailyOrders.map(order => order.employeeId)).size;
 
   return (
@@ -113,6 +158,15 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => loadOrders(true)}
+              disabled={refreshing || loading}
+              className="px-4 py-2 rounded-lg font-medium bg-primary-600 text-white hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+              title="Refresh data"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
             <div className="relative">
               <button
                 onClick={() => setShowDatePicker(!showDatePicker)}
@@ -215,7 +269,7 @@ export default function DashboardPage() {
                       <div>
                         <h3 className="font-semibold text-gray-900">{pack.packName}</h3>
                         <p className="text-sm text-gray-600">
-                          {pack.packPrice.toFixed(2)} TND per pack
+                          {(typeof pack.packPrice === 'string' ? parseFloat(pack.packPrice) : pack.packPrice || 0).toFixed(2)} TND per pack
                         </p>
                       </div>
                       <div className="text-right">
@@ -270,45 +324,46 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-        <Spotlight>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <SpotLightItem className="bg-surface border border-surface-dark rounded-lg hover:border-primary-300 hover:shadow-sm transition-all">
-              <Link href="/employees" className="block p-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                    <Users className="w-6 h-6 text-primary-600" />
-                  </div>
-                  <h2 className="text-xl font-semibold text-gray-900">Employees</h2>
-                </div>
-                <p className="text-gray-600">Manage employee accounts</p>
-              </Link>
-            </SpotLightItem>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Link 
+            href="/employees" 
+            className="bg-surface border border-surface-dark rounded-lg hover:border-primary-300 hover:shadow-md transition-all cursor-pointer block p-6 group"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
+                <Users className="w-6 h-6 text-primary-600" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">Employees</h2>
+            </div>
+            <p className="text-gray-600">Manage employee accounts</p>
+          </Link>
 
-            <SpotLightItem className="bg-surface border border-surface-dark rounded-lg hover:border-primary-300 hover:shadow-sm transition-all">
-              <Link href="/orders" className="block p-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                    <ShoppingCart className="w-6 h-6 text-primary-600" />
-                  </div>
-                  <h2 className="text-xl font-semibold text-gray-900">Orders</h2>
-                </div>
-                <p className="text-gray-600">View all employee orders</p>
-              </Link>
-            </SpotLightItem>
+          <Link 
+            href="/orders" 
+            className="bg-surface border border-surface-dark rounded-lg hover:border-primary-300 hover:shadow-md transition-all cursor-pointer block p-6 group"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
+                <ShoppingCart className="w-6 h-6 text-primary-600" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">Orders</h2>
+            </div>
+            <p className="text-gray-600">View all employee orders</p>
+          </Link>
 
-            <SpotLightItem className="bg-surface border border-surface-dark rounded-lg hover:border-primary-300 hover:shadow-sm transition-all">
-              <Link href="/invoices" className="block p-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 text-primary-600" />
-                  </div>
-                  <h2 className="text-xl font-semibold text-gray-900">Invoices</h2>
-                </div>
-                <p className="text-gray-600">View and manage invoices</p>
-              </Link>
-            </SpotLightItem>
-          </div>
-        </Spotlight>
+          <Link 
+            href="/invoices" 
+            className="bg-surface border border-surface-dark rounded-lg hover:border-primary-300 hover:shadow-md transition-all cursor-pointer block p-6 group"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
+                <TrendingUp className="w-6 h-6 text-primary-600" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">Invoices</h2>
+            </div>
+            <p className="text-gray-600">View and manage invoices</p>
+          </Link>
+        </div>
       </div>
     </div>
   );

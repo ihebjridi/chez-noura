@@ -38,7 +38,14 @@ export default function OrdersPage() {
 
   const filteredOrders = useMemo(() => {
     if (dateFilter === 'custom' && customDate) {
-      return orders.filter((order) => order.orderDate.split('T')[0] === customDate);
+      // Backend returns orderDate as YYYY-MM-DD (local timezone)
+      // Extract just the date part if it includes time, otherwise use as-is
+      return orders.filter((order) => {
+        const orderDateOnly = order.orderDate.includes('T') 
+          ? order.orderDate.split('T')[0] 
+          : order.orderDate;
+        return orderDateOnly === customDate;
+      });
     } else if (dateFilter === 'all') {
       return orders;
     }
@@ -50,7 +57,12 @@ export default function OrdersPage() {
     const byDate: Record<string, Record<string, OrderDto[]>> = {};
     
     filteredOrders.forEach((order) => {
-      const dateKey = order.orderDate.split('T')[0];
+      // Backend returns orderDate as YYYY-MM-DD (local timezone)
+      // Extract just the date part if it includes time, otherwise use as-is
+      const orderDateOnly = order.orderDate.includes('T') 
+        ? order.orderDate.split('T')[0] 
+        : order.orderDate;
+      const dateKey = orderDateOnly;
       if (!byDate[dateKey]) {
         byDate[dateKey] = {};
       }
@@ -180,7 +192,12 @@ export default function OrdersPage() {
               0
             );
             const totalAmountForDate = filteredOrders
-              .filter((o) => o.orderDate.split('T')[0] === dateKey)
+              .filter((o) => {
+                const orderDateOnly = o.orderDate.includes('T') 
+                  ? o.orderDate.split('T')[0] 
+                  : o.orderDate;
+                return orderDateOnly === dateKey;
+              })
               .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
 
             return (

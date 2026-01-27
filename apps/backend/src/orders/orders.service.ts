@@ -636,6 +636,14 @@ export class OrdersService {
   }
 
   private mapOrderToDto(order: any): OrderDto {
+    // Format orderDate as YYYY-MM-DD in local timezone, not UTC
+    // This ensures the date matches what was originally sent (e.g., "2024-01-26" stays "2024-01-26")
+    const orderDateObj = order.orderDate instanceof Date ? order.orderDate : new Date(order.orderDate);
+    const year = orderDateObj.getFullYear();
+    const month = String(orderDateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(orderDateObj.getDate()).padStart(2, '0');
+    const orderDateString = `${year}-${month}-${day}`;
+
     return {
       id: order.id,
       employeeId: order.employeeId,
@@ -646,7 +654,7 @@ export class OrdersService {
       packId: order.packId,
       packName: order.pack?.name || '',
       packPrice: order.pack ? Number(order.pack.price) : Number(order.totalAmount),
-      orderDate: order.orderDate.toISOString().split('T')[0],
+      orderDate: orderDateString,
       status: order.status as any,
       items: order.items.map((item: any) => ({
         id: item.id,
