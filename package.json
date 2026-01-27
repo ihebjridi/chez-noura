@@ -5,7 +5,7 @@
   "description": "B2B corporate catering platform for Tunisia",
   "scripts": {
     "build": "pnpm --filter \"./packages/*\" build && pnpm --filter \"./apps/*\" build",
-    "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter admin-web dev\" \"pnpm --filter business-web dev\" \"pnpm --filter employee-web dev\"",
+    "dev": "concurrently -k --names \"BE,ADMIN,BIZ,EMP\" \"pnpm --filter backend dev\" \"pnpm --filter admin-web dev\" \"pnpm --filter business-web dev\" \"pnpm --filter employee-web dev\"",
     "dev:backend": "pnpm --filter backend dev",
     "dev:admin": "pnpm --filter admin-web dev",
     "dev:business": "pnpm --filter business-web dev",

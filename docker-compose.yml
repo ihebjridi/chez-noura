@@ -33,6 +33,31 @@ services:
   #     postgres:
   #       condition: service_healthy
 
+  prisma-studio:
+    image: node:24-alpine
+    container_name: chez-noura-prisma-studio
+    restart: unless-stopped
+    working_dir: /app/apps/backend
+    environment:
+      DATABASE_URL: postgresql://postgres:admin123@postgres:5432/db_chez-noura
+    ports:
+      - '5555:5555'
+    volumes:
+      - .:/app
+    command: >
+      sh -c "
+        corepack enable && corepack prepare pnpm@latest --activate &&
+        apk add --no-cache openssl &&
+        cd /app &&
+        pnpm install --frozen-lockfile &&
+        cd /app/apps/backend &&
+        pnpm prisma:generate &&
+        pnpm prisma studio --port 5555 --browser none
+      "
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
     driver: local

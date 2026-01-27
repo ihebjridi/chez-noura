@@ -9,6 +9,7 @@ import {
   UserDto,
   TokenPayload,
   UserRole,
+  EntityStatus,
 } from '@contracts/core';
 import { ActivityLogsService } from '../activity-logs/activity-logs.service';
 
@@ -42,6 +43,21 @@ export class AuthService {
       return null;
     }
 
+    // For BUSINESS_ADMIN, check if business is active
+    if (user.role === UserRole.BUSINESS_ADMIN) {
+      if (!user.business) {
+        console.error(`Business admin user ${email} has no associated business`);
+        return null;
+      }
+
+      if (user.business.status !== EntityStatus.ACTIVE) {
+        console.error(
+          `Business admin user ${email} attempted login but business ${user.business.id} is ${user.business.status}`,
+        );
+        return null;
+      }
+    }
+
     // SUPER_ADMIN and BUSINESS_ADMIN require password
     if (user.role === UserRole.SUPER_ADMIN || user.role === UserRole.BUSINESS_ADMIN) {
       if (!password) {
@@ -49,11 +65,13 @@ export class AuthService {
       }
 
       if (!user.password) {
+        console.error(`User ${email} (${user.role}) has no password set`);
         return null;
       }
 
       const isPasswordValid = await this.comparePassword(password, user.password);
       if (!isPasswordValid) {
+        console.error(`Password validation failed for user ${email}`);
         return null;
       }
     }
@@ -74,7 +92,9 @@ export class AuthService {
    * Login user and generate tokens
    */
   async login(loginDto: LoginRequestDto): Promise<LoginResponseDto> {
-    const user = await this.validateUser(loginDto.email, loginDto.password);
+    // Trim email to handle any accidental whitespace
+    const trimmedEmail = loginDto.email.trim();
+    const user = await this.validateUser(trimmedEmail, loginDto.password);
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -122,7 +142,9 @@ export class AuthService {
    * Employee email-based login (no password)
    */
   async loginEmployee(email: string): Promise<LoginResponseDto> {
-    const user = await this.validateUser(email);
+    // Trim email to handle any accidental whitespace
+    const trimmedEmail = email.trim();
+    const user = await this.validateUser(trimmedEmail);
 
     if (!user || user.role !== UserRole.EMPLOYEE) {
       throw new UnauthorizedException('Invalid employee email');
