@@ -7,7 +7,7 @@ const isBuild =
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
-  migrations: { path: 'prisma/migrations' },
+  migrations: { path: 'prisma/migrations', seed: 'prisma/seed.ts' },
   datasource: {
     url: isBuild
       ? process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/dummy'
