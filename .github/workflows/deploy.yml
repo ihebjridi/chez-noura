@@ -14,17 +14,24 @@ on:
         description: 'Image tag to deploy (leave empty for latest)'
         required: false
         type: string
-  push:
+  workflow_run:
+    workflows: ["Build and Push Docker Images"]
+    types:
+      - completed
     branches:
       - main
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    # Only deploy if:
+    # 1. Manually triggered (workflow_dispatch), OR
+    # 2. Build-and-push workflow completed successfully on main branch
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'workflow_run' && 
+       github.event.workflow_run.conclusion == 'success' && 
+       github.event.workflow_run.head_branch == 'main')
     
     steps:
       - name: Checkout repository
