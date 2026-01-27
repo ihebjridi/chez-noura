@@ -1,5 +1,5 @@
 # Backend Dockerfile
-FROM node:20-alpine AS base
+FROM node:24-alpine AS base
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -19,7 +19,8 @@ RUN pnpm install --frozen-lockfile
 FROM base AS build
 
 # Accept DATABASE_URL as build argument (for prisma generate)
-ARG DATABASE_URL
+# Use a dummy URL if not provided - prisma generate doesn't need a real connection
+ARG DATABASE_URL=postgresql://postgres:admin123@localhost:5432/db_chez-noura
 ENV DATABASE_URL=${DATABASE_URL}
 
 # Copy all source files
@@ -35,7 +36,7 @@ RUN pnpm --filter backend prisma:generate
 RUN pnpm --filter backend build
 
 # Production stage
-FROM node:20-alpine AS production
+FROM node:24-alpine AS production
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
