@@ -56,7 +56,7 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.cheznoura.com}
     ports:
-      - '127.0.0.1:3001:3001'  # Only expose to localhost (nginx will proxy)
+      - '127.0.0.1:3001:3000'  # Only expose to localhost (nginx will proxy)
     depends_on:
       - backend
     networks:
@@ -75,7 +75,7 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.cheznoura.com}
     ports:
-      - '127.0.0.1:3002:3002'  # Only expose to localhost (nginx will proxy)
+      - '127.0.0.1:3002:3000'  # Only expose to localhost (nginx will proxy)
     depends_on:
       - backend
     networks:
@@ -94,7 +94,7 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.cheznoura.com}
     ports:
-      - '127.0.0.1:3003:3003'  # Only expose to localhost (nginx will proxy)
+      - '127.0.0.1:3003:3000'  # Only expose to localhost (nginx will proxy)
     depends_on:
       - backend
     networks:
