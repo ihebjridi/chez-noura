@@ -8,7 +8,7 @@ import { OrderDto } from '@contracts/core';
 import { Loading } from '../../components/ui/loading';
 import { Empty } from '../../components/ui/empty';
 import { Error } from '../../components/ui/error';
-import { Spotlight, SpotLightItem } from '../../components/ui-layouts/spotlight-cards';
+import { Card } from '../../components/ui/card';
 import { Users, ShoppingCart, DollarSign, TrendingUp, RefreshCw } from 'lucide-react';
 import { getTodayISO } from '../../lib/date-utils';
 
@@ -278,64 +278,62 @@ export default function DashboardPage() {
       ) : (
         <div className="bg-surface border border-surface-dark rounded-lg p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('dashboard.packSummary')}</h2>
-          <Spotlight>
-            <div className="space-y-4">
-              {packSummary.map((pack) => (
-                <SpotLightItem key={pack.packName} className="bg-surface border border-surface-dark rounded-lg">
-                  <div className="p-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{pack.packName}</h3>
-                        <p className="text-sm text-gray-600">
-                          {(typeof pack.packPrice === 'string' ? parseFloat(pack.packPrice) : pack.packPrice || 0).toFixed(2)} TND {t('common.labels.perPack')}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-semibold text-gray-900">{pack.count}</div>
-                        <div className="text-sm text-gray-600">{t('common.labels.orders')}</div>
+          <div className="space-y-4">
+            {packSummary.map((pack) => (
+              <Card key={pack.packName} className="bg-surface border border-surface-dark rounded-lg hover:shadow-md transition-shadow">
+                <div className="p-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{pack.packName}</h3>
+                      <p className="text-sm text-gray-600">
+                        {(typeof pack.packPrice === 'string' ? parseFloat(pack.packPrice) : pack.packPrice || 0).toFixed(2)} TND {t('common.labels.perPack')}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-semibold text-gray-900">{pack.count}</div>
+                      <div className="text-sm text-gray-600">{t('common.labels.orders')}</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() =>
+                      setExpandedPack(expandedPack === pack.packName ? null : pack.packName)
+                    }
+                    className="mt-2 text-sm text-primary-600 hover:text-primary-700 font-medium"
+                  >
+                    {expandedPack === pack.packName ? t('common.labels.hideVariantBreakdown') : t('common.labels.showVariantBreakdown')}
+                  </button>
+                  {expandedPack === pack.packName && (
+                    <div className="mt-4 pt-4 border-t border-surface-dark">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                        {t('common.labels.variantBreakdown')}:
+                      </h4>
+                      <div className="space-y-2">
+                        {Object.entries(pack.variantBreakdown).map(
+                          ([componentName, variants]) => (
+                            <div key={componentName} className="ml-4">
+                              <div className="font-medium text-gray-700 text-sm mb-1">
+                                {componentName}:
+                              </div>
+                              <div className="ml-4 space-y-1">
+                                {Object.entries(variants).map(([variantName, count]) => (
+                                  <div
+                                    key={variantName}
+                                    className="text-sm text-gray-600"
+                                  >
+                                    {variantName}: <strong>{count}</strong>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        )}
                       </div>
                     </div>
-                    <button
-                      onClick={() =>
-                        setExpandedPack(expandedPack === pack.packName ? null : pack.packName)
-                      }
-                      className="mt-2 text-sm text-primary-600 hover:text-primary-700 font-medium"
-                    >
-                      {expandedPack === pack.packName ? t('common.labels.hideVariantBreakdown') : t('common.labels.showVariantBreakdown')}
-                    </button>
-                    {expandedPack === pack.packName && (
-                      <div className="mt-4 pt-4 border-t border-surface-dark">
-                        <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                          {t('common.labels.variantBreakdown')}:
-                        </h4>
-                        <div className="space-y-2">
-                          {Object.entries(pack.variantBreakdown).map(
-                            ([componentName, variants]) => (
-                              <div key={componentName} className="ml-4">
-                                <div className="font-medium text-gray-700 text-sm mb-1">
-                                  {componentName}:
-                                </div>
-                                <div className="ml-4 space-y-1">
-                                  {Object.entries(variants).map(([variantName, count]) => (
-                                    <div
-                                      key={variantName}
-                                      className="text-sm text-gray-600"
-                                    >
-                                      {variantName}: <strong>{count}</strong>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </SpotLightItem>
-              ))}
-            </div>
-          </Spotlight>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
 

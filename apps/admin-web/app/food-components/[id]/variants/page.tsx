@@ -22,12 +22,12 @@ import { StatusBadge } from '../../../../components/ui/status-badge';
 import { ArrowLeft } from 'lucide-react';
 import {
   Dialog,
-  DialogContainer,
   DialogContent,
   DialogTitle,
   DialogDescription,
-  DialogClose,
-} from '../../../../components/ui-layouts/linear-modal';
+  DialogHeader,
+  DialogFooter,
+} from '../../../../components/ui/dialog';
 
 type VariantFormData = {
   name: string;
@@ -399,35 +399,34 @@ export default function FoodComponentVariantsPage() {
         </div>
       )}
 
-      <Dialog isOpen={showDeleteModal} onOpenChange={(open) => !open && handleDeleteCancel()}>
-        <DialogContainer>
-          <DialogContent className="bg-surface border border-surface-dark rounded-lg p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <DialogClose className="text-gray-600 hover:text-gray-800" />
-            <DialogTitle className="text-xl font-semibold mb-4 text-destructive">Delete Variant?</DialogTitle>
-            <DialogDescription className="text-gray-600 mb-4">
+      <Dialog open={showDeleteModal} onOpenChange={(open) => !open && handleDeleteCancel()}>
+        <DialogContent className="bg-surface border border-surface-dark rounded-lg max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Delete Variant?</DialogTitle>
+            <DialogDescription>
               Are you sure you want to delete this variant? This action cannot be undone.
             </DialogDescription>
-            <p className="text-sm text-gray-500 mb-6">
-              {deletingVariantId && variants.find(v => v.id === deletingVariantId) && (
-                <>Variant "{variants.find(v => v.id === deletingVariantId)?.name}" will be permanently deleted. If this variant has been used in any orders, deletion will be prevented to maintain data integrity.</>
-              )}
-            </p>
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={handleDeleteCancel}
-                className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteConfirm}
-                className="px-4 py-2 bg-destructive text-white rounded hover:bg-destructive-hover transition-colors"
-              >
-                Delete
-              </button>
-            </div>
-          </DialogContent>
-        </DialogContainer>
+          </DialogHeader>
+          <p className="text-sm text-gray-500 mb-6">
+            {deletingVariantId && variants.find(v => v.id === deletingVariantId) && (
+              <>Variant "{variants.find(v => v.id === deletingVariantId)?.name}" will be permanently deleted. If this variant has been used in any orders, deletion will be prevented to maintain data integrity.</>
+            )}
+          </p>
+          <DialogFooter>
+            <button
+              onClick={handleDeleteCancel}
+              className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteConfirm}
+              className="px-4 py-2 bg-destructive text-white rounded hover:bg-destructive-hover transition-colors"
+            >
+              Delete
+            </button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </div>
   );

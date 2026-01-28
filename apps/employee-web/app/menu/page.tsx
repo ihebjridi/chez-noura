@@ -17,7 +17,7 @@ import { DegradedModeBanner } from '../../components/degraded-mode-banner';
 import { Loading } from '../../components/ui/loading';
 import { Empty } from '../../components/ui/empty';
 import { Error } from '../../components/ui/error';
-import { Spotlight, SpotLightItem } from '../../components/ui-layouts/spotlight-cards';
+import { Card } from '../../components/ui/card';
 import { CutoffCountdown } from '../../components/cutoff-countdown';
 import { EmployeeLayout } from '../../components/layouts/EmployeeLayout';
 import { CollapsibleSection } from '../../components/layouts/CollapsibleSection';
@@ -265,9 +265,9 @@ export default function MenuPage() {
                 <h2 className="text-base font-semibold text-gray-900 px-1">
                   {t('menu.selectPack')}
                 </h2>
-                <Spotlight>
+                <div className="space-y-3">
                   {packs.map((pack) => (
-                    <SpotLightItem key={pack.id} className="bg-surface border border-surface-dark rounded-lg">
+                    <Card key={pack.id} className="bg-surface border border-surface-dark rounded-lg hover:shadow-md transition-shadow">
                       <button
                         onClick={() => handlePackSelect(pack)}
                         className="relative z-10 w-full p-4 text-left hover:bg-surface-light transition-colors cursor-pointer"
@@ -291,9 +291,9 @@ export default function MenuPage() {
                           <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-4" />
                         </div>
                       </button>
-                    </SpotLightItem>
+                    </Card>
                   ))}
-                </Spotlight>
+                </div>
               </div>
             ) : (
               <>

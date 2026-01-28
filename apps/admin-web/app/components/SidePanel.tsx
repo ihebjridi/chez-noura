@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { PackDto, VariantDto } from '@contracts/core';
-import { Accordion, AccordionItem, AccordionHeader, AccordionPanel } from '../../components/ui-layouts/accordion';
 import { X } from 'lucide-react';
 
 interface SidePanelProps {

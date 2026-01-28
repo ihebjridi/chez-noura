@@ -12,7 +12,7 @@ import {
 import { Loading } from '../../../components/ui/loading';
 import { Empty } from '../../../components/ui/empty';
 import { Error } from '../../../components/ui/error';
-import { Spotlight, SpotLightItem } from '../../../components/ui-layouts/spotlight-cards';
+import { Card } from '../../../components/ui/card';
 import { CutoffCountdown } from '../../../components/cutoff-countdown';
 import { CollapsibleSection } from '../../../components/layouts/CollapsibleSection';
 import { CheckCircle, Clock, Package, AlertCircle, Calendar, ChevronRight } from 'lucide-react';
@@ -289,9 +289,9 @@ function NewOrderContent() {
                   />
                 </div>
               ) : (
-                <Spotlight>
+                <div className="space-y-3">
                   {packs.map((pack) => (
-                    <SpotLightItem key={pack.id} className="bg-surface border border-surface-dark rounded-lg">
+                    <Card key={pack.id} className="bg-surface border border-surface-dark rounded-lg hover:shadow-md transition-shadow">
                       <button
                         onClick={() => handlePackSelect(pack)}
                         className="relative z-10 w-full p-4 text-left hover:bg-surface-light transition-colors cursor-pointer min-h-[44px]"
@@ -315,9 +315,9 @@ function NewOrderContent() {
                           <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-4" />
                         </div>
                       </button>
-                    </SpotLightItem>
+                    </Card>
                   ))}
-                </Spotlight>
+                </div>
               )}
             </div>
           ) : (

@@ -2,7 +2,7 @@ import { PackDto, PackWithComponentsDto, VariantDto } from '@contracts/core';
 import { PackFoodComponentDto } from '../types';
 import { ToggleSwitch } from './ToggleSwitch';
 import { PackVariantsManager } from './PackVariantsManager';
-import { Accordion, AccordionItem, AccordionHeader, AccordionPanel } from '../../../../components/ui-layouts/accordion';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../../../../components/ui/accordion';
 
 interface PackSelectionProps {
   packs: PackDto[];
@@ -86,12 +86,12 @@ export function PackSelection({
                       </div>
                     </label>
                     {selected && (
-                      <Accordion multiple defaultValue={expandedPacks.has(pack.id) ? [pack.id] : []}>
-                        <AccordionItem value={pack.id} className="mt-2">
-                          <AccordionHeader>
+                      <Accordion type="multiple" defaultValue={expandedPacks.has(pack.id) ? [pack.id] : []} className="mt-2">
+                        <AccordionItem value={pack.id}>
+                          <AccordionTrigger>
                             <span className="text-sm font-medium">Manage Variants</span>
-                          </AccordionHeader>
-                          <AccordionPanel>
+                          </AccordionTrigger>
+                          <AccordionContent>
                             <PackVariantsManager
                               packName={pack.name}
                               foodComponents={getFoodComponentsForPack(pack.id)}
@@ -104,7 +104,7 @@ export function PackSelection({
                               onVariantToggle={onVariantToggle}
                               onStockChange={onStockChange}
                             />
-                          </AccordionPanel>
+                          </AccordionContent>
                         </AccordionItem>
                       </Accordion>
                     )}
