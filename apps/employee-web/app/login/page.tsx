@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/auth-context';
@@ -12,12 +12,21 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated (only after auth check is complete)
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.push('/calendar');
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  if (authLoading) {
+    return null;
+  }
+
   if (isAuthenticated) {
-    router.push('/calendar');
     return null;
   }
 
@@ -44,6 +53,7 @@ export default function LoginPage() {
       
       <div className="w-full max-w-md bg-surface border border-surface-dark rounded-lg shadow-sm p-6 md:p-8">
         <div className="mb-6 md:mb-8 text-center">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">EMPLOYEE PORTAL</h1>
           <Logo className="justify-center mb-2" />
           <p className="text-xs md:text-sm text-gray-600 mt-2">{t('auth.subtitle')}</p>
         </div>

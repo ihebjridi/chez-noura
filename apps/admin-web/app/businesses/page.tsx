@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useBusinesses } from '../../hooks/useBusinesses';
 import { CreateBusinessDto, ActivityLogDto, EntityStatus } from '@contracts/core';
 import { Loading } from '../../components/ui/loading';
@@ -465,9 +465,8 @@ export default function BusinessesPage() {
                                    disablingBusiness === business.id;
                   
                   return (
-                    <>
+                    <Fragment key={business.id}>
                       <tr 
-                        key={business.id} 
                         className="hover:bg-surface-light transition-colors"
                       >
                         <td className="px-4 py-3 whitespace-nowrap">
@@ -664,7 +663,7 @@ export default function BusinessesPage() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
               </tbody>

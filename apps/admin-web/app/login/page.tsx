@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/auth-context';
 import { LoginRequestDto } from '@contracts/core';
@@ -13,12 +13,21 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated (only after auth check is complete)
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  if (authLoading) {
+    return null;
+  }
+
   if (isAuthenticated) {
-    router.push('/dashboard');
     return null;
   }
 
@@ -41,8 +50,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-sm border border-gray-200 p-8">
         <div className="mb-8 text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">SUPER ADMIN PORTAL</h1>
           <Logo className="justify-center mb-2" />
-          <p className="text-sm text-gray-600 mt-2">Super Admin Portal</p>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-4">
