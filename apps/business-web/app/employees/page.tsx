@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiClient } from '../../lib/api-client';
 import { EmployeeDto, CreateEmployeeDto, EntityStatus, OrderDto } from '@contracts/core';
 import { useAuth } from '../../contexts/auth-context';
@@ -10,6 +11,7 @@ import { Empty } from '../../components/ui/empty';
 import { UserPlus, CheckCircle2, XCircle, ChevronDown, ChevronUp, ShoppingCart } from 'lucide-react';
 
 export default function EmployeesPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [employees, setEmployees] = useState<EmployeeDto[]>([]);
   const [orders, setOrders] = useState<OrderDto[]>([]);
@@ -41,7 +43,7 @@ export default function EmployeesPage() {
       const data = await apiClient.getEmployees();
       setEmployees(data);
     } catch (err: any) {
-      setError(err.message || 'Failed to load employees');
+      setError(err.message || t('common.messages.failedToLoad'));
     } finally {
       setLoading(false);
     }
@@ -81,26 +83,26 @@ export default function EmployeesPage() {
       await apiClient.createEmployee({ ...formData, businessId: user.businessId });
       setShowInviteForm(false);
       setFormData({ email: '', firstName: '', lastName: '', businessId: user.businessId });
-      setSuccess('Employee created successfully!');
+      setSuccess(t('common.messages.employeeCreatedSuccess'));
       await loadEmployees();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
-      setError(err.message || 'Failed to create employee');
+      setError(err.message || t('common.messages.failedToCreateEmployee'));
     }
   };
 
   const handleDisable = async (employeeId: string) => {
-    if (!confirm('Are you sure you want to disable this employee? They will not be able to place new orders.')) return;
+    if (!confirm(t('common.messages.confirmDisableEmployee'))) return;
 
     try {
       setError('');
       setSuccess('');
       await apiClient.updateEmployee(employeeId, { status: EntityStatus.INACTIVE });
-      setSuccess('Employee disabled successfully');
+      setSuccess(t('common.messages.employeeDisabledSuccess'));
       await loadEmployees();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
-      setError(err.message || 'Failed to disable employee');
+      setError(err.message || t('common.messages.failedToDisableEmployee'));
     }
   };
 
@@ -109,11 +111,11 @@ export default function EmployeesPage() {
       setError('');
       setSuccess('');
       await apiClient.updateEmployee(employeeId, { status: EntityStatus.ACTIVE });
-      setSuccess('Employee enabled successfully');
+      setSuccess(t('common.messages.employeeEnabledSuccess'));
       await loadEmployees();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
-      setError(err.message || 'Failed to enable employee');
+      setError(err.message || t('common.messages.failedToEnableEmployee'));
     }
   };
 
@@ -121,8 +123,8 @@ export default function EmployeesPage() {
     <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Employees</h1>
-        <p className="mt-1 text-sm text-gray-600 font-normal">Manage employee accounts and invitations</p>
+        <h1 className="text-2xl font-semibold text-gray-900">{t('employees.title')}</h1>
+        <p className="mt-1 text-sm text-gray-600 font-normal">{t('employees.subtitle')}</p>
       </div>
 
       {/* Error Display */}
@@ -145,7 +147,7 @@ export default function EmployeesPage() {
           onClick={() => setShowInviteForm(!showInviteForm)}
           className="w-full px-6 py-4 flex justify-between items-center text-left hover:bg-surface-light transition-colors"
         >
-          <span className="font-semibold">Invite New Employee</span>
+          <span className="font-semibold">{t('common.buttons.inviteNewEmployee')}</span>
           <span className="text-gray-500">{showInviteForm ? '−' : '+'}</span>
         </button>
         {showInviteForm && (
@@ -153,40 +155,40 @@ export default function EmployeesPage() {
             <form onSubmit={handleInvite} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email *
+                {t('common.labels.email')} *
               </label>
               <input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
-                placeholder="employee@company.com"
+                placeholder={t('employees.emailPlaceholder')}
                 className="w-full px-3 py-2 border border-surface-dark rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-background"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                First Name *
+                {t('common.labels.firstName')} *
               </label>
               <input
                 type="text"
                 value={formData.firstName}
                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                 required
-                placeholder="John"
+                placeholder={t('employees.firstNamePlaceholder')}
                 className="w-full px-3 py-2 border border-surface-dark rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-background"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Last Name *
+                {t('common.labels.lastName')} *
               </label>
               <input
                 type="text"
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                 required
-                placeholder="Doe"
+                placeholder={t('employees.lastNamePlaceholder')}
                 className="w-full px-3 py-2 border border-surface-dark rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-background"
               />
             </div>
@@ -195,7 +197,7 @@ export default function EmployeesPage() {
                 type="submit"
                 className="px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
               >
-                Send Invitation
+                {t('common.buttons.sendInvitation')}
               </button>
               <button
                 type="button"
@@ -205,7 +207,7 @@ export default function EmployeesPage() {
                 }}
                 className="px-4 py-2 bg-surface text-gray-700 font-medium rounded-lg hover:bg-surface-dark transition-colors"
               >
-                Cancel
+                {t('common.buttons.cancel')}
               </button>
             </div>
           </form>
@@ -216,7 +218,7 @@ export default function EmployeesPage() {
       {/* Loading State */}
       {loading && (
         <div className="bg-surface border border-surface-dark rounded-lg p-12">
-          <Loading message="Loading employees..." />
+          <Loading message={t('employees.loadingEmployees')} />
         </div>
       )}
 
@@ -224,8 +226,8 @@ export default function EmployeesPage() {
       {!loading && employees.length === 0 && (
         <div className="bg-surface border border-surface-dark rounded-lg p-12">
           <Empty
-            message="No employees found"
-            description="Invite your first employee to get started."
+            message={t('employees.noEmployees')}
+            description={t('employees.noEmployeesDescription')}
           />
         </div>
       )}
@@ -273,13 +275,13 @@ export default function EmployeesPage() {
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
                       <ShoppingCart className="w-4 h-4 text-gray-600" />
-                      <span className="text-gray-600">Orders:</span>
+                      <span className="text-gray-600">{t('common.labels.orders')}:</span>
                     </div>
                     <span className="font-semibold text-gray-900">{totalOrders}</span>
                   </div>
                   {totalOrders > 0 && (
                     <div className="flex items-center justify-between text-sm mt-1">
-                      <span className="text-gray-600">Total Spent:</span>
+                      <span className="text-gray-600">{t('common.labels.totalSpent')}:</span>
                       <span className="font-semibold text-gray-900">
                         {totalSpent.toFixed(2)} TND
                       </span>
@@ -298,12 +300,12 @@ export default function EmployeesPage() {
                     {expandedEmployeeId === employee.id ? (
                       <>
                         <ChevronUp className="w-4 h-4" />
-                        Hide Orders
+                        {t('common.buttons.hideOrders')}
                       </>
                     ) : (
                       <>
                         <ChevronDown className="w-4 h-4" />
-                        View Orders ({totalOrders})
+                        {t('employees.viewOrdersCount', { count: totalOrders })}
                       </>
                     )}
                   </button>
@@ -312,7 +314,7 @@ export default function EmployeesPage() {
                 {/* Expanded Orders List */}
                 {expandedEmployeeId === employee.id && employeeOrders.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-surface-dark">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Recent Orders</h4>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">{t('common.labels.recentOrders')}</h4>
                     <div className="space-y-2 max-h-64 overflow-y-auto">
                       {employeeOrders
                         .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
@@ -344,14 +346,14 @@ export default function EmployeesPage() {
                       onClick={() => handleDisable(employee.id)}
                       className="flex-1 px-4 py-2 bg-destructive text-white text-sm font-medium rounded-lg hover:bg-destructive-hover transition-colors"
                     >
-                      Disable
+                      {t('common.buttons.disable')}
                     </button>
                   ) : (
                     <button
                       onClick={() => handleEnable(employee.id)}
                       className="flex-1 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
                     >
-                      Enable
+                      {t('common.buttons.enable')}
                     </button>
                   )}
                 </div>

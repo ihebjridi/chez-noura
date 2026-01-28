@@ -15,7 +15,8 @@ export function I18nProvider({ children }: I18nProviderProps) {
   const { i18n } = useTranslation();
 
   useEffect(() => {
-    // Sync locale from cookie on mount
+    // Sync locale from cookie after hydration
+    // This runs only on the client side after initial render
     const storedLocale = Cookies.get(LOCALE_COOKIE_NAME);
     if (storedLocale && (storedLocale === 'fr' || storedLocale === 'en')) {
       if (i18n.language !== storedLocale) {
@@ -24,5 +25,7 @@ export function I18nProvider({ children }: I18nProviderProps) {
     }
   }, [i18n]);
 
+  // During SSR and initial render, always render with default locale (fr)
+  // After hydration, the locale will be synced from cookie in useEffect
   return <>{children}</>;
 }

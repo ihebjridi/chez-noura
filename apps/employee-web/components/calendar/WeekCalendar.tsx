@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { OrderDto, EmployeeMenuDto } from '@contracts/core';
 import { DayStatus } from '../../hooks/useCalendarStatus';
@@ -24,6 +25,7 @@ export function WeekCalendar({
   onDayClick,
   onCustomizeMeal,
 }: WeekCalendarProps) {
+  const { t, i18n } = useTranslation();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -182,23 +184,33 @@ export function WeekCalendar({
   };
 
   const formatWeekRange = () => {
+    const locale = i18n.language || 'fr';
     const start = weekDates[0];
     const end = weekDates[6];
     const startDate = new Date(start);
     const endDate = new Date(end);
     
     if (startDate.getMonth() === endDate.getMonth()) {
-      return startDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      return startDate.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
     }
-    return `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    return `${startDate.toLocaleDateString(locale, { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })}`;
   };
 
-  const monthYear = currentDate.toLocaleDateString('en-US', {
+  const monthYear = currentDate.toLocaleDateString(i18n.language || 'fr', {
     month: 'long',
     year: 'numeric',
   });
 
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  // Week day abbreviations - locale-aware
+  const weekDays = useMemo(() => {
+    const locale = i18n.language || 'fr';
+    const baseDate = new Date(2024, 0, 7); // Sunday
+    return Array.from({ length: 7 }, (_, i) => {
+      const date = new Date(baseDate);
+      date.setDate(baseDate.getDate() + i);
+      return date.toLocaleDateString(locale, { weekday: 'short' });
+    });
+  }, [i18n.language]);
 
   return (
     <div className="bg-surface border border-surface-dark rounded-lg p-4">
@@ -207,7 +219,7 @@ export function WeekCalendar({
         <button
           onClick={handlePrevious}
           className="p-1 hover:bg-surface-light rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-          aria-label="Previous"
+          aria-label={t('common.labels.previous')}
         >
           <ChevronLeft className="w-5 h-5 text-gray-700" />
         </button>
@@ -220,7 +232,7 @@ export function WeekCalendar({
             onClick={handleToday}
             className="px-2 py-1 text-xs bg-primary-50 text-primary-700 rounded hover:bg-primary-100 transition-colors font-medium min-h-[32px]"
           >
-            Today
+            {t('common.labels.today')}
           </button>
         </div>
 
@@ -228,14 +240,14 @@ export function WeekCalendar({
           <button
             onClick={() => setViewMode(viewMode === 'week' ? 'month' : 'week')}
             className="p-2 hover:bg-surface-light rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-            aria-label="Toggle view"
+            aria-label={t('common.labels.toggleView')}
           >
             <CalendarIcon className="w-5 h-5 text-gray-700" />
           </button>
           <button
             onClick={handleNext}
             className="p-1 hover:bg-surface-light rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-            aria-label="Next"
+            aria-label={t('common.labels.next')}
           >
             <ChevronRight className="w-5 h-5 text-gray-700" />
           </button>
@@ -297,18 +309,18 @@ export function WeekCalendar({
                       {status === 'open' && (
                         <div className="mt-2 p-3 bg-warning-50 border border-warning-300 rounded-lg">
                           <p className="text-sm font-semibold text-warning-800 mb-2">
-                            Order available
+                            {t('common.labels.orderAvailable')}
                           </p>
                           {dateStr >= today ? (
                             <button
                               onClick={() => onCustomizeMeal?.(dateStr)}
                               className="w-full px-3 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors font-semibold text-sm min-h-[44px]"
                             >
-                              Customize Meal
+                              {t('common.buttons.customize')}
                             </button>
                           ) : (
                             <p className="text-xs text-gray-600">
-                              Past dates are read-only
+                              {t('common.labels.pastDatesReadOnly')}
                             </p>
                           )}
                         </div>
@@ -317,7 +329,7 @@ export function WeekCalendar({
                       {status === 'closed' && (
                         <div className="mt-2 p-3 bg-gray-50 border border-gray-300 rounded-lg">
                           <p className="text-sm text-gray-600">
-                            Ordering closed for this date
+                            {t('cutoff.orderingClosed')}
                           </p>
                         </div>
                       )}
@@ -325,7 +337,7 @@ export function WeekCalendar({
                       {status === 'no-menu' && (
                         <div className="mt-2 p-3 bg-gray-50 border border-gray-300 rounded-lg">
                           <p className="text-sm text-gray-600">
-                            No menu available
+                            {t('menu.noMenu')}
                           </p>
                         </div>
                       )}

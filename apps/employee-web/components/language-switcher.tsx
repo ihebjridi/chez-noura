@@ -5,8 +5,13 @@ import { changeLanguage } from '../i18n/config';
 import { Globe } from 'lucide-react';
 import { useState } from 'react';
 
-export function LanguageSwitcher() {
-  const { i18n } = useTranslation();
+interface LanguageSwitcherProps {
+  /** If true, dropdown opens upward (for bottom-positioned switchers) */
+  openUpward?: boolean;
+}
+
+export function LanguageSwitcher({ openUpward = false }: LanguageSwitcherProps = {}) {
+  const { t, i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
   const currentLanguage = i18n.language || 'fr';
@@ -28,10 +33,11 @@ export function LanguageSwitcher() {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-surface-light rounded-md transition-colors"
-        aria-label="Change language"
+        className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 text-sm font-medium text-gray-700 hover:bg-surface-light rounded-md transition-colors min-h-[44px] min-w-[44px] justify-center"
+        aria-label={t('common.labels.changeLanguage')}
+        title={t('common.labels.changeLanguage')}
       >
-        <Globe className="w-4 h-4" />
+        <Globe className="w-5 h-5 flex-shrink-0" />
         <span className="hidden sm:inline">{currentLang.flag}</span>
         <span className="hidden md:inline">{currentLang.name}</span>
       </button>
@@ -42,7 +48,9 @@ export function LanguageSwitcher() {
             className="fixed inset-0 z-10"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute right-0 mt-2 w-48 bg-surface border border-surface-dark rounded-lg shadow-lg z-20">
+          <div className={`absolute right-0 w-48 bg-surface border border-surface-dark rounded-lg shadow-lg z-20 ${
+            openUpward ? 'bottom-full mb-2' : 'top-full mt-2'
+          }`}>
             <div className="py-1">
               {languages.map((lang) => (
                 <button

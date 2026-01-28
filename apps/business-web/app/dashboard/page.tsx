@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { apiClient } from '../../lib/api-client';
 import { OrderDto } from '@contracts/core';
@@ -12,6 +13,7 @@ import { Users, ShoppingCart, DollarSign, TrendingUp, RefreshCw } from 'lucide-r
 import { getTodayISO } from '../../lib/date-utils';
 
 export default function DashboardPage() {
+  const { t, i18n } = useTranslation();
   const [orders, setOrders] = useState<OrderDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -93,7 +95,7 @@ export default function DashboardPage() {
       const data = await apiClient.getBusinessOrders();
       setOrders(data);
     } catch (err: any) {
-      setError(err.message || 'Failed to load orders');
+      setError(err.message || t('common.messages.failedToLoad'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -168,7 +170,7 @@ export default function DashboardPage() {
       <div className="mb-6">
         <div className="bg-surface border border-surface-dark rounded-lg p-4">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-semibold text-gray-900">Today's Orders</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">{t('dashboard.todaysOrders')}</h1>
             <div className="text-lg font-semibold text-gray-700">
               {formatFullDate(selectedDate)}
             </div>
@@ -178,17 +180,17 @@ export default function DashboardPage() {
               onClick={() => loadOrders(true)}
               disabled={refreshing || loading}
               className="px-4 py-2 rounded-lg font-medium bg-primary-600 text-white hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
-              title="Refresh data"
+              title={t('dashboard.refreshData')}
             >
               <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh
+              {t('common.buttons.refresh')}
             </button>
             <div className="relative">
               <button
                 onClick={() => setShowDatePicker(!showDatePicker)}
                 className="px-4 py-2 rounded-lg font-medium bg-surface-light text-gray-700 hover:bg-surface-dark transition-colors border-2 border-transparent"
               >
-                Other Date
+                {t('common.buttons.otherDate')}
               </button>
               {showDatePicker && (
                 <div className="absolute top-full mt-2 left-0 bg-surface border border-surface-dark rounded-lg shadow-lg p-3 z-50">
@@ -221,7 +223,7 @@ export default function DashboardPage() {
         <div className="bg-surface border border-surface-dark rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Orders</p>
+              <p className="text-sm font-medium text-gray-600">{t('dashboard.totalOrders')}</p>
               <p className="text-3xl font-semibold text-gray-900 mt-2">{totalOrdersToday}</p>
             </div>
             <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
@@ -233,9 +235,9 @@ export default function DashboardPage() {
         <div className="bg-surface border border-surface-dark rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Cost</p>
+              <p className="text-sm font-medium text-gray-600">{t('dashboard.totalCost')}</p>
               <p className="text-3xl font-semibold text-gray-900 mt-2">
-                {totalCostToday.toLocaleString('en-US', {
+                {totalCostToday.toLocaleString(i18n.language || 'fr', {
                   style: 'currency',
                   currency: 'TND',
                   minimumFractionDigits: 0,
@@ -251,7 +253,7 @@ export default function DashboardPage() {
         <div className="bg-surface border border-surface-dark rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Active Employees</p>
+              <p className="text-sm font-medium text-gray-600">{t('dashboard.activeEmployees')}</p>
               <p className="text-3xl font-semibold text-gray-900 mt-2">{uniqueEmployees}</p>
             </div>
             <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
@@ -264,18 +266,18 @@ export default function DashboardPage() {
       {/* Daily Summary Section */}
       {loading ? (
         <div className="bg-surface border border-surface-dark rounded-lg p-12">
-          <Loading message="Loading orders..." />
+          <Loading message={t('dashboard.loadingOrders')} />
         </div>
       ) : dailyOrders.length === 0 ? (
         <div className="bg-surface border border-surface-dark rounded-lg p-12">
           <Empty
-            message="No orders found"
-            description={`No orders found for ${formatFullDate(selectedDate)}`}
+            message={t('dashboard.noOrdersFound')}
+            description={t('dashboard.noOrdersForDate', { date: formatFullDate(selectedDate) })}
           />
         </div>
       ) : (
         <div className="bg-surface border border-surface-dark rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Pack Summary</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('dashboard.packSummary')}</h2>
           <Spotlight>
             <div className="space-y-4">
               {packSummary.map((pack) => (
@@ -285,12 +287,12 @@ export default function DashboardPage() {
                       <div>
                         <h3 className="font-semibold text-gray-900">{pack.packName}</h3>
                         <p className="text-sm text-gray-600">
-                          {(typeof pack.packPrice === 'string' ? parseFloat(pack.packPrice) : pack.packPrice || 0).toFixed(2)} TND per pack
+                          {(typeof pack.packPrice === 'string' ? parseFloat(pack.packPrice) : pack.packPrice || 0).toFixed(2)} TND {t('common.labels.perPack')}
                         </p>
                       </div>
                       <div className="text-right">
                         <div className="text-2xl font-semibold text-gray-900">{pack.count}</div>
-                        <div className="text-sm text-gray-600">orders</div>
+                        <div className="text-sm text-gray-600">{t('common.labels.orders')}</div>
                       </div>
                     </div>
                     <button
@@ -299,12 +301,12 @@ export default function DashboardPage() {
                       }
                       className="mt-2 text-sm text-primary-600 hover:text-primary-700 font-medium"
                     >
-                      {expandedPack === pack.packName ? 'Hide' : 'Show'} Variant Breakdown
+                      {expandedPack === pack.packName ? t('common.labels.hideVariantBreakdown') : t('common.labels.showVariantBreakdown')}
                     </button>
                     {expandedPack === pack.packName && (
                       <div className="mt-4 pt-4 border-t border-surface-dark">
                         <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                          Variant Breakdown:
+                          {t('common.labels.variantBreakdown')}:
                         </h4>
                         <div className="space-y-2">
                           {Object.entries(pack.variantBreakdown).map(
@@ -339,7 +341,7 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('dashboard.quickActions')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Link 
             href="/employees" 
@@ -349,9 +351,9 @@ export default function DashboardPage() {
               <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
                 <Users className="w-6 h-6 text-primary-600" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">Employees</h2>
+              <h2 className="text-xl font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">{t('navigation.employees')}</h2>
             </div>
-            <p className="text-gray-600">Manage employee accounts</p>
+            <p className="text-gray-600">{t('dashboard.manageEmployeeAccounts')}</p>
           </Link>
 
           <Link 
@@ -362,9 +364,9 @@ export default function DashboardPage() {
               <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
                 <ShoppingCart className="w-6 h-6 text-primary-600" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">Orders</h2>
+              <h2 className="text-xl font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">{t('navigation.orders')}</h2>
             </div>
-            <p className="text-gray-600">View all employee orders</p>
+            <p className="text-gray-600">{t('dashboard.viewAllEmployeeOrders')}</p>
           </Link>
 
           <Link 
@@ -375,9 +377,9 @@ export default function DashboardPage() {
               <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
                 <TrendingUp className="w-6 h-6 text-primary-600" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">Invoices</h2>
+              <h2 className="text-xl font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">{t('navigation.invoices')}</h2>
             </div>
-            <p className="text-gray-600">View and manage invoices</p>
+            <p className="text-gray-600">{t('dashboard.viewAndManageInvoices')}</p>
           </Link>
         </div>
       </div>

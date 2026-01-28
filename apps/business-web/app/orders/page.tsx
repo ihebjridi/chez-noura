@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiClient } from '../../lib/api-client';
 import { OrderDto, OrderStatus } from '@contracts/core';
 import { Loading } from '../../components/ui/loading';
@@ -9,6 +10,7 @@ import { Empty } from '../../components/ui/empty';
 import { ChevronDown, ChevronUp, Users } from 'lucide-react';
 
 export default function OrdersPage() {
+  const { t } = useTranslation();
   const [orders, setOrders] = useState<OrderDto[]>([]);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
@@ -30,7 +32,7 @@ export default function OrdersPage() {
       const data = await apiClient.getBusinessOrders();
       setOrders(data);
     } catch (err: any) {
-      setError(err.message || 'Failed to load orders');
+      setError(err.message || t('common.messages.failedToLoad'));
     } finally {
       setLoading(false);
     }
@@ -95,7 +97,23 @@ export default function OrdersPage() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    // Get locale from cookie or default to French
+    let locale = 'fr';
+    if (typeof document !== 'undefined') {
+      try {
+        const cookies = document.cookie.split(';');
+        const localeCookie = cookies.find(c => c.trim().startsWith('NEXT_LOCALE='));
+        if (localeCookie) {
+          const loc = localeCookie.split('=')[1].trim();
+          if (loc === 'fr' || loc === 'en') {
+            locale = loc;
+          }
+        }
+      } catch (e) {
+        // Fallback to default
+      }
+    }
+    return date.toLocaleDateString(locale, {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -107,7 +125,7 @@ export default function OrdersPage() {
     <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-4">Orders</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 mb-4">{t('orders.title')}</h1>
         
         {/* Date Filter Tabs */}
         <div className="bg-surface border border-surface-dark rounded-lg p-4">
@@ -123,7 +141,7 @@ export default function OrdersPage() {
                   : 'bg-surface-light text-gray-700 hover:bg-surface-dark border-2 border-transparent'
               }`}
             >
-              All Orders
+              {t('common.buttons.allOrders')}
             </button>
             <div className="relative">
               <button
@@ -134,7 +152,7 @@ export default function OrdersPage() {
                     : 'bg-surface-light text-gray-700 hover:bg-surface-dark border-transparent'
                 }`}
               >
-                {customDate ? new Date(customDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Custom Date'}
+                {customDate ? new Date(customDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : t('common.buttons.customDate')}
               </button>
               {showDatePicker && (
                 <div className="absolute top-full mt-2 left-0 bg-surface border border-surface-dark rounded-lg shadow-lg p-3 z-50">
@@ -168,7 +186,7 @@ export default function OrdersPage() {
       {/* Loading State */}
       {loading && (
         <div className="bg-surface border border-surface-dark rounded-lg p-12">
-          <Loading message="Loading orders..." />
+          <Loading message={t('orders.loadingOrders')} />
         </div>
       )}
 
@@ -176,8 +194,8 @@ export default function OrdersPage() {
       {!loading && filteredOrders.length === 0 && (
         <div className="bg-white rounded-lg border border-gray-200 p-12">
           <Empty
-            message="No orders found"
-            description="No orders match the selected filter criteria."
+            message={t('orders.noOrders')}
+            description={t('orders.noOrdersDescription')}
           />
         </div>
       )}
@@ -216,7 +234,7 @@ export default function OrdersPage() {
                     <div className="text-left">
                       <h3 className="text-lg font-semibold text-gray-900">{formatDate(dateKey)}</h3>
                       <p className="text-sm text-gray-600">
-                        {totalOrdersForDate} order{totalOrdersForDate !== 1 ? 's' : ''} • {totalAmountForDate.toFixed(2)} TND
+                        {totalOrdersForDate} {totalOrdersForDate !== 1 ? t('common.labels.orders') : t('common.labels.order')} • {totalAmountForDate.toFixed(2)} TND
                       </p>
                     </div>
                   </div>
@@ -255,7 +273,7 @@ export default function OrdersPage() {
                             <div className="flex items-center gap-4">
                               <div className="text-right">
                                 <p className="text-sm font-semibold text-gray-900">
-                                  {employeeOrders.length} order{employeeOrders.length !== 1 ? 's' : ''}
+                                  {employeeOrders.length} {employeeOrders.length !== 1 ? t('common.labels.orders') : t('common.labels.order')}
                                 </p>
                                 <p className="text-xs text-gray-600">
                                   {employeeTotal.toFixed(2)} TND
@@ -281,7 +299,7 @@ export default function OrdersPage() {
                                     <div className="flex-1">
                                       <div className="flex items-center gap-3 mb-2">
                                         <h4 className="text-sm font-semibold text-gray-900">
-                                          Order #{order.id.substring(0, 8)}
+                                          {t('orders.orderNumber', { id: order.id.substring(0, 8) })}
                                         </h4>
                                         <span
                                           className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(
@@ -292,7 +310,7 @@ export default function OrdersPage() {
                                         </span>
                                       </div>
                                       <p className="text-sm text-gray-600 mb-1">
-                                        <strong>Pack:</strong> {order.packName} - {order.packPrice.toFixed(2)} TND
+                                        <strong>{t('common.labels.packLabel')}</strong> {order.packName} - {order.packPrice.toFixed(2)} TND
                                       </p>
                                     </div>
                                     <div className="text-right">
@@ -314,12 +332,12 @@ export default function OrdersPage() {
                                     {expandedOrderId === order.id ? (
                                       <>
                                         <ChevronUp className="w-3 h-3" />
-                                        Hide Details
+                                        {t('common.buttons.hideDetails')}
                                       </>
                                     ) : (
                                       <>
                                         <ChevronDown className="w-3 h-3" />
-                                        Show Details
+                                        {t('common.buttons.showDetails')}
                                       </>
                                     )}
                                   </button>
@@ -327,7 +345,7 @@ export default function OrdersPage() {
                                   {expandedOrderId === order.id && (
                                     <div className="mt-3 pt-3 border-t border-surface-dark">
                                       <h5 className="text-xs font-semibold text-gray-700 mb-2">
-                                        Component Selections:
+                                        {t('common.labels.componentSelections')}:
                                       </h5>
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                         {order.items.map((item) => (
@@ -344,7 +362,7 @@ export default function OrdersPage() {
                                                 />
                                               ) : (
                                                 <div className="w-10 h-10 bg-surface-light border border-surface-dark rounded-md flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
-                                                  No image
+                                                  {t('common.labels.noImage')}
                                                 </div>
                                               )}
                                               <div className="flex-1 flex justify-between items-center">

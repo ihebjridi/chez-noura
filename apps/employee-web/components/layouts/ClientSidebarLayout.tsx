@@ -2,8 +2,10 @@
 
 import { useState, ReactNode, Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { Logo } from '../logo';
+import { LanguageSwitcher } from '../language-switcher';
 import { useAuth } from '../../contexts/auth-context';
 import {
   Calendar,
@@ -20,19 +22,20 @@ interface ClientSidebarLayoutProps {
   children: ReactNode;
 }
 
-const navigation = [
-  { name: 'Today', href: '/today', icon: Calendar },
-  { name: 'New Order', href: '/new-order', icon: Plus },
-  { name: 'Order History', href: '/calendar', icon: History },
-  { name: 'My Company', href: '/company', icon: Building2 },
-];
-
 function NavigationContent({ children }: ClientSidebarLayoutProps) {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { logout, user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const navigation = [
+    { name: t('today.title'), href: '/today', icon: Calendar },
+    { name: t('newOrder.title'), href: '/new-order', icon: Plus },
+    { name: t('orders.orderHistory'), href: '/calendar', icon: History },
+    { name: t('company.title'), href: '/company', icon: Building2 },
+  ];
 
   const navigationWithCurrent = navigation.map((item) => ({
     ...item,
@@ -94,9 +97,15 @@ function NavigationContent({ children }: ClientSidebarLayoutProps) {
             <div className="flex items-center gap-3 mb-3 px-4">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">{user?.email}</p>
-                <p className="text-xs text-gray-500">Employee</p>
+                <p className="text-xs text-gray-500">{t('common.labels.employee')}</p>
               </div>
             </div>
+            
+            {/* Language Switcher */}
+            <div className="mb-3 px-4">
+              <LanguageSwitcher openUpward={true} />
+            </div>
+            
             <button
               onClick={() => {
                 logout();
@@ -105,7 +114,7 @@ function NavigationContent({ children }: ClientSidebarLayoutProps) {
               className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-surface-light transition-colors min-h-[44px]"
             >
               <LogOut className="h-5 w-5" />
-              Logout
+              {t('common.buttons.logout')}
             </button>
           </div>
         </div>
@@ -123,7 +132,9 @@ function NavigationContent({ children }: ClientSidebarLayoutProps) {
               <Menu className="h-6 w-6" />
             </button>
             <Logo className="flex-1 justify-center" />
-            <div className="w-10" /> {/* Spacer for centering */}
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher />
+            </div>
           </div>
         </header>
 

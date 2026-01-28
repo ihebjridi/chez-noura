@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '../../../lib/api-client';
 import { OrderDto, OrderStatus } from '@contracts/core';
@@ -14,6 +15,7 @@ import { getTodayISO, getTomorrowISO, formatDateToISO } from '../../../lib/date-
 const ITEMS_PER_PAGE = 10;
 
 function OrderHistoryContent() {
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [orders, setOrders] = useState<OrderDto[]>([]);
@@ -48,7 +50,7 @@ function OrderHistoryContent() {
         setExpandedOrders(new Set([sorted[0].id]));
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to load orders');
+      setError(err.message || t('common.messages.failedToLoad'));
     } finally {
       setLoading(false);
     }
@@ -59,19 +61,19 @@ function OrderHistoryContent() {
       case OrderStatus.LOCKED:
         return {
           icon: CheckCircle,
-          description: 'Confirmed - Ready for pickup',
+          description: t('orders.confirmedReadyPickup'),
           className: 'bg-success-50 text-success-700 border-success-300',
         };
       case OrderStatus.CREATED:
         return {
           icon: Clock,
-          description: 'Pending confirmation',
+          description: t('orders.pendingConfirmation'),
           className: 'bg-warning-50 text-warning-700 border-warning-300',
         };
       case OrderStatus.CANCELLED:
         return {
           icon: X,
-          description: 'Cancelled',
+          description: t('orders.cancelled'),
           className: 'bg-destructive/10 text-destructive border-destructive/30',
         };
       default:
@@ -87,13 +89,14 @@ function OrderHistoryContent() {
     const date = new Date(dateString);
     const today = getTodayISO();
     const tomorrow = getTomorrowISO();
+    const locale = i18n.language || 'fr';
 
     if (dateString === today) {
-      return 'Today';
+      return t('common.labels.today');
     } else if (dateString === tomorrow) {
-      return 'Tomorrow';
+      return t('common.labels.tomorrow');
     } else {
-      return date.toLocaleDateString('en-US', {
+      return date.toLocaleDateString(locale, {
         weekday: 'short',
         month: 'short',
         day: 'numeric',
@@ -119,7 +122,7 @@ function OrderHistoryContent() {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[400px]">
-        <Loading message="Loading orders..." />
+        <Loading message={t('orders.loadingOrders')} />
       </div>
     );
   }
@@ -135,9 +138,9 @@ function OrderHistoryContent() {
   return (
     <div className="p-4 max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Order History</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('orders.orderHistory')}</h1>
         <p className="text-sm text-gray-600 mt-1">
-          View all your past and upcoming orders
+          {t('orders.viewAllPastUpcoming')}
         </p>
       </div>
 
@@ -146,7 +149,7 @@ function OrderHistoryContent() {
         <div className="mb-4 p-4 bg-success-50 border border-success-300 text-success-700 rounded-lg">
           <div className="flex items-center gap-2">
             <CheckCircle className="w-5 h-5 flex-shrink-0" />
-            <p className="text-sm font-semibold">Order placed successfully!</p>
+            <p className="text-sm font-semibold">{t('common.messages.orderPlacedSuccess')}</p>
           </div>
         </div>
       )}
@@ -155,15 +158,15 @@ function OrderHistoryContent() {
       {orders.length === 0 ? (
         <div className="bg-surface border border-surface-dark rounded-lg p-8 w-full max-w-md mx-auto">
           <Empty
-            message="No orders yet"
-            description="Place your first order to get started"
+            message={t('common.labels.noOrdersYet')}
+            description={t('common.labels.placeFirstOrder')}
           />
           <div className="mt-6 text-center">
             <button
               onClick={() => router.push('/new-order')}
               className="px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors font-semibold min-h-[44px]"
             >
-              Place Your First Order
+              {t('common.buttons.placeOrder')}
             </button>
           </div>
         </div>
@@ -207,7 +210,7 @@ function OrderHistoryContent() {
                     {/* Order Items */}
                     <div className="space-y-2">
                       <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                        Your Selection
+                        {t('common.labels.yourSelection')}
                       </p>
                       {order.items.map((item) => (
                         <div
@@ -222,7 +225,7 @@ function OrderHistoryContent() {
                             />
                           ) : (
                             <div className="w-12 h-12 bg-surface-light border border-surface-dark rounded-md flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
-                              No image
+                              {t('common.labels.noImage')}
                             </div>
                           )}
                           <p className="text-sm text-gray-700 font-normal">
@@ -252,14 +255,14 @@ function OrderHistoryContent() {
           {totalPages > 1 && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-surface-dark">
               <div className="text-sm text-gray-600">
-                Showing {startIndex + 1} to {Math.min(endIndex, orders.length)} of {orders.length} orders
+                {t('common.labels.showing')} {startIndex + 1} {t('common.labels.to')} {Math.min(endIndex, orders.length)} {t('common.labels.of')} {orders.length} {t('common.labels.orders')}
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
                   className="p-2 rounded-md border border-surface-dark hover:bg-surface-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                  aria-label="Previous page"
+                  aria-label={t('common.labels.previousPage')}
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
@@ -303,7 +306,7 @@ function OrderHistoryContent() {
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
                   className="p-2 rounded-md border border-surface-dark hover:bg-surface-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                  aria-label="Next page"
+                  aria-label={t('common.labels.nextPage')}
                 >
                   <ChevronRight className="w-5 h-5" />
                 </button>
@@ -317,11 +320,13 @@ function OrderHistoryContent() {
 }
 
 export default function OrderHistoryPage() {
+  const { t } = useTranslation();
+  
   return (
     <Suspense
       fallback={
         <div className="min-h-screen bg-background flex items-center justify-center">
-          <Loading message="Loading..." />
+          <Loading message={t('common.messages.loading')} />
         </div>
       }
     >

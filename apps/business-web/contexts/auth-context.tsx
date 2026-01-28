@@ -56,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Verify user is BUSINESS_ADMIN
       if (response.user.role !== UserRole.BUSINESS_ADMIN) {
+        // Note: This error message is not translated as it's thrown before i18n is available
         throw new Error('Access denied. Business Admin access required.');
       }
 

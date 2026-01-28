@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ProtectedRoute } from '../../../components/protected-route';
 import { useAuth } from '../../../contexts/auth-context';
@@ -17,6 +18,7 @@ import { Clock, CheckCircle } from 'lucide-react';
 import { getTodayISO } from '../../../lib/date-utils';
 
 function OrderConfirmContent() {
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [menu, setMenu] = useState<EmployeeMenuDto | null>(null);
@@ -51,13 +53,13 @@ function OrderConfirmContent() {
       setMenu(menuData);
       const selectedPack = menuData.packs.find((p) => p.id === packId);
       if (!selectedPack) {
-        setError('Pack not found or no longer available');
+        setError(t('common.messages.packNotFound'));
         router.push('/menu');
         return;
       }
       setPack(selectedPack);
     } catch (err: any) {
-      setError(err.message || 'Failed to load menu information');
+      setError(err.message || t('common.messages.failedToLoadMenuInfo'));
     } finally {
       setLoading(false);
     }
@@ -70,7 +72,7 @@ function OrderConfirmContent() {
 
     try {
       if (!pack || !dailyMenuId) {
-        setError('Menu or pack information is missing');
+        setError(t('common.messages.menuInfoMissing'));
         return;
       }
 
@@ -86,23 +88,19 @@ function OrderConfirmContent() {
       });
       router.push('/calendar?success=true');
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to place order';
+      const errorMessage = err.message || t('common.messages.failedToPlaceOrder');
       if (
         errorMessage.includes('cutoff') ||
         errorMessage.includes('cut-off') ||
         errorMessage.includes('Ordering cutoff')
       ) {
-        setError(
-          'Ordering cutoff time has passed. Orders cannot be placed after the cutoff time.',
-        );
+        setError(t('common.messages.cutoffTimePassed'));
       } else if (
         errorMessage.includes('already ordered') ||
         errorMessage.includes('duplicate') ||
         errorMessage.includes('Conflict')
       ) {
-        setError(
-          'You have already placed an order for this date. Only one order per day is allowed.',
-        );
+        setError(t('common.messages.alreadyOrderedDate'));
       } else {
         setError(errorMessage);
       }
@@ -118,7 +116,8 @@ function OrderConfirmContent() {
         const readyDate = new Date(cutoffDate.getTime() + 2 * 60 * 60 * 1000); // +2 hours
         const now = new Date();
         const isToday = readyDate.toDateString() === now.toDateString();
-        const timeStr = readyDate.toLocaleTimeString('en-US', {
+        const locale = i18n.language || 'fr';
+        const timeStr = readyDate.toLocaleTimeString(locale, {
           hour: 'numeric',
           minute: '2-digit',
           hour12: true,
@@ -132,7 +131,7 @@ function OrderConfirmContent() {
       <ProtectedRoute requiredRole={UserRole.EMPLOYEE}>
         <EmployeeLayout>
           <div className="flex-1 flex items-center justify-center">
-            <Loading message="Loading order details..." />
+            <Loading message={t('newOrder.loadingOrderDetails')} />
           </div>
         </EmployeeLayout>
       </ProtectedRoute>
@@ -148,14 +147,14 @@ function OrderConfirmContent() {
             <div className="bg-surface border border-surface-dark rounded-lg p-4">
               <div className="flex items-center gap-2 mb-4">
                 <CheckCircle className="w-5 h-5 text-primary-600" />
-                <h2 className="text-lg font-semibold text-gray-900">Confirm Your Order</h2>
+                <h2 className="text-lg font-semibold text-gray-900">{t('newOrder.confirmYourOrder')}</h2>
               </div>
 
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1 font-normal">Order Date</p>
+                  <p className="text-sm text-gray-600 mb-1 font-normal">{t('common.labels.orderDate')}</p>
                   <p className="font-semibold text-gray-900">
-                    {new Date(orderDate).toLocaleDateString('en-US', {
+                    {new Date(orderDate).toLocaleDateString(i18n.language || 'fr', {
                       weekday: 'long',
                       year: 'numeric',
                       month: 'long',
@@ -165,12 +164,12 @@ function OrderConfirmContent() {
                 </div>
 
                 <div className="border-t border-surface-dark pt-3">
-                  <p className="text-sm text-gray-600 mb-2 font-normal">Pack</p>
+                  <p className="text-sm text-gray-600 mb-2 font-normal">{t('common.labels.pack')}</p>
                   <p className="font-semibold text-gray-900">{pack.name}</p>
                 </div>
 
                 <div className="border-t border-surface-dark pt-3 space-y-2">
-                  <p className="text-sm text-gray-600 mb-2 font-normal">Your Selection</p>
+                  <p className="text-sm text-gray-600 mb-2 font-normal">{t('common.labels.yourSelection')}</p>
                   {pack.components.map((component) => {
                     const selectedVariant = component.variants.find((v) =>
                       items.some(
@@ -189,7 +188,7 @@ function OrderConfirmContent() {
                             />
                           ) : (
                             <div className="w-12 h-12 bg-surface-light border border-surface-dark rounded-md flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
-                              No image
+                              {t('common.labels.noImage')}
                             </div>
                           )}
                           <div className="text-sm">
@@ -210,11 +209,11 @@ function OrderConfirmContent() {
                 <div className="flex items-center gap-2">
                   <Clock className="w-5 h-5 text-primary-600" />
                   <div>
-                    <p className="text-xs text-gray-600 font-normal">Order will be ready at:</p>
+                    <p className="text-xs text-gray-600 font-normal">{t('common.labels.orderWillBeReadyAt')}:</p>
                     <p className="text-base font-semibold text-primary-700">
                       {readyTime.isToday
-                        ? `Today at ${readyTime.timeStr}`
-                        : readyTime.date.toLocaleDateString('en-US', {
+                        ? `${t('common.labels.today')} ${readyTime.timeStr}`
+                        : readyTime.date.toLocaleDateString(i18n.language || 'fr', {
                             weekday: 'long',
                             month: 'long',
                             day: 'numeric',
@@ -242,14 +241,14 @@ function OrderConfirmContent() {
                 disabled={submitting || !pack || items.length === 0}
                 className="w-full py-3 px-4 bg-primary-600 text-white font-semibold rounded-md hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed min-h-[44px]"
               >
-                {submitting ? 'Placing Order...' : 'Place Order'}
+                {submitting ? t('newOrder.placingOrder') : t('newOrder.placeOrder')}
               </button>
               <button
                 type="button"
                 onClick={() => router.push('/menu')}
                 className="w-full py-2.5 px-4 bg-surface-light text-gray-700 rounded-md hover:bg-surface-dark transition-colors font-semibold min-h-[44px]"
               >
-                Back to Menu
+                {t('newOrder.backToMenu')}
               </button>
             </div>
           </form>
@@ -264,7 +263,7 @@ export default function OrderConfirmPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-background flex items-center justify-center">
-          <Loading message="Loading..." />
+          <Loading message={t('common.messages.loading')} />
         </div>
       }
     >

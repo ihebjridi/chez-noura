@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { apiClient } from '../../lib/api-client';
 import { InvoiceSummaryDto, InvoiceStatus } from '@contracts/core';
@@ -10,6 +11,7 @@ import { Empty } from '../../components/ui/empty';
 import { FileText, ArrowRight } from 'lucide-react';
 
 export default function InvoicesPage() {
+  const { t } = useTranslation();
   const [invoices, setInvoices] = useState<InvoiceSummaryDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -25,7 +27,7 @@ export default function InvoicesPage() {
       const data = await apiClient.getBusinessInvoices();
       setInvoices(data);
     } catch (err: any) {
-      setError(err.message || 'Failed to load invoices');
+      setError(err.message || t('common.messages.failedToLoad'));
     } finally {
       setLoading(false);
     }
@@ -48,8 +50,8 @@ export default function InvoicesPage() {
     <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Invoices</h1>
-        <p className="mt-2 text-gray-600">View and manage your invoices</p>
+        <h1 className="text-2xl font-semibold text-gray-900">{t('invoices.title')}</h1>
+        <p className="mt-2 text-gray-600">{t('invoices.subtitle')}</p>
       </div>
 
       {/* Error Display */}
@@ -62,7 +64,7 @@ export default function InvoicesPage() {
       {/* Loading State */}
       {loading && (
         <div className="bg-surface border border-surface-dark rounded-lg p-12">
-          <Loading message="Loading invoices..." />
+          <Loading message={t('invoices.loadingInvoices')} />
         </div>
       )}
 
@@ -70,8 +72,8 @@ export default function InvoicesPage() {
       {!loading && invoices.length === 0 && (
         <div className="bg-surface border border-surface-dark rounded-lg p-12">
           <Empty
-            message="No invoices found"
-            description="Invoices will appear here once they are generated."
+            message={t('invoices.noInvoices')}
+            description={t('invoices.noInvoicesDescription')}
           />
         </div>
       )}
@@ -92,7 +94,7 @@ export default function InvoicesPage() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
-                      Invoice #{invoice.invoiceNumber}
+                      {t('invoices.invoiceNumber')} #{invoice.invoiceNumber}
                     </h3>
                   </div>
                 </div>
@@ -101,12 +103,12 @@ export default function InvoicesPage() {
 
               <div className="space-y-2 mb-4">
                 <p className="text-sm text-gray-600">
-                  <strong>Period:</strong>{' '}
+                  <strong>{t('common.labels.period')}:</strong>{' '}
                   {new Date(invoice.periodStart).toLocaleDateString()} -{' '}
                   {new Date(invoice.periodEnd).toLocaleDateString()}
                 </p>
                 <p className="text-sm text-gray-600">
-                  <strong>Due:</strong> {new Date(invoice.dueDate).toLocaleDateString()}
+                  <strong>{t('common.labels.due')}:</strong> {new Date(invoice.dueDate).toLocaleDateString()}
                 </p>
               </div>
 

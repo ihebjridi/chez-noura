@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { ProtectedRoute } from '../../components/protected-route';
 import { useAuth } from '../../contexts/auth-context';
@@ -24,6 +25,7 @@ import { CheckCircle, Clock, X, Package, AlertCircle, ChevronRight } from 'lucid
 import { getTodayISO } from '../../lib/date-utils';
 
 export default function MenuPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const router = useRouter();
   const [menu, setMenu] = useState<EmployeeMenuDto | null>(null);
@@ -51,7 +53,7 @@ export default function MenuPage() {
       const currentToday = getTodayISO();
       if (today !== currentToday) {
         // If the today constant is outdated, use current date
-        setError('Date mismatch detected. Please refresh the page.');
+        setError(t('common.messages.dateMismatch'));
         return;
       }
       
@@ -60,9 +62,9 @@ export default function MenuPage() {
       setPacks(menuData.packs);
     } catch (err: any) {
       if (err.message?.includes('past date') || err.message?.includes('read-only')) {
-        setError('This menu is for a past date. Orders can only be placed for today\'s menu.');
+        setError(t('menu.pastDateMenu'));
       } else {
-        setError(err.message || 'Failed to load menu');
+        setError(err.message || t('menu.failedToLoadMenu'));
       }
     } finally {
       setLoading(false);
@@ -120,12 +122,12 @@ export default function MenuPage() {
 
   const handleConfirmClick = () => {
     if (todayOrder) {
-      setError('You have already placed an order for today. Only one order per day is allowed.');
+      setError(t('common.messages.alreadyOrderedToday'));
       return;
     }
 
     if (!selectedPack || !isOrderValid || !menu) {
-      setError('Please select a pack and all required components');
+      setError(t('common.messages.selectPackAndComponents'));
       return;
     }
 
@@ -154,19 +156,19 @@ export default function MenuPage() {
 
       router.push('/calendar?success=true');
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to place order';
+      const errorMessage = err.message || t('common.messages.failedToPlaceOrder');
       if (
         errorMessage.includes('cutoff') ||
         errorMessage.includes('cut-off') ||
         errorMessage.includes('Ordering cutoff')
       ) {
-        setError('Ordering cutoff time has passed. Orders cannot be placed after the cutoff time.');
+        setError(t('common.messages.cutoffTimePassed'));
       } else if (
         errorMessage.includes('already ordered') ||
         errorMessage.includes('duplicate') ||
         errorMessage.includes('Conflict')
       ) {
-        setError('You have already placed an order for this date. Only one order per day is allowed.');
+        setError(t('common.messages.alreadyOrderedDate'));
       } else {
         setError(errorMessage);
       }
@@ -180,13 +182,13 @@ export default function MenuPage() {
       case OrderStatus.LOCKED:
         return {
           icon: CheckCircle,
-          message: 'Confirmed - Ready for pickup',
+          message: t('menu.confirmedReadyPickup'),
           className: 'bg-success-50 border-success-300 text-success-700',
         };
       case OrderStatus.CREATED:
         return {
           icon: Clock,
-          message: 'Pending confirmation',
+          message: t('menu.pendingConfirmation'),
           className: 'bg-warning-50 border-warning-300 text-warning-800',
         };
       default:
@@ -213,7 +215,7 @@ export default function MenuPage() {
                 <StatusIcon className="w-5 h-5 flex-shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="font-semibold text-sm">Today's Order</p>
+                    <p className="font-semibold text-sm">{t('menu.todaysOrder')}</p>
                     <span className="px-2 py-1 rounded text-xs font-medium bg-white/50">
                       {todayOrder.status}
                     </span>
@@ -223,7 +225,7 @@ export default function MenuPage() {
                     onClick={() => router.push('/calendar')}
                     className="px-3 py-1.5 text-sm bg-white/50 hover:bg-white/70 rounded border font-medium transition-colors"
                   >
-                    View Details
+                    {t('common.buttons.viewDetails')}
                   </button>
                 </div>
               </div>
@@ -246,13 +248,13 @@ export default function MenuPage() {
         {/* Loading State */}
         {loading ? (
           <div className="flex-1 flex items-center justify-center">
-            <Loading message="Loading menu..." />
+            <Loading message={t('menu.failedToLoadMenu')} />
           </div>
         ) : packs.length === 0 ? (
           <div className="flex-1 flex items-center justify-center px-4">
             <Empty
-              message="No packs available for today"
-              description="Check back later or contact your business admin."
+              message={t('menu.noMenu')}
+              description={t('today.checkBackLater')}
             />
           </div>
         ) : (
@@ -261,7 +263,7 @@ export default function MenuPage() {
             {!selectedPack ? (
               <div className="space-y-3">
                 <h2 className="text-base font-semibold text-gray-900 px-1">
-                  Choose Your Pack
+                  {t('menu.selectPack')}
                 </h2>
                 <Spotlight>
                   {packs.map((pack) => (
@@ -279,10 +281,10 @@ export default function MenuPage() {
                               </h3>
                             </div>
                             <p className="text-sm text-gray-600">
-                              {pack.components.length} component{pack.components.length !== 1 ? 's' : ''}
+                              {pack.components.length} {pack.components.length !== 1 ? t('common.labels.items') : t('common.labels.item')}
                             </p>
                             <p className="text-xs text-primary-600 mt-1 font-medium flex items-center gap-1">
-                              Tap to customize
+                              {t('common.buttons.customize')}
                               <ChevronRight className="w-3 h-3" />
                             </p>
                           </div>
@@ -310,18 +312,18 @@ export default function MenuPage() {
                       }}
                       className="text-sm text-primary-600 hover:text-primary-700 font-medium"
                     >
-                      Change
+                      {t('common.labels.change')}
                     </button>
                   </div>
                   <p className="text-sm text-gray-600">
-                    {selectedPack.components.length} component{selectedPack.components.length !== 1 ? 's' : ''}
+                    {selectedPack.components.length} {selectedPack.components.length !== 1 ? t('common.labels.items') : t('common.labels.item')}
                   </p>
                 </div>
 
                 {/* Component Selection - Collapsible Sections */}
                 <div className="space-y-4">
                   <h2 className="text-lg font-semibold text-gray-900 px-1">
-                    Customize Your Pack
+                    {t('menu.selectVariant')}
                   </h2>
                   {sortedComponents.map((component, index) => {
                     const selectedVariantId = selections[component.id];
@@ -339,12 +341,12 @@ export default function MenuPage() {
                               <span className="font-semibold text-gray-900">{component.name}</span>
                               {component.required && (
                                 <span className="px-2 py-0.5 text-xs font-medium bg-destructive/10 text-destructive rounded-full border border-destructive/20">
-                                  Required
+                                  {t('common.labels.required')}
                                 </span>
                               )}
                               {!component.required && (
                                 <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
-                                  Optional
+                                  {t('common.labels.optional')}
                                 </span>
                               )}
                             </div>
@@ -361,7 +363,7 @@ export default function MenuPage() {
                         >
                           <div className="space-y-3 pt-3">
                             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                              Select a variant for {component.name}:
+                              {t('menu.selectVariant')} {component.name}:
                             </p>
                             {component.variants.map((variant) => {
                               const isOutOfStock = variant.stockQuantity <= 0;
@@ -395,7 +397,7 @@ export default function MenuPage() {
                                       />
                                     ) : (
                                       <div className="w-16 h-16 bg-surface-light border-2 border-surface-dark rounded-lg flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
-                                        No image
+                                        {t('common.labels.noImage')}
                                       </div>
                                     )}
                                     <div className="flex-1 flex justify-between items-center min-w-0">
@@ -405,19 +407,19 @@ export default function MenuPage() {
                                         </span>
                                         {isSelected && (
                                           <span className="text-xs text-primary-600 font-medium mt-1 block">
-                                            Selected
+                                            {t('common.labels.selected')}
                                           </span>
                                         )}
                                       </div>
                                       <div className="flex items-center gap-2 flex-shrink-0 ml-3">
                                         {isOutOfStock && (
                                           <span className="px-2 py-1 text-xs text-destructive font-medium bg-destructive/10 rounded border border-destructive/20">
-                                            Out of Stock
+                                            {t('common.labels.outOfStock')}
                                           </span>
                                         )}
                                         {!isOutOfStock && variant.stockQuantity < 10 && (
                                           <span className="px-2 py-1 text-xs text-warning-700 font-medium bg-warning-50 rounded border border-warning-200">
-                                            {variant.stockQuantity} left
+                                            {variant.stockQuantity} {t('common.labels.left')}
                                           </span>
                                         )}
                                         {isSelected && (
@@ -432,7 +434,7 @@ export default function MenuPage() {
                           </div>
                           {component.required && !selectedVariantId && (
                             <p className="text-sm text-destructive mt-3 font-medium bg-destructive/10 border border-destructive/20 rounded-lg p-2">
-                              ⚠️ Required - Please select an option for {component.name}
+                              ⚠️ {t('common.labels.required')} - {t('menu.selectVariant')} {component.name}
                             </p>
                           )}
                         </CollapsibleSection>
@@ -446,13 +448,13 @@ export default function MenuPage() {
                   <div className="bg-surface border-2 border-primary-500 rounded-lg p-4 space-y-4">
                     <div className="flex items-center gap-2 mb-2">
                       <CheckCircle className="w-5 h-5 text-primary-600" />
-                      <h3 className="text-lg font-semibold text-gray-900">Confirm Your Order</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">{t('menu.confirmOrder')}</h3>
                     </div>
 
                     {/* Order Summary */}
                     <div className="bg-background rounded-lg p-3 space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Pack:</span>
+                        <span className="text-gray-600">{t('common.labels.pack')}:</span>
                         <span className="font-medium text-gray-900">{selectedPack.name}</span>
                       </div>
                       {sortedComponents.map((component) => {
@@ -476,10 +478,10 @@ export default function MenuPage() {
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4 text-primary-600" />
                           <div>
-                            <p className="text-xs text-gray-600 font-normal">Ready at:</p>
+                            <p className="text-xs text-gray-600 font-normal">{t('common.labels.readyAt')}:</p>
                             <p className="text-sm font-semibold text-primary-700">
                               {readyTime.isToday
-                                ? `Today at ${readyTime.timeStr}`
+                                ? `${t('common.labels.today')} ${readyTime.timeStr}`
                                 : readyTime.date.toLocaleDateString('en-US', {
                                     weekday: 'long',
                                     month: 'long',
@@ -501,14 +503,14 @@ export default function MenuPage() {
                         onClick={() => setShowConfirm(false)}
                         className="flex-1 px-4 py-2.5 bg-surface-light text-gray-700 rounded-md hover:bg-surface-dark transition-colors font-semibold min-h-[44px]"
                       >
-                        Back
+                        {t('common.buttons.back')}
                       </button>
                       <button
                         onClick={handlePlaceOrder}
                         disabled={submitting}
                         className="flex-1 px-4 py-2.5 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed min-h-[44px]"
                       >
-                        {submitting ? 'Placing...' : 'Place Order'}
+                        {submitting ? t('newOrder.placingOrder') : t('common.buttons.placeOrder')}
                       </button>
                     </div>
                   </div>
@@ -524,8 +526,8 @@ export default function MenuPage() {
                         className="w-full py-2.5 px-4 bg-primary-600 text-white font-semibold rounded-md hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed min-h-[44px]"
                       >
                         {!isOrderValid
-                          ? 'Complete Selection'
-                          : 'Review & Confirm'}
+                          ? t('common.labels.completeSelection')
+                          : t('common.labels.reviewConfirm')}
                       </button>
                     </div>
                   </div>

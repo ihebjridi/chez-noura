@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiClient } from '../lib/api-client';
 
 export function DegradedModeBanner() {
+  const { t } = useTranslation();
   const [isDegraded, setIsDegraded] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
 
@@ -42,7 +44,7 @@ export function DegradedModeBanner() {
 
   return (
     <div className="fixed top-0 left-0 right-0 bg-warning-50 text-warning-800 px-4 py-3 border-b-2 border-warning-300 z-[1000] text-center text-sm md:text-base font-medium">
-      ⚠️ Backend is currently unavailable. You are viewing cached data. New orders cannot be placed at this time.
+      ⚠️ {t('common.messages.backendUnavailable')}
     </div>
   );
 }

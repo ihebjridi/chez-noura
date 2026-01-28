@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '../../../lib/api-client';
 import {
@@ -18,6 +19,7 @@ import { CheckCircle, Clock, Package, AlertCircle, Calendar, ChevronRight } from
 import { getTodayISO, getTomorrowISO } from '../../../lib/date-utils';
 
 function NewOrderContent() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [menu, setMenu] = useState<EmployeeMenuDto | null>(null);
@@ -38,7 +40,7 @@ function NewOrderContent() {
     if (selectedDate < today) {
       // Redirect to today's date if past date is detected
       router.replace(`/new-order?date=${today}`);
-      setError('This menu is for a past date. Orders can only be placed for today\'s menu.');
+      setError(t('menu.pastDateMenu'));
       return;
     }
     
@@ -57,7 +59,7 @@ function NewOrderContent() {
       
       // Validate date is not in the past before making API call
       if (selectedDate < today) {
-        setError('This menu is for a past date. Orders can only be placed for today\'s menu.');
+        setError(t('menu.pastDateMenu'));
         router.replace(`/new-order?date=${today}`);
         return;
       }
@@ -67,13 +69,13 @@ function NewOrderContent() {
       setPacks(menuData.packs);
     } catch (err: any) {
       if (err.message?.includes('not found') || err.message?.includes('404')) {
-        setError('Menu not available for this date');
+        setError(t('common.messages.menuNotAvailableDate'));
       } else if (err.message?.includes('past date') || err.message?.includes('read-only')) {
-        setError('This menu is for a past date. Orders can only be placed for today\'s menu.');
+        setError(t('menu.pastDateMenu'));
         // Redirect to today if backend rejects past date
         router.replace(`/new-order?date=${today}`);
       } else {
-        setError(err.message || 'Failed to load menu');
+        setError(err.message || t('menu.failedToLoadMenu'));
       }
       setMenu(null);
       setPacks([]);
@@ -132,12 +134,12 @@ function NewOrderContent() {
 
   const handlePlaceOrder = async () => {
     if (existingOrder) {
-      setError('You have already placed an order for this date. Only one order per day is allowed.');
+      setError(t('common.messages.alreadyOrderedDate'));
       return;
     }
 
     if (!selectedPack || !isOrderValid || !menu) {
-      setError('Please select a pack and all required components');
+      setError(t('common.messages.selectPackAndComponents'));
       return;
     }
 
@@ -158,19 +160,19 @@ function NewOrderContent() {
 
       router.push(`/today?success=true`);
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to place order';
+      const errorMessage = err.message || t('common.messages.failedToPlaceOrder');
       if (
         errorMessage.includes('cutoff') ||
         errorMessage.includes('cut-off') ||
         errorMessage.includes('Ordering cutoff')
       ) {
-        setError('Ordering cutoff time has passed. Orders cannot be placed after the cutoff time.');
+        setError(t('common.messages.cutoffTimePassed'));
       } else if (
         errorMessage.includes('already ordered') ||
         errorMessage.includes('duplicate') ||
         errorMessage.includes('Conflict')
       ) {
-        setError('You have already placed an order for this date. Only one order per day is allowed.');
+        setError(t('common.messages.alreadyOrderedDate'));
       } else {
         setError(errorMessage);
       }
@@ -183,13 +185,29 @@ function NewOrderContent() {
     const date = new Date(dateStr);
     const today = getTodayISO();
     const tomorrow = getTomorrowISO();
+    // Get locale from cookie or default to French
+    let locale = 'fr';
+    if (typeof document !== 'undefined') {
+      try {
+        const cookies = document.cookie.split(';');
+        const localeCookie = cookies.find(c => c.trim().startsWith('NEXT_LOCALE='));
+        if (localeCookie) {
+          const loc = localeCookie.split('=')[1].trim();
+          if (loc === 'fr' || loc === 'en') {
+            locale = loc;
+          }
+        }
+      } catch (e) {
+        // Fallback to default
+      }
+    }
 
     if (dateStr === today) {
-      return 'Today';
+      return t('common.labels.today');
     } else if (dateStr === tomorrow) {
-      return 'Tomorrow';
+      return t('common.labels.tomorrow');
     } else {
-      return date.toLocaleDateString('en-US', {
+      return date.toLocaleDateString(locale, {
         weekday: 'long',
         month: 'long',
         day: 'numeric',
@@ -200,7 +218,7 @@ function NewOrderContent() {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <Loading message="Loading menu..." />
+        <Loading message={t('menu.failedToLoadMenu')} />
       </div>
     );
   }
@@ -208,7 +226,7 @@ function NewOrderContent() {
   return (
     <div className="p-4 max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">New Order</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('newOrder.title')}</h1>
         <div className="flex items-center gap-2 mt-2">
           <Calendar className="w-4 h-4 text-gray-600" />
           <p className="text-sm text-gray-600">{formatDate(selectedDate)}</p>
@@ -221,7 +239,7 @@ function NewOrderContent() {
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5" />
             <p className="text-sm font-semibold">
-              You have already placed an order for this date. Only one order per day is allowed.
+              {t('common.messages.alreadyOrderedDate')}
             </p>
           </div>
         </div>
@@ -246,8 +264,8 @@ function NewOrderContent() {
         <div className="flex-1 flex items-center justify-center">
           <div className="bg-surface border border-surface-dark rounded-lg p-8 w-full max-w-md">
             <Empty
-              message="Menu not available"
-              description="No menu is available for the selected date. Please choose a different date."
+              message={t('menu.menuUnavailable')}
+              description={t('common.messages.menuNotAvailableDate')}
             />
           </div>
         </div>
@@ -260,13 +278,13 @@ function NewOrderContent() {
           {!selectedPack ? (
             <div className="space-y-3">
               <h2 className="text-base font-semibold text-gray-900 px-1">
-                Choose Your Pack
+                {t('menu.selectPack')}
               </h2>
               {packs.length === 0 ? (
                 <div className="bg-surface border border-surface-dark rounded-lg p-6">
                   <Empty
-                    message="No packs available"
-                    description="No packs are available for this date."
+                    message={t('menu.noMenu')}
+                    description={t('common.messages.menuNotAvailableDate')}
                   />
                 </div>
               ) : (
@@ -286,10 +304,10 @@ function NewOrderContent() {
                               </h3>
                             </div>
                             <p className="text-sm text-gray-600">
-                              {pack.components.length} component{pack.components.length !== 1 ? 's' : ''}
+                              {pack.components.length} {pack.components.length !== 1 ? t('common.labels.items') : t('common.labels.item')}
                             </p>
                             <p className="text-xs text-primary-600 mt-1 font-medium flex items-center gap-1">
-                              Tap to customize
+                              {t('common.buttons.customize')}
                               <ChevronRight className="w-3 h-3" />
                             </p>
                           </div>
@@ -317,18 +335,18 @@ function NewOrderContent() {
                     }}
                     className="text-sm text-primary-600 hover:text-primary-700 font-medium min-h-[44px] px-2"
                   >
-                    Change
+                    {t('common.labels.change')}
                   </button>
                 </div>
                 <p className="text-sm text-gray-600">
-                  {selectedPack.components.length} component{selectedPack.components.length !== 1 ? 's' : ''}
+                  {selectedPack.components.length} {selectedPack.components.length !== 1 ? t('common.labels.items') : t('common.labels.item')}
                 </p>
               </div>
 
               {/* Component Selection */}
               <div className="space-y-4">
                 <h2 className="text-lg font-semibold text-gray-900 px-1">
-                  Customize Your Pack
+                  {t('menu.selectVariant')}
                 </h2>
                 {sortedComponents.map((component, index) => {
                   const selectedVariantId = selections[component.id];
@@ -346,12 +364,12 @@ function NewOrderContent() {
                             <span className="font-semibold text-gray-900">{component.name}</span>
                             {component.required && (
                               <span className="px-2 py-0.5 text-xs font-medium bg-destructive/10 text-destructive rounded-full border border-destructive/20">
-                                Required
+                                {t('common.labels.required')}
                               </span>
                             )}
                             {!component.required && (
                               <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
-                                Optional
+                                {t('common.labels.optional')}
                               </span>
                             )}
                           </div>
@@ -368,7 +386,7 @@ function NewOrderContent() {
                       >
                         <div className="space-y-3 pt-3">
                           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                            Select a variant for {component.name}:
+                            {t('menu.selectVariant')} {component.name}:
                           </p>
                           {component.variants.map((variant) => {
                             const isOutOfStock = variant.stockQuantity <= 0;
@@ -400,33 +418,33 @@ function NewOrderContent() {
                                       alt={variant.name}
                                       className="w-16 h-16 object-cover rounded-lg border-2 border-surface-dark flex-shrink-0"
                                     />
-                                  ) : (
-                                    <div className="w-16 h-16 bg-surface-light border-2 border-surface-dark rounded-lg flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
-                                      No image
-                                    </div>
-                                  )}
-                                  <div className="flex-1 flex justify-between items-center min-w-0">
-                                    <div className="flex-1 min-w-0">
-                                      <span className={`block text-base ${isSelected ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
-                                        {variant.name}
-                                      </span>
-                                      {isSelected && (
-                                        <span className="text-xs text-primary-600 font-medium mt-1 block">
-                                          Selected
+                                    ) : (
+                                      <div className="w-16 h-16 bg-surface-light border-2 border-surface-dark rounded-lg flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
+                                        {t('common.labels.noImage')}
+                                      </div>
+                                    )}
+                                    <div className="flex-1 flex justify-between items-center min-w-0">
+                                      <div className="flex-1 min-w-0">
+                                        <span className={`block text-base ${isSelected ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
+                                          {variant.name}
                                         </span>
-                                      )}
-                                    </div>
-                                    <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                                      {isOutOfStock && (
-                                        <span className="px-2 py-1 text-xs text-destructive font-medium bg-destructive/10 rounded border border-destructive/20">
-                                          Out of Stock
-                                        </span>
-                                      )}
-                                      {!isOutOfStock && variant.stockQuantity < 10 && (
-                                        <span className="px-2 py-1 text-xs text-warning-700 font-medium bg-warning-50 rounded border border-warning-200">
-                                          {variant.stockQuantity} left
-                                        </span>
-                                      )}
+                                        {isSelected && (
+                                          <span className="text-xs text-primary-600 font-medium mt-1 block">
+                                            {t('common.labels.selected')}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                                        {isOutOfStock && (
+                                          <span className="px-2 py-1 text-xs text-destructive font-medium bg-destructive/10 rounded border border-destructive/20">
+                                            {t('common.labels.outOfStock')}
+                                          </span>
+                                        )}
+                                        {!isOutOfStock && variant.stockQuantity < 10 && (
+                                          <span className="px-2 py-1 text-xs text-warning-700 font-medium bg-warning-50 rounded border border-warning-200">
+                                            {variant.stockQuantity} {t('common.labels.left')}
+                                          </span>
+                                        )}
                                       {isSelected && (
                                         <CheckCircle className="w-5 h-5 text-primary-600 flex-shrink-0" />
                                       )}
@@ -439,7 +457,7 @@ function NewOrderContent() {
                         </div>
                         {component.required && !selectedVariantId && (
                           <p className="text-sm text-destructive mt-3 font-medium bg-destructive/10 border border-destructive/20 rounded-lg p-2">
-                            ⚠️ Required - Please select an option for {component.name}
+                            ⚠️ {t('common.labels.required')} - {t('menu.selectVariant')} {component.name}
                           </p>
                         )}
                       </CollapsibleSection>
@@ -457,11 +475,11 @@ function NewOrderContent() {
                       <div className="flex items-center gap-2">
                         <Clock className="w-4 h-4 text-primary-600" />
                         <div>
-                          <p className="text-xs text-gray-600 font-normal">Ready at:</p>
+                          <p className="text-xs text-gray-600 font-normal">{t('common.labels.readyAt')}:</p>
                           <p className="text-sm font-semibold text-primary-700">
                             {readyTime.isToday
-                              ? `Today at ${readyTime.timeStr}`
-                              : readyTime.date.toLocaleDateString('en-US', {
+                              ? `${t('common.labels.today')} ${readyTime.timeStr}`
+                              : readyTime.date.toLocaleDateString(i18n.language || 'fr', {
                                   weekday: 'long',
                                   month: 'long',
                                   day: 'numeric',
@@ -481,10 +499,10 @@ function NewOrderContent() {
                     className="w-full py-2.5 px-4 bg-primary-600 text-white font-semibold rounded-md hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed min-h-[44px]"
                   >
                     {submitting
-                      ? 'Placing Order...'
+                      ? t('newOrder.placingOrder')
                       : !isOrderValid
-                        ? 'Complete Selection'
-                        : 'Confirm My Meal'}
+                        ? t('common.labels.completeSelection')
+                        : t('common.buttons.placeOrder')}
                   </button>
                 </div>
               </div>
@@ -501,7 +519,7 @@ export default function NewOrderPage() {
     <Suspense
       fallback={
         <div className="flex-1 flex items-center justify-center">
-          <Loading message="Loading..." />
+          <Loading message={t('common.messages.loading')} />
         </div>
       }
     >

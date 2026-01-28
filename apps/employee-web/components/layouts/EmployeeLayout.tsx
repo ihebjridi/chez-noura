@@ -38,7 +38,7 @@ export function EmployeeLayout({
                 <button
                   onClick={backAction}
                   className="p-2 hover:bg-surface-light rounded-md transition-colors -ml-2"
-                  aria-label="Back"
+                  aria-label={t('common.buttons.back')}
                 >
                   <svg
                     className="w-5 h-5 text-gray-700"

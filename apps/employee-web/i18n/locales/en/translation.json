@@ -15,7 +15,11 @@
       "newOrder": "New Order",
       "viewDetails": "View Details",
       "confirm": "Confirm",
-      "placeOrder": "Place Order"
+      "placeOrder": "Place Order",
+      "orderNow": "Order Now",
+      "backToMenu": "Back to Menu",
+      "customize": "Customize",
+      "redirecting": "Redirecting..."
     },
     "labels": {
       "email": "Email",
@@ -29,7 +33,47 @@
       "noData": "No data available",
       "error": "Error",
       "success": "Success",
-      "emailAddress": "Email Address"
+      "emailAddress": "Email Address",
+      "orderDate": "Order Date",
+      "pack": "Pack",
+      "yourSelection": "Your Selection",
+      "readyAt": "Ready at",
+      "orderWillBeReadyAt": "Order will be ready at",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "item": "item",
+      "items": "items",
+      "noImage": "No image",
+      "hours": "Hours",
+      "minutes": "Minutes",
+      "seconds": "Seconds",
+      "timeRemaining": "Time Remaining",
+      "yourOrder": "Your Order",
+      "required": "Required",
+      "optional": "Optional",
+      "outOfStock": "Out of Stock",
+      "left": "left",
+      "selected": "Selected",
+      "change": "Change",
+      "completeSelection": "Complete Selection",
+      "reviewConfirm": "Review & Confirm",
+      "showing": "Showing",
+      "to": "to",
+      "of": "of",
+      "orders": "orders",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "noOrdersYet": "No orders yet",
+      "placeFirstOrder": "Place your first order to get started",
+      "changeLanguage": "Change language",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "previous": "Previous",
+      "next": "Next",
+      "toggleView": "Toggle view",
+      "orderAvailable": "Order available",
+      "pastDatesReadOnly": "Past dates are read-only",
+      "employee": "Employee"
     },
     "status": {
       "active": "ACTIVE",
@@ -48,7 +92,21 @@
       "errorOccurred": "An error occurred",
       "loginFailed": "Login failed. Please check your email.",
       "hidePassword": "Hide password",
-      "showPassword": "Show password"
+      "showPassword": "Show password",
+      "failedToLoad": "Failed to load",
+      "dateMismatch": "Date mismatch detected. Please refresh the page.",
+      "alreadyOrderedToday": "You have already placed an order for today. Only one order per day is allowed.",
+      "alreadyOrderedDate": "You have already placed an order for this date. Only one order per day is allowed.",
+      "selectPackAndComponents": "Please select a pack and all required components",
+      "cutoffTimePassed": "Ordering cutoff time has passed. Orders cannot be placed after the cutoff time.",
+      "orderPlacedSuccess": "Order placed successfully!",
+      "menuNotAvailableDate": "Menu not available for this date",
+      "packNotFound": "Pack not found or no longer available",
+      "menuInfoMissing": "Menu or pack information is missing",
+      "failedToPlaceOrder": "Failed to place order",
+      "failedToLoadMenuInfo": "Failed to load menu information",
+      "failedToLoadTodaysData": "Failed to load today's data",
+      "backendUnavailable": "Backend is currently unavailable. You are viewing cached data. New orders cannot be placed at this time."
     }
   },
   "auth": {
@@ -87,7 +145,9 @@
       "created": "Your order has been created successfully. It will be locked at the cutoff time.",
       "locked": "Your order has been locked and can no longer be modified.",
       "cancelled": "Your order has been cancelled."
-    }
+    },
+    "confirmedReadyPickup": "Confirmed - Ready for pickup",
+    "pendingConfirmation": "Pending confirmation"
   },
   "orders": {
     "title": "My Orders",
@@ -97,7 +157,13 @@
     "date": "Date",
     "status": "Status",
     "total": "Total",
-    "viewOrder": "View Order"
+    "viewOrder": "View Order",
+    "loadingOrders": "Loading orders...",
+    "orderHistory": "Order History",
+    "viewAllPastUpcoming": "View all your past and upcoming orders",
+    "confirmedReadyPickup": "Confirmed - Ready for pickup",
+    "pendingConfirmation": "Pending confirmation",
+    "cancelled": "Cancelled"
   },
   "calendar": {
     "title": "Calendar",
@@ -118,7 +184,35 @@
   },
   "today": {
     "title": "Today",
-    "todaysOrder": "Today's Order"
+    "todaysOrder": "Today's Order",
+    "loadingTodaysOrder": "Loading today's order...",
+    "noOrderToday": "No order for today",
+    "noOrderTodayDescription": "You can place an order now",
+    "menuPublishedNoPacks": "Menu is published but no packs are available",
+    "menuNotAvailableOrdering": "Menu is not yet available for ordering",
+    "contactBusinessAdmin": "Contact your business admin",
+    "menuStatus": "Menu status",
+    "noMenuAvailableToday": "No menu available for today",
+    "checkBackLater": "Check back later or contact your business admin",
+    "viewOrderHistory": "View Order History",
+    "confirmedReadyPickup": "Confirmed - Ready for pickup",
+    "pendingConfirmation": "Pending confirmation"
+  },
+  "newOrder": {
+    "title": "New Order",
+    "loadingOrderDetails": "Loading order details...",
+    "confirmYourOrder": "Confirm Your Order",
+    "backToMenu": "Back to Menu",
+    "placingOrder": "Placing Order...",
+    "placeOrder": "Place Order"
+  },
+  "cutoff": {
+    "orderingClosesIn": "Ordering Closes In",
+    "hurryTimeRunningOut": "⏰ Hurry! Time is running out",
+    "lessThanHourRemaining": "Less than an hour remaining",
+    "placeOrderBeforeCutoff": "Place your order before the cutoff",
+    "orderingClosed": "Ordering Closed",
+    "cutoffTimePassed": "The cutoff time has passed"
   },
   "layout": {
     "back": "Back",

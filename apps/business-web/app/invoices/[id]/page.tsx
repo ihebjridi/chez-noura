@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useRouter } from 'next/navigation';
 import { apiClient } from '../../../lib/api-client';
 import { InvoiceDto, InvoiceStatus } from '@contracts/core';
@@ -10,6 +11,7 @@ import { Empty } from '../../../components/ui/empty';
 import { ArrowLeft, FileText } from 'lucide-react';
 
 export default function InvoiceDetailPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const [invoice, setInvoice] = useState<InvoiceDto | null>(null);
@@ -29,7 +31,7 @@ export default function InvoiceDetailPage() {
       const data = await apiClient.getInvoice(id);
       setInvoice(data);
     } catch (err: any) {
-      setError(err.message || 'Failed to load invoice');
+      setError(err.message || t('common.messages.failedToLoad'));
     } finally {
       setLoading(false);
     }
@@ -40,11 +42,11 @@ export default function InvoiceDetailPage() {
       case InvoiceStatus.PAID:
         return 'bg-success-50 text-success-700 border-success-300';
       case InvoiceStatus.ISSUED:
-        return 'bg-blue-100 text-blue-800 border-blue-300';
+        return 'bg-blue-50 text-blue-700 border-blue-300';
       case InvoiceStatus.DRAFT:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
+        return 'bg-secondary-100 text-secondary-700 border-secondary-300';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
+        return 'bg-secondary-100 text-secondary-700 border-secondary-300';
     }
   };
 
@@ -57,9 +59,9 @@ export default function InvoiceDetailPage() {
           className="mb-4 flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Invoices
+          {t('invoices.backToInvoices')}
         </button>
-        <h1 className="text-2xl font-semibold text-gray-900">Invoice Details</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">{t('invoices.invoiceDetails')}</h1>
       </div>
 
       {/* Error Display */}
@@ -72,14 +74,14 @@ export default function InvoiceDetailPage() {
       {/* Loading State */}
       {loading && (
         <div className="bg-surface border border-surface-dark rounded-lg p-12">
-          <Loading message="Loading invoice..." />
+          <Loading message={t('invoices.loadingInvoice')} />
         </div>
       )}
 
       {/* Empty State */}
       {!loading && !invoice && (
         <div className="bg-surface border border-surface-dark rounded-lg p-12">
-          <Empty message="Invoice not found" />
+          <Empty message={t('invoices.invoiceNotFound')} />
         </div>
       )}
 
@@ -95,7 +97,7 @@ export default function InvoiceDetailPage() {
                 </div>
                 <div>
                   <h2 className="text-2xl font-semibold text-gray-900">
-                    Invoice #{invoice.invoiceNumber}
+                    {t('invoices.invoiceNumber')} #{invoice.invoiceNumber}
                   </h2>
                   <p className="text-sm text-gray-600 mt-1">{invoice.businessName}</p>
                 </div>
@@ -112,26 +114,26 @@ export default function InvoiceDetailPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-gray-600 mb-1">
-                  <strong>Business Email:</strong> {invoice.businessEmail}
+                  <strong>{t('common.labels.businessEmail')}:</strong> {invoice.businessEmail}
                 </p>
                 <p className="text-gray-600 mb-1">
-                  <strong>Period:</strong>{' '}
+                  <strong>{t('common.labels.period')}:</strong>{' '}
                   {new Date(invoice.periodStart).toLocaleDateString()} -{' '}
                   {new Date(invoice.periodEnd).toLocaleDateString()}
                 </p>
                 <p className="text-gray-600">
-                  <strong>Due Date:</strong> {new Date(invoice.dueDate).toLocaleDateString()}
+                  <strong>{t('common.labels.dueDate')}:</strong> {new Date(invoice.dueDate).toLocaleDateString()}
                 </p>
               </div>
               <div>
                 {invoice.issuedAt && (
                   <p className="text-gray-600 mb-1">
-                    <strong>Issued At:</strong> {new Date(invoice.issuedAt).toLocaleString()}
+                    <strong>{t('common.labels.issuedAt')}:</strong> {new Date(invoice.issuedAt).toLocaleString()}
                   </p>
                 )}
                 {invoice.paidAt && (
                   <p className="text-gray-600">
-                    <strong>Paid At:</strong> {new Date(invoice.paidAt).toLocaleString()}
+                    <strong>{t('common.labels.paidAt')}:</strong> {new Date(invoice.paidAt).toLocaleString()}
                   </p>
                 )}
               </div>
@@ -140,25 +142,25 @@ export default function InvoiceDetailPage() {
 
           {/* Invoice Items */}
           <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Items</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('common.labels.items')}</h3>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-surface-dark border-b border-surface-dark">
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Order Date
+                      {t('common.labels.orderDate')}
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Pack
+                      {t('common.labels.pack')}
                     </th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Quantity
+                      {t('common.labels.quantity')}
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Unit Price
+                      {t('common.labels.unitPrice')}
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Total
+                      {t('common.labels.total')}
                     </th>
                   </tr>
                 </thead>
@@ -190,17 +192,17 @@ export default function InvoiceDetailPage() {
             <div className="flex justify-end">
               <div className="w-full max-w-md space-y-2">
                 <div className="flex justify-between text-sm text-gray-600">
-                  <span>Subtotal:</span>
+                  <span>{t('common.labels.subtotal')}:</span>
                   <span className="font-medium">{invoice.subtotal.toFixed(2)} TND</span>
                 </div>
                 {invoice.tax && invoice.tax > 0 && (
                   <div className="flex justify-between text-sm text-gray-600">
-                    <span>Tax:</span>
+                    <span>{t('common.labels.tax')}:</span>
                     <span className="font-medium">{invoice.tax.toFixed(2)} TND</span>
                   </div>
                 )}
                 <div className="flex justify-between text-xl font-semibold text-gray-900 pt-2 border-t border-surface-dark">
-                  <span>Total:</span>
+                  <span>{t('common.labels.total')}:</span>
                   <span>{invoice.total.toFixed(2)} TND</span>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Clock, AlertCircle } from 'lucide-react';
 
 interface CutoffCountdownProps {
@@ -42,6 +43,7 @@ function TimeCard({ value, label, isUrgent }: { value: number; label: string; is
 }
 
 export function CutoffCountdown({ cutoffTime }: CutoffCountdownProps) {
+  const { t } = useTranslation();
   const [timeRemaining, setTimeRemaining] = useState<{
     hours: number;
     minutes: number;
@@ -124,10 +126,10 @@ export function CutoffCountdown({ cutoffTime }: CutoffCountdownProps) {
           </div>
           <div>
             <p className="text-base md:text-lg font-bold text-warning-900">
-              Ordering Closed
+              {t('cutoff.orderingClosed')}
             </p>
             <p className="text-sm text-warning-700 mt-0.5">
-              The cutoff time has passed
+              {t('cutoff.cutoffTimePassed')}
             </p>
           </div>
         </div>
@@ -183,7 +185,7 @@ export function CutoffCountdown({ cutoffTime }: CutoffCountdownProps) {
               ${isUrgent ? 'text-warning-900' : 'text-gray-900'}
             `}
           >
-            Ordering Closes In
+            {t('cutoff.orderingClosesIn')}
           </h3>
           <p
             className={`
@@ -192,10 +194,10 @@ export function CutoffCountdown({ cutoffTime }: CutoffCountdownProps) {
             `}
           >
             {isVeryUrgent
-              ? '⏰ Hurry! Time is running out'
+              ? t('cutoff.hurryTimeRunningOut')
               : isUrgent
-              ? 'Less than an hour remaining'
-              : 'Place your order before the cutoff'}
+              ? t('cutoff.lessThanHourRemaining')
+              : t('cutoff.placeOrderBeforeCutoff')}
           </p>
         </div>
       </div>
@@ -204,7 +206,7 @@ export function CutoffCountdown({ cutoffTime }: CutoffCountdownProps) {
       <div className="flex items-center justify-center gap-3 sm:gap-4">
         <TimeCard
           value={timeRemaining.hours}
-          label="Hours"
+          label={t('common.labels.hours')}
           isUrgent={isUrgent}
         />
         <div
@@ -219,7 +221,7 @@ export function CutoffCountdown({ cutoffTime }: CutoffCountdownProps) {
         </div>
         <TimeCard
           value={timeRemaining.minutes}
-          label="Minutes"
+          label={t('common.labels.minutes')}
           isUrgent={isUrgent}
         />
         <div
@@ -234,7 +236,7 @@ export function CutoffCountdown({ cutoffTime }: CutoffCountdownProps) {
         </div>
         <TimeCard
           value={timeRemaining.seconds}
-          label="Seconds"
+          label={t('common.labels.seconds')}
           isUrgent={isUrgent}
         />
       </div>
@@ -243,7 +245,7 @@ export function CutoffCountdown({ cutoffTime }: CutoffCountdownProps) {
       {isUrgent && (
         <div className="mt-4 pt-4 border-t border-warning-200">
           <div className="flex items-center justify-between text-xs text-warning-700 mb-1">
-            <span>Time Remaining</span>
+            <span>{t('common.labels.timeRemaining')}</span>
             <span className="font-semibold">
               {timeRemaining.minutes}m {timeRemaining.seconds}s
             </span>

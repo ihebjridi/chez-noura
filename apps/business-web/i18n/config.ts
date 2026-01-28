@@ -8,14 +8,8 @@ const LOCALE_COOKIE_NAME = 'NEXT_LOCALE';
 const DEFAULT_LOCALE = 'fr';
 const COOKIE_EXPIRATION_DAYS = 365;
 
-// Get locale from cookie or default to French
-const getStoredLocale = (): string => {
-  if (typeof window === 'undefined') {
-    return DEFAULT_LOCALE;
-  }
-  return Cookies.get(LOCALE_COOKIE_NAME) || DEFAULT_LOCALE;
-};
-
+// Always initialize with default locale to prevent hydration mismatch
+// The locale will be synced from cookie in I18nProvider after hydration
 i18n
   .use(initReactI18next)
   .init({
@@ -27,7 +21,7 @@ i18n
         translation: enTranslation,
       },
     },
-    lng: getStoredLocale(),
+    lng: DEFAULT_LOCALE, // Always use default for initial render
     fallbackLng: DEFAULT_LOCALE,
     interpolation: {
       escapeValue: false, // React already escapes values

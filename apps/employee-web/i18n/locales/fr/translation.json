@@ -15,7 +15,11 @@
       "newOrder": "Nouvelle commande",
       "viewDetails": "Voir les détails",
       "confirm": "Confirmer",
-      "placeOrder": "Passer la commande"
+      "placeOrder": "Passer la commande",
+      "orderNow": "Commander maintenant",
+      "backToMenu": "Retour au menu",
+      "customize": "Personnaliser",
+      "redirecting": "Redirection..."
     },
     "labels": {
       "email": "E-mail",
@@ -29,7 +33,47 @@
       "noData": "Aucune donnée disponible",
       "error": "Erreur",
       "success": "Succès",
-      "emailAddress": "Adresse e-mail"
+      "emailAddress": "Adresse e-mail",
+      "orderDate": "Date de commande",
+      "pack": "Pack",
+      "yourSelection": "Votre sélection",
+      "readyAt": "Prêt à",
+      "orderWillBeReadyAt": "La commande sera prête à",
+      "today": "Aujourd'hui",
+      "tomorrow": "Demain",
+      "item": "article",
+      "items": "articles",
+      "noImage": "Pas d'image",
+      "hours": "Heures",
+      "minutes": "Minutes",
+      "seconds": "Secondes",
+      "timeRemaining": "Temps restant",
+      "yourOrder": "Votre commande",
+      "required": "Requis",
+      "optional": "Optionnel",
+      "outOfStock": "Rupture de stock",
+      "left": "restant",
+      "selected": "Sélectionné",
+      "change": "Changer",
+      "completeSelection": "Compléter la sélection",
+      "reviewConfirm": "Réviser et confirmer",
+      "showing": "Affichage",
+      "to": "à",
+      "of": "sur",
+      "orders": "commandes",
+      "previousPage": "Page précédente",
+      "nextPage": "Page suivante",
+      "noOrdersYet": "Aucune commande pour le moment",
+      "placeFirstOrder": "Passez votre première commande pour commencer",
+      "changeLanguage": "Changer de langue",
+      "previousMonth": "Mois précédent",
+      "nextMonth": "Mois suivant",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "toggleView": "Basculer la vue",
+      "orderAvailable": "Commande disponible",
+      "pastDatesReadOnly": "Les dates passées sont en lecture seule",
+      "employee": "Employé"
     },
     "status": {
       "active": "ACTIF",
@@ -48,7 +92,21 @@
       "errorOccurred": "Une erreur s'est produite",
       "loginFailed": "Échec de la connexion. Veuillez vérifier votre e-mail.",
       "hidePassword": "Masquer le mot de passe",
-      "showPassword": "Afficher le mot de passe"
+      "showPassword": "Afficher le mot de passe",
+      "failedToLoad": "Échec du chargement",
+      "dateMismatch": "Décalage de date détecté. Veuillez actualiser la page.",
+      "alreadyOrderedToday": "Vous avez déjà passé une commande pour aujourd'hui. Une seule commande par jour est autorisée.",
+      "alreadyOrderedDate": "Vous avez déjà passé une commande pour cette date. Une seule commande par jour est autorisée.",
+      "selectPackAndComponents": "Veuillez sélectionner un pack et tous les composants requis",
+      "cutoffTimePassed": "L'heure limite de commande est passée. Les commandes ne peuvent plus être passées après l'heure limite.",
+      "orderPlacedSuccess": "Commande passée avec succès !",
+      "menuNotAvailableDate": "Menu non disponible pour cette date",
+      "packNotFound": "Pack introuvable ou plus disponible",
+      "menuInfoMissing": "Informations sur le menu ou le pack manquantes",
+      "failedToPlaceOrder": "Échec de la passation de la commande",
+      "failedToLoadMenuInfo": "Échec du chargement des informations du menu",
+      "failedToLoadTodaysData": "Échec du chargement des données d'aujourd'hui",
+      "backendUnavailable": "Le backend est actuellement indisponible. Vous visualisez des données en cache. Les nouvelles commandes ne peuvent pas être passées pour le moment."
     }
   },
   "auth": {
@@ -87,7 +145,9 @@
       "created": "Votre commande a été créée avec succès. Elle sera verrouillée à l'heure limite.",
       "locked": "Votre commande a été verrouillée et ne peut plus être modifiée.",
       "cancelled": "Votre commande a été annulée."
-    }
+    },
+    "confirmedReadyPickup": "Confirmé - Prêt pour récupération",
+    "pendingConfirmation": "En attente de confirmation"
   },
   "orders": {
     "title": "Mes commandes",
@@ -97,7 +157,13 @@
     "date": "Date",
     "status": "Statut",
     "total": "Total",
-    "viewOrder": "Voir la commande"
+    "viewOrder": "Voir la commande",
+    "loadingOrders": "Chargement des commandes...",
+    "orderHistory": "Historique des commandes",
+    "viewAllPastUpcoming": "Voir toutes vos commandes passées et à venir",
+    "confirmedReadyPickup": "Confirmé - Prêt pour récupération",
+    "pendingConfirmation": "En attente de confirmation",
+    "cancelled": "Annulé"
   },
   "calendar": {
     "title": "Calendrier",
@@ -118,7 +184,35 @@
   },
   "today": {
     "title": "Aujourd'hui",
-    "todaysOrder": "Commande du jour"
+    "todaysOrder": "Commande du jour",
+    "loadingTodaysOrder": "Chargement de la commande du jour...",
+    "noOrderToday": "Aucune commande pour aujourd'hui",
+    "noOrderTodayDescription": "Vous pouvez passer une commande maintenant",
+    "menuPublishedNoPacks": "Le menu est publié mais aucun pack n'est disponible",
+    "menuNotAvailableOrdering": "Le menu n'est pas encore disponible pour la commande",
+    "contactBusinessAdmin": "Contactez votre administrateur d'entreprise",
+    "menuStatus": "Statut du menu",
+    "noMenuAvailableToday": "Aucun menu disponible pour aujourd'hui",
+    "checkBackLater": "Revenez plus tard ou contactez votre administrateur d'entreprise",
+    "viewOrderHistory": "Voir l'historique des commandes",
+    "confirmedReadyPickup": "Confirmé - Prêt pour récupération",
+    "pendingConfirmation": "En attente de confirmation"
+  },
+  "newOrder": {
+    "title": "Nouvelle commande",
+    "loadingOrderDetails": "Chargement des détails de la commande...",
+    "confirmYourOrder": "Confirmer votre commande",
+    "backToMenu": "Retour au menu",
+    "placingOrder": "Passage de la commande...",
+    "placeOrder": "Passer la commande"
+  },
+  "cutoff": {
+    "orderingClosesIn": "La commande se ferme dans",
+    "hurryTimeRunningOut": "⏰ Dépêchez-vous ! Le temps presse",
+    "lessThanHourRemaining": "Moins d'une heure restante",
+    "placeOrderBeforeCutoff": "Passez votre commande avant l'heure limite",
+    "orderingClosed": "Commande fermée",
+    "cutoffTimePassed": "L'heure limite est passée"
   },
   "layout": {
     "back": "Retour",

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/auth-context';
 import { Logo } from '../../components/logo';
+import { LanguageSwitcher } from '../../components/language-switcher';
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -35,7 +36,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8 relative">
+      {/* Language Switcher - Top Right */}
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher />
+      </div>
+      
       <div className="w-full max-w-md bg-surface border border-surface-dark rounded-lg shadow-sm p-6 md:p-8">
         <div className="mb-6 md:mb-8 text-center">
           <Logo className="justify-center mb-2" />

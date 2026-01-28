@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { OrderDto } from '@contracts/core';
 import { getTodayISO, formatDateToISO } from '../lib/date-utils';
@@ -16,6 +17,7 @@ export function OrderCalendar({
   selectedDate,
   onDateSelect,
 }: OrderCalendarProps) {
+  const { t, i18n } = useTranslation();
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   // Get unique dates that have orders
@@ -64,7 +66,7 @@ export function OrderCalendar({
     return days;
   }, [currentMonth, orderDates, startingDayOfWeek, daysInMonth]);
 
-  const monthYear = currentMonth.toLocaleDateString('en-US', {
+  const monthYear = currentMonth.toLocaleDateString(i18n.language || 'fr', {
     month: 'long',
     year: 'numeric',
   });
@@ -94,7 +96,16 @@ export function OrderCalendar({
     onDateSelect(selectedDate === fullDate ? null : fullDate);
   };
 
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  // Week day abbreviations - locale-aware
+  const weekDays = useMemo(() => {
+    const locale = i18n.language || 'fr';
+    const baseDate = new Date(2024, 0, 7); // Sunday
+    return Array.from({ length: 7 }, (_, i) => {
+      const date = new Date(baseDate);
+      date.setDate(baseDate.getDate() + i);
+      return date.toLocaleDateString(locale, { weekday: 'short' });
+    });
+  }, [i18n.language]);
 
   return (
     <div className="bg-surface border border-surface-dark rounded-lg p-4 mb-4">
@@ -102,7 +113,7 @@ export function OrderCalendar({
         <button
           onClick={handlePreviousMonth}
           className="p-1 hover:bg-surface-light rounded transition-colors"
-          aria-label="Previous month"
+          aria-label={t('common.labels.previousMonth')}
         >
           <ChevronLeft className="w-5 h-5 text-gray-700" />
         </button>
@@ -114,13 +125,13 @@ export function OrderCalendar({
             onClick={handleToday}
             className="px-2 py-1 text-xs bg-primary-50 text-primary-700 rounded hover:bg-primary-100 transition-colors font-medium"
           >
-            Today
+            {t('common.labels.today')}
           </button>
         </div>
         <button
           onClick={handleNextMonth}
           className="p-1 hover:bg-surface-light rounded transition-colors"
-          aria-label="Next month"
+          aria-label={t('common.labels.nextMonth')}
         >
           <ChevronRight className="w-5 h-5 text-gray-700" />
         </button>
@@ -178,7 +189,7 @@ export function OrderCalendar({
             onClick={() => onDateSelect(null)}
             className="text-sm text-primary-600 hover:text-primary-700 font-medium"
           >
-            Show all orders
+            {t('common.buttons.view')} {t('common.labels.orders')}
           </button>
         </div>
       )}

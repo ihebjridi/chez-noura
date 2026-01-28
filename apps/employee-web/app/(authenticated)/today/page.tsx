@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '../../../lib/api-client';
 import { OrderDto, EmployeeMenuDto, OrderStatus } from '@contracts/core';
@@ -11,6 +12,7 @@ import { CheckCircle, Clock, Package, ArrowRight } from 'lucide-react';
 import { getTodayISO } from '../../../lib/date-utils';
 
 export default function TodayPage() {
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [todayOrder, setTodayOrder] = useState<OrderDto | null>(null);
@@ -67,7 +69,7 @@ export default function TodayPage() {
       }
     } catch (err: any) {
       console.error('Failed to load today\'s data:', err);
-      setError(err.message || 'Failed to load today\'s data');
+      setError(err.message || t('common.messages.failedToLoadTodaysData'));
     } finally {
       setLoading(false);
     }
@@ -78,13 +80,13 @@ export default function TodayPage() {
       case OrderStatus.LOCKED:
         return {
           icon: CheckCircle,
-          message: 'Confirmed - Ready for pickup',
+          message: t('today.confirmedReadyPickup'),
           className: 'bg-success-50 border-success-300 text-success-700',
         };
       case OrderStatus.CREATED:
         return {
           icon: Clock,
-          message: 'Pending confirmation',
+          message: t('today.pendingConfirmation'),
           className: 'bg-warning-50 border-warning-300 text-warning-800',
         };
       default:
@@ -103,7 +105,8 @@ export default function TodayPage() {
         const readyDate = new Date(cutoffDate.getTime() + 2 * 60 * 60 * 1000); // +2 hours
         const now = new Date();
         const isToday = readyDate.toDateString() === now.toDateString();
-        const timeStr = readyDate.toLocaleTimeString('en-US', {
+        const locale = i18n.language || 'fr';
+        const timeStr = readyDate.toLocaleTimeString(locale, {
           hour: 'numeric',
           minute: '2-digit',
           hour12: true,
@@ -115,7 +118,7 @@ export default function TodayPage() {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <Loading message="Loading today's order..." />
+        <Loading message={t('today.loadingTodaysOrder')} />
       </div>
     );
   }
@@ -131,9 +134,9 @@ export default function TodayPage() {
   return (
     <div className="p-4 max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Today</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('today.title')}</h1>
         <p className="text-sm text-gray-600 mt-1">
-          {new Date().toLocaleDateString('en-US', {
+          {new Date().toLocaleDateString(i18n.language || 'fr', {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
@@ -147,7 +150,7 @@ export default function TodayPage() {
         <div className="mb-4 p-4 bg-success-50 border border-success-300 text-success-700 rounded-lg">
           <div className="flex items-center gap-2">
             <CheckCircle className="w-5 h-5" />
-            <p className="text-sm font-semibold">Order placed successfully!</p>
+            <p className="text-sm font-semibold">{t('common.messages.orderPlacedSuccess')}</p>
           </div>
         </div>
       )}
@@ -165,7 +168,7 @@ export default function TodayPage() {
                   <StatusIcon className="w-6 h-6 flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="font-semibold text-base">Today's Order</p>
+                      <p className="font-semibold text-base">{t('today.todaysOrder')}</p>
                       <span className="px-3 py-1 rounded text-xs font-medium bg-white/50">
                         {todayOrder.status}
                       </span>
@@ -187,7 +190,7 @@ export default function TodayPage() {
             {/* Order Items */}
             <div className="space-y-2 mb-4">
               <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                Your Selection
+                {t('common.labels.yourSelection')}
               </p>
               {todayOrder.items.map((item) => (
                 <div
@@ -202,7 +205,7 @@ export default function TodayPage() {
                     />
                   ) : (
                     <div className="w-12 h-12 bg-surface-light border border-surface-dark rounded-md flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
-                      No image
+                      {t('common.labels.noImage')}
                     </div>
                   )}
                   <p className="text-sm text-gray-700">
@@ -219,11 +222,11 @@ export default function TodayPage() {
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-primary-600" />
                   <div>
-                    <p className="text-xs text-gray-600 font-normal">Ready at:</p>
+                    <p className="text-xs text-gray-600 font-normal">{t('common.labels.readyAt')}:</p>
                     <p className="text-sm font-semibold text-primary-700">
                       {readyTime.isToday
-                        ? `Today at ${readyTime.timeStr}`
-                        : readyTime.date.toLocaleDateString('en-US', {
+                        ? `${t('common.labels.today')} ${readyTime.timeStr}`
+                        : readyTime.date.toLocaleDateString(i18n.language || 'fr', {
                             weekday: 'long',
                             month: 'long',
                             day: 'numeric',
@@ -243,7 +246,7 @@ export default function TodayPage() {
             onClick={() => router.push('/calendar')}
             className="w-full px-4 py-3 bg-surface border border-surface-dark rounded-lg hover:bg-surface-light transition-colors font-medium text-gray-700 flex items-center justify-center gap-2 min-h-[44px]"
           >
-            View Order History
+            {t('today.viewOrderHistory')}
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
@@ -253,22 +256,22 @@ export default function TodayPage() {
           {menu.packs && menu.packs.length > 0 ? (
             <div className="bg-surface border border-surface-dark rounded-lg p-6 text-center">
               <Empty
-                message="No order for today"
-                description="You can place an order now"
+                message={t('today.noOrderToday')}
+                description={t('today.noOrderTodayDescription')}
               />
               <button
                 onClick={() => router.push(`/new-order?date=${today}`)}
                 className="mt-6 px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors font-semibold min-h-[44px] inline-flex items-center gap-2"
               >
-                Order Now
+                {t('common.buttons.orderNow')}
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           ) : (
             <div className="bg-surface border border-surface-dark rounded-lg p-6 text-center">
               <Empty
-                message={menu.status === 'PUBLISHED' ? 'Menu is published but no packs are available' : 'Menu is not yet available for ordering'}
-                description={menu.status === 'PUBLISHED' ? 'Contact your business admin' : `Menu status: ${menu.status}`}
+                message={menu.status === 'PUBLISHED' ? t('today.menuPublishedNoPacks') : t('today.menuNotAvailableOrdering')}
+                description={menu.status === 'PUBLISHED' ? t('today.contactBusinessAdmin') : `${t('today.menuStatus')}: ${menu.status}`}
               />
             </div>
           )}
@@ -277,8 +280,8 @@ export default function TodayPage() {
         /* No Menu Available */
         <div className="bg-surface border border-surface-dark rounded-lg p-6 text-center">
           <Empty
-            message="No menu available for today"
-            description="Check back later or contact your business admin"
+            message={t('today.noMenuAvailableToday')}
+            description={t('today.checkBackLater')}
           />
         </div>
       )}

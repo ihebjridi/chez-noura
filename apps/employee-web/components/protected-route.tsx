@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/auth-context';
 import { UserRole } from '@contracts/core';
+import { Loading } from './ui/loading';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -11,6 +13,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
+  const { t } = useTranslation();
   const { isAuthenticated, loading, user } = useAuth();
   const router = useRouter();
 
@@ -31,7 +34,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
         height: '100vh',
         backgroundColor: '#f5f5f5'
       }}>
-        <p>Loading...</p>
+        <Loading message={t('common.messages.loading')} />
       </div>
     );
   }
