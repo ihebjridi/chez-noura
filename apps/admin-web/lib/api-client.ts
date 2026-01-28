@@ -9,6 +9,7 @@ import {
   OrderSummaryDto,
   KitchenSummaryDto,
   KitchenBusinessSummaryDto,
+  KitchenDetailedSummaryDto,
   DayLockDto,
   InvoiceDto,
   InvoiceSummaryDto,
@@ -34,6 +35,9 @@ import {
   PublishDailyMenuResponseDto,
   ActivityLogDto,
   EmployeeDto,
+  PackStatisticsDto,
+  ComponentStatisticsDto,
+  VariantStatisticsDto,
 } from '@contracts/core';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -138,6 +142,10 @@ class ApiClient {
 
   async getKitchenBusinessSummary(date: string): Promise<KitchenBusinessSummaryDto> {
     return this.request<KitchenBusinessSummaryDto>(`/ops/business-summary?date=${date}&format=json`);
+  }
+
+  async getKitchenDetailedSummary(date: string): Promise<KitchenDetailedSummaryDto> {
+    return this.request<KitchenDetailedSummaryDto>(`/ops/detailed-summary?date=${date}`);
   }
 
   // Invoice endpoints
@@ -335,6 +343,12 @@ class ApiClient {
     });
   }
 
+  async deleteVariant(variantId: string): Promise<void> {
+    return this.request<void>(`/variants/${variantId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Daily Menu endpoints
   async getDailyMenus(date?: string): Promise<DailyMenuDto[] | DailyMenuWithDetailsDto[]> {
     const query = date ? `?date=${date}` : '';
@@ -396,6 +410,19 @@ class ApiClient {
       }
       throw error;
     }
+  }
+
+  // Statistics endpoints
+  async getPackStatistics(packId: string): Promise<PackStatisticsDto> {
+    return this.request<PackStatisticsDto>(`/packs/${packId}/statistics`);
+  }
+
+  async getComponentStatistics(componentId: string): Promise<ComponentStatisticsDto> {
+    return this.request<ComponentStatisticsDto>(`/components/${componentId}/statistics`);
+  }
+
+  async getVariantStatistics(variantId: string): Promise<VariantStatisticsDto> {
+    return this.request<VariantStatisticsDto>(`/variants/${variantId}/statistics`);
   }
 }
 

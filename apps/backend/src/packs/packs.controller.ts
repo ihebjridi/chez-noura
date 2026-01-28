@@ -27,6 +27,7 @@ import {
   UserRole,
   CreatePackComponentDto,
   PackComponentDto,
+  PackStatisticsDto,
 } from '@contracts/core';
 import { CreatePackDto } from './dto/create-pack.dto';
 import { UpdatePackDto } from './dto/update-pack.dto';
@@ -151,5 +152,18 @@ export class PacksController {
     @Param('id') packId: string,
   ): Promise<PackComponentDto[]> {
     return this.packsService.getPackComponents(packId);
+  }
+
+  @Get(':id/statistics')
+  @Roles(UserRole.BUSINESS_ADMIN, UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Get statistics for a pack' })
+  @ApiParam({ name: 'id', description: 'Pack ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Pack statistics including order count, revenue, and recent orders',
+  })
+  @ApiResponse({ status: 404, description: 'Pack not found' })
+  async getPackStatistics(@Param('id') packId: string): Promise<PackStatisticsDto> {
+    return this.packsService.getPackStatistics(packId);
   }
 }

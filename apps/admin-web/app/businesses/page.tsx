@@ -14,6 +14,7 @@ import { Textarea } from '../../components/ui/textarea';
 import { StatusBadge } from '../../components/ui/status-badge';
 import { Button } from '../../components/ui/button';
 import { EmployeeListModal } from '../../components/business/employee-list-modal';
+import { CredentialsModal } from '../../components/business/credentials-modal';
 import { apiClient } from '../../lib/api-client';
 import { formatDateTime } from '../../lib/date-utils';
 import { 
@@ -61,6 +62,17 @@ export default function BusinessesPage() {
   const [businessToDisable, setBusinessToDisable] = useState<{ id: string; name: string; status: EntityStatus } | null>(null);
   const [employeeModalOpen, setEmployeeModalOpen] = useState(false);
   const [selectedBusinessForEmployees, setSelectedBusinessForEmployees] = useState<{ id: string; name: string } | null>(null);
+  const [credentialsModal, setCredentialsModal] = useState<{
+    isOpen: boolean;
+    businessName: string;
+    email: string;
+    password: string;
+  }>({
+    isOpen: false,
+    businessName: '',
+    email: '',
+    password: '',
+  });
   const [businessesWithFailedDelete, setBusinessesWithFailedDelete] = useState<Set<string>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [expandedActivityLogs, setExpandedActivityLogs] = useState<Set<string>>(new Set());
@@ -81,7 +93,13 @@ export default function BusinessesPage() {
       setFormData({ name: '', adminEmail: '' });
       setLogoFile(null);
       setLogoPreview(null);
-      setError(`Business created! Admin: ${result.adminCredentials.email}, Password: ${result.adminCredentials.temporaryPassword} - Save these credentials securely.`);
+      // Show credentials modal
+      setCredentialsModal({
+        isOpen: true,
+        businessName: result.business.name,
+        email: result.adminCredentials.email,
+        password: result.adminCredentials.temporaryPassword,
+      });
     } catch (err: any) {
       // Error is already set by the hook
     }
@@ -111,7 +129,13 @@ export default function BusinessesPage() {
       setError('');
       const result = await apiClient.generateBusinessAdminPassword(businessToGeneratePassword.id);
       setBusinessToGeneratePassword(null);
-      setError(`New password generated! Admin: ${result.email}, Password: ${result.temporaryPassword} - Save these credentials securely.`);
+      // Show credentials modal
+      setCredentialsModal({
+        isOpen: true,
+        businessName: businessToGeneratePassword.name,
+        email: result.email,
+        password: result.temporaryPassword,
+      });
     } catch (err: any) {
       setError(err.message || 'Failed to generate new password');
     } finally {
@@ -662,6 +686,15 @@ export default function BusinessesPage() {
           onLoadEmployees={getBusinessEmployees}
         />
       )}
+
+      {/* Credentials Modal */}
+      <CredentialsModal
+        isOpen={credentialsModal.isOpen}
+        onClose={() => setCredentialsModal({ ...credentialsModal, isOpen: false })}
+        businessName={credentialsModal.businessName}
+        email={credentialsModal.email}
+        password={credentialsModal.password}
+      />
 
       {/* Disable/Enable Confirmation Modal */}
       {businessToDisable && (

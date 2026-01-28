@@ -17,6 +17,8 @@ import {
   UserRole,
   AvailableComponentDto,
   AvailableVariantDto,
+  PackStatisticsDto,
+  RecentOrderDto,
 } from '@contracts/core';
 import { Prisma } from '@prisma/client';
 
@@ -381,6 +383,89 @@ export class PacksService {
       componentName: packComponent.component.name,
       required: packComponent.required,
       orderIndex: packComponent.orderIndex,
+    };
+  }
+
+  /**
+   * Get statistics for a pack
+   * Returns order count, revenue, and recent orders
+   */
+  async getPackStatistics(packId: string): Promise<PackStatisticsDto> {
+    const pack = await this.prisma.pack.findUnique({
+      where: { id: packId },
+      include: {
+        packComponents: true,
+      },
+    });
+
+    if (!pack) {
+      throw new NotFoundException(`Pack with ID ${packId} not found`);
+    }
+
+    // Get all orders for this pack
+    const orders = await this.prisma.order.findMany({
+      where: { packId },
+      include: {
+        business: {
+          select: {
+            name: true,
+          },
+        },
+        employee: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+      orderBy: {
+        orderDate: 'desc',
+      },
+      take: 20, // Recent 20 orders
+    });
+
+    const totalOrders = await this.prisma.order.count({
+      where: { packId },
+    });
+
+    const totalRevenue = orders.reduce((sum, order) => {
+      return sum + Number(order.totalAmount);
+    }, 0);
+
+    // Get all-time revenue (not just recent orders)
+    const allOrders = await this.prisma.order.findMany({
+      where: { packId },
+      select: {
+        totalAmount: true,
+      },
+    });
+
+    const allTimeRevenue = allOrders.reduce((sum, order) => {
+      return sum + Number(order.totalAmount);
+    }, 0);
+
+    const recentOrders: RecentOrderDto[] = orders.slice(0, 10).map((order) => ({
+      orderId: order.id,
+      orderDate: order.orderDate.toISOString().split('T')[0],
+      status: order.status,
+      totalAmount: Number(order.totalAmount),
+      businessName: order.business?.name,
+      employeeName: order.employee
+        ? `${order.employee.firstName} ${order.employee.lastName}`
+        : undefined,
+    }));
+
+    const lastOrder = orders[0];
+    const lastOrderDate = lastOrder ? lastOrder.orderDate.toISOString().split('T')[0] : null;
+
+    return {
+      packId: pack.id,
+      packName: pack.name,
+      totalOrders,
+      totalRevenue: allTimeRevenue,
+      recentOrders,
+      lastOrderDate,
+      componentCount: pack.packComponents.length,
     };
   }
 }

@@ -16,6 +16,8 @@ import {
   X,
   LogOut,
   LayoutDashboard,
+  Layers,
+  Grid3x3,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -27,6 +29,8 @@ const navigation = [
   { name: 'Menus', href: '/menus', icon: Calendar, current: false },
   { name: 'Businesses', href: '/businesses', icon: Building2, current: false },
   { name: 'Packs', href: '/packs', icon: Package, current: false },
+  { name: 'Components', href: '/components', icon: Layers, current: false },
+  { name: 'Variants', href: '/variants', icon: Grid3x3, current: false },
   { name: 'Orders', href: '/orders', icon: ShoppingCart, current: false },
   { name: 'Kitchen', href: '/kitchen', icon: ChefHat, current: false },
   { name: 'Invoices', href: '/invoices', icon: FileText, current: false },

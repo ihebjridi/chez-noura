@@ -22,11 +22,12 @@ export function usePacks() {
     }
   }, []);
 
-  const createPack = useCallback(async (data: CreatePackDto) => {
+  const createPack = useCallback(async (data: CreatePackDto): Promise<PackDto> => {
     try {
       setError('');
-      await apiClient.createPack(data);
+      const newPack = await apiClient.createPack(data);
       await loadPacks();
+      return newPack;
     } catch (err: any) {
       setError(err.message || 'Failed to create pack');
       throw err;

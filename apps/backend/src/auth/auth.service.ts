@@ -92,9 +92,10 @@ export class AuthService {
    * Login user and generate tokens
    */
   async login(loginDto: LoginRequestDto): Promise<LoginResponseDto> {
-    // Trim email to handle any accidental whitespace
+    // Trim email and password to handle any accidental whitespace
     const trimmedEmail = loginDto.email.trim();
-    const user = await this.validateUser(trimmedEmail, loginDto.password);
+    const trimmedPassword = loginDto.password.trim();
+    const user = await this.validateUser(trimmedEmail, trimmedPassword);
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');

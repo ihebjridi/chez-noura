@@ -68,3 +68,31 @@ export interface DayLockDto {
   lockedBy?: string;
   ordersLocked: number; // Number of orders that were locked
 }
+
+/**
+ * Order summary for kitchen operations
+ * Represents an order with its pack and variant selections
+ */
+export interface KitchenOrderSummaryDto {
+  orderId: string;
+  businessName: string;
+  employeeName: string;
+  packName: string;
+  packId: string;
+  variants: Array<{
+    componentName: string;
+    variantName: string;
+  }>;
+}
+
+/**
+ * Detailed kitchen summary combining variant aggregation and order details
+ */
+export interface KitchenDetailedSummaryDto {
+  date: string; // ISO date string (YYYY-MM-DD)
+  totalVariants: number; // Total number of variant items
+  totalOrders: number; // Total number of orders
+  variants: VariantSummaryDto[];
+  orders: KitchenOrderSummaryDto[];
+  lockedAt?: string; // ISO datetime when the day was locked
+}

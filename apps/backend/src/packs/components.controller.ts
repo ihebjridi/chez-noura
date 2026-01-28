@@ -26,6 +26,7 @@ import {
   VariantDto,
   TokenPayload,
   UserRole,
+  ComponentStatisticsDto,
 } from '@contracts/core';
 import { CreateComponentDtoClass } from './dto/create-component.dto';
 import { CreateVariantDtoClass } from './dto/create-variant.dto';
@@ -100,5 +101,20 @@ export class ComponentsController {
     @Param('id') componentId: string,
   ): Promise<VariantDto[]> {
     return this.componentsService.getComponentVariants(componentId);
+  }
+
+  @Get(':id/statistics')
+  @Roles(UserRole.BUSINESS_ADMIN, UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Get statistics for a component' })
+  @ApiParam({ name: 'id', description: 'Component ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Component statistics including usage count, variant count, and recent usage',
+  })
+  @ApiResponse({ status: 404, description: 'Component not found' })
+  async getComponentStatistics(
+    @Param('id') componentId: string,
+  ): Promise<ComponentStatisticsDto> {
+    return this.componentsService.getComponentStatistics(componentId);
   }
 }

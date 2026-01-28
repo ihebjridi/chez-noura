@@ -70,285 +70,236 @@ async function main() {
 
   // Create Variants for Soup
   console.log('\nCreating Variants for Soup...');
-  const lentilSoup = await prisma.variant.upsert({
+  const chorba = await prisma.variant.upsert({
     where: {
       componentId_name: {
         componentId: soupComponent.id,
-        name: 'Lentil Soup',
+        name: 'Chorba',
       },
     },
     update: {},
     create: {
       componentId: soupComponent.id,
-      name: 'Lentil Soup',
+      name: 'Chorba',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Lentil Soup');
+  console.log('✅ Variant created: Chorba');
 
-  const chickenSoup = await prisma.variant.upsert({
+  const chorbaLentilles = await prisma.variant.upsert({
     where: {
       componentId_name: {
         componentId: soupComponent.id,
-        name: 'Chicken Soup',
+        name: 'Chorba Lentilles',
       },
     },
     update: {},
     create: {
       componentId: soupComponent.id,
-      name: 'Chicken Soup',
+      name: 'Chorba Lentilles',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Chicken Soup');
+  console.log('✅ Variant created: Chorba Lentilles');
 
-  const vegetableSoup = await prisma.variant.upsert({
+  const chorbaPotiron = await prisma.variant.upsert({
     where: {
       componentId_name: {
         componentId: soupComponent.id,
-        name: 'Vegetable Soup',
+        name: 'Chorba Potiron',
       },
     },
     update: {},
     create: {
       componentId: soupComponent.id,
-      name: 'Vegetable Soup',
+      name: 'Chorba Potiron',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Vegetable Soup');
+  console.log('✅ Variant created: Chorba Potiron');
 
   // Create Variants for Main Course
   console.log('\nCreating Variants for Main Course...');
-  const grilledChicken = await prisma.variant.upsert({
+  const brik = await prisma.variant.upsert({
     where: {
       componentId_name: {
         componentId: mainCourseComponent.id,
-        name: 'Grilled Chicken',
+        name: 'Brik',
       },
     },
     update: {},
     create: {
       componentId: mainCourseComponent.id,
-      name: 'Grilled Chicken',
+      name: 'Brik',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Grilled Chicken');
+  console.log('✅ Variant created: Brik');
 
-  const beefSteak = await prisma.variant.upsert({
+  const couscousViande = await prisma.variant.upsert({
     where: {
       componentId_name: {
         componentId: mainCourseComponent.id,
-        name: 'Beef Steak',
+        name: 'Couscous Viande',
       },
     },
     update: {},
     create: {
       componentId: mainCourseComponent.id,
-      name: 'Beef Steak',
+      name: 'Couscous Viande',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Beef Steak');
+  console.log('✅ Variant created: Couscous Viande');
 
-  const fishFillet = await prisma.variant.upsert({
+  const croquette = await prisma.variant.upsert({
     where: {
       componentId_name: {
         componentId: mainCourseComponent.id,
-        name: 'Fish Fillet',
+        name: 'Croquette',
       },
     },
     update: {},
     create: {
       componentId: mainCourseComponent.id,
-      name: 'Fish Fillet',
+      name: 'Croquette',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Fish Fillet');
+  console.log('✅ Variant created: Croquette');
 
-  const vegetarianOption = await prisma.variant.upsert({
+  const ojjaMerguez = await prisma.variant.upsert({
     where: {
       componentId_name: {
         componentId: mainCourseComponent.id,
-        name: 'Vegetarian Option',
+        name: 'Ojja Merguez',
       },
     },
     update: {},
     create: {
       componentId: mainCourseComponent.id,
-      name: 'Vegetarian Option',
+      name: 'Ojja Merguez',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Vegetarian Option');
+  console.log('✅ Variant created: Ojja Merguez');
+
+  const rizLegumes = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: mainCourseComponent.id,
+        name: 'Riz Légumes',
+      },
+    },
+    update: {},
+    create: {
+      componentId: mainCourseComponent.id,
+      name: 'Riz Légumes',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant created: Riz Légumes');
+
+  const tajine = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: mainCourseComponent.id,
+        name: 'Tajine',
+      },
+    },
+    update: {},
+    create: {
+      componentId: mainCourseComponent.id,
+      name: 'Tajine',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant created: Tajine');
 
   // Create Variants for Dessert
   console.log('\nCreating Variants for Dessert...');
-  const baklava = await prisma.variant.upsert({
+  const zlebya = await prisma.variant.upsert({
     where: {
       componentId_name: {
         componentId: dessertComponent.id,
-        name: 'Baklava',
+        name: 'Zlebya',
       },
     },
     update: {},
     create: {
       componentId: dessertComponent.id,
-      name: 'Baklava',
+      name: 'Zlebya',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Baklava');
-
-  const kunafa = await prisma.variant.upsert({
-    where: {
-      componentId_name: {
-        componentId: dessertComponent.id,
-        name: 'Kunafa',
-      },
-    },
-    update: {},
-    create: {
-      componentId: dessertComponent.id,
-      name: 'Kunafa',
-      stockQuantity: 100,
-      isActive: true,
-    },
-  });
-  console.log('✅ Variant created: Kunafa');
-
-  const fruitSalad = await prisma.variant.upsert({
-    where: {
-      componentId_name: {
-        componentId: dessertComponent.id,
-        name: 'Fruit Salad',
-      },
-    },
-    update: {},
-    create: {
-      componentId: dessertComponent.id,
-      name: 'Fruit Salad',
-      stockQuantity: 100,
-      isActive: true,
-    },
-  });
-  console.log('✅ Variant created: Fruit Salad');
+  console.log('✅ Variant created: Zlebya');
 
   // Create Variants for Beverage
   console.log('\nCreating Variants for Beverage...');
-  const orangeJuice = await prisma.variant.upsert({
-    where: {
-      componentId_name: {
-        componentId: beverageComponent.id,
-        name: 'Orange Juice',
-      },
-    },
-    update: {},
-    create: {
-      componentId: beverageComponent.id,
-      name: 'Orange Juice',
-      stockQuantity: 100,
-      isActive: true,
-    },
-  });
-  console.log('✅ Variant created: Orange Juice');
-
-  const lemonade = await prisma.variant.upsert({
-    where: {
-      componentId_name: {
-        componentId: beverageComponent.id,
-        name: 'Lemonade',
-      },
-    },
-    update: {},
-    create: {
-      componentId: beverageComponent.id,
-      name: 'Lemonade',
-      stockQuantity: 100,
-      isActive: true,
-    },
-  });
-  console.log('✅ Variant created: Lemonade');
-
-  const water = await prisma.variant.upsert({
-    where: {
-      componentId_name: {
-        componentId: beverageComponent.id,
-        name: 'Water',
-      },
-    },
-    update: {},
-    create: {
-      componentId: beverageComponent.id,
-      name: 'Water',
-      stockQuantity: 100,
-      isActive: true,
-    },
-  });
-  console.log('✅ Variant created: Water');
+  // No beverage images in variant-images directory
 
   // Create Variants for Salad
   console.log('\nCreating Variants for Salad...');
-  const greenSalad = await prisma.variant.upsert({
+  const saladeMechoueya = await prisma.variant.upsert({
     where: {
       componentId_name: {
         componentId: saladComponent.id,
-        name: 'Green Salad',
+        name: 'Salade Mechoueya',
       },
     },
     update: {},
     create: {
       componentId: saladComponent.id,
-      name: 'Green Salad',
+      name: 'Salade Mechoueya',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Green Salad');
+  console.log('✅ Variant created: Salade Mechoueya');
 
-  const fattoush = await prisma.variant.upsert({
+  const saladePatates = await prisma.variant.upsert({
     where: {
       componentId_name: {
         componentId: saladComponent.id,
-        name: 'Fattoush',
+        name: 'Salade Patates',
       },
     },
     update: {},
     create: {
       componentId: saladComponent.id,
-      name: 'Fattoush',
+      name: 'Salade Patates',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Fattoush');
+  console.log('✅ Variant created: Salade Patates');
 
-  const tabbouleh = await prisma.variant.upsert({
+  const saladeTunisienne = await prisma.variant.upsert({
     where: {
       componentId_name: {
         componentId: saladComponent.id,
-        name: 'Tabbouleh',
+        name: 'Salade Tunisienne',
       },
     },
     update: {},
     create: {
       componentId: saladComponent.id,
-      name: 'Tabbouleh',
+      name: 'Salade Tunisienne',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Tabbouleh');
+  console.log('✅ Variant created: Salade Tunisienne');
 
   // Create Packs
   console.log('\nCreating Packs...');
@@ -560,11 +511,11 @@ async function main() {
   console.log('  - Beverage');
   console.log('  - Salad');
   console.log('\nVARIANTS:');
-  console.log('  Soup: Lentil Soup, Chicken Soup, Vegetable Soup');
-  console.log('  Main Course: Grilled Chicken, Beef Steak, Fish Fillet, Vegetarian Option');
-  console.log('  Dessert: Baklava, Kunafa, Fruit Salad');
-  console.log('  Beverage: Orange Juice, Lemonade, Water');
-  console.log('  Salad: Green Salad, Fattoush, Tabbouleh');
+  console.log('  Soup: Chorba, Chorba Lentilles, Chorba Potiron');
+  console.log('  Main Course: Brik, Couscous Viande, Croquette, Ojja Merguez, Riz Légumes, Tajine');
+  console.log('  Dessert: Zlebya');
+  console.log('  Beverage: (none)');
+  console.log('  Salad: Salade Mechoueya, Salade Patates, Salade Tunisienne');
   console.log('\nPACKS:');
   console.log('  - Standard Pack (25.00 TND)');
   console.log('  - Premium Pack (35.00 TND)');

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { apiClient } from '../../lib/api-client';
 import {
   KitchenSummaryDto,
   KitchenBusinessSummaryDto,
+  KitchenDetailedSummaryDto,
 } from '@contracts/core';
 import { Loading } from '../../components/ui/loading';
 import { Error } from '../../components/ui/error';
@@ -15,9 +16,10 @@ export default function KitchenPage() {
   const [date, setDate] = useState(getTodayISO());
   const [summary, setSummary] = useState<KitchenSummaryDto | null>(null);
   const [businessSummary, setBusinessSummary] = useState<KitchenBusinessSummaryDto | null>(null);
+  const [detailedSummary, setDetailedSummary] = useState<KitchenDetailedSummaryDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<'summary' | 'business'>('summary');
+  const [activeTab, setActiveTab] = useState<'chef' | 'summary' | 'business'>('chef');
 
   const loadSummary = async () => {
     try {
@@ -45,6 +47,19 @@ export default function KitchenPage() {
     }
   };
 
+  const loadDetailedSummary = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const data = await apiClient.getKitchenDetailedSummary(date);
+      setDetailedSummary(data);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load detailed summary');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLockDay = async () => {
     if (!confirm(`Close all orders for ${date}? This action cannot be undone.`)) {
       return;
@@ -55,7 +70,9 @@ export default function KitchenPage() {
       setError('');
       await apiClient.lockDay(date);
       setError(`Orders for ${date} closed successfully`);
-      if (activeTab === 'summary') {
+      if (activeTab === 'chef') {
+        await loadDetailedSummary();
+      } else if (activeTab === 'summary') {
         await loadSummary();
       } else {
         await loadBusinessSummary();
@@ -67,14 +84,30 @@ export default function KitchenPage() {
     }
   };
 
-  const handleTabChange = (tab: 'summary' | 'business') => {
+  const handleTabChange = (tab: 'chef' | 'summary' | 'business') => {
     setActiveTab(tab);
-    if (tab === 'summary' && !summary) {
+    if (tab === 'chef' && !detailedSummary) {
+      loadDetailedSummary();
+    } else if (tab === 'summary' && !summary) {
       loadSummary();
     } else if (tab === 'business' && !businessSummary) {
       loadBusinessSummary();
     }
   };
+
+  // Group variants by component for chef view
+  const variantsByComponent = useMemo(() => {
+    if (!detailedSummary) return {};
+    
+    const grouped: Record<string, typeof detailedSummary.variants> = {};
+    for (const variant of detailedSummary.variants) {
+      if (!grouped[variant.componentName]) {
+        grouped[variant.componentName] = [];
+      }
+      grouped[variant.componentName].push(variant);
+    }
+    return grouped;
+  }, [detailedSummary]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -97,12 +130,19 @@ export default function KitchenPage() {
                 setDate(e.target.value);
                 setSummary(null);
                 setBusinessSummary(null);
+                setDetailedSummary(null);
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
           <button
-            onClick={activeTab === 'summary' ? loadSummary : loadBusinessSummary}
+            onClick={
+              activeTab === 'chef'
+                ? loadDetailedSummary
+                : activeTab === 'summary'
+                ? loadSummary
+                : loadBusinessSummary
+            }
             disabled={loading}
             className="px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
@@ -118,6 +158,16 @@ export default function KitchenPage() {
         </div>
 
         <div className="flex gap-2">
+          <button
+            onClick={() => handleTabChange('chef')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              activeTab === 'chef'
+                ? 'bg-primary-100 text-primary-900 border-2 border-primary-500'
+                : 'bg-surface-light text-gray-700 hover:bg-surface-dark border-2 border-transparent'
+            }`}
+          >
+            Chef View
+          </button>
           <button
             onClick={() => handleTabChange('summary')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
@@ -144,6 +194,111 @@ export default function KitchenPage() {
       {error && (
         <div className="mb-4">
           <Error message={error} onRetry={() => setError('')} />
+        </div>
+      )}
+
+      {activeTab === 'chef' && detailedSummary && (
+        <div className="space-y-6">
+          {/* Variant Summary Section - Grouped by Component */}
+          <div className="bg-surface border border-surface-dark rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">Cooking Quantities - {date}</h2>
+            {detailedSummary.lockedAt && (
+              <p className="text-sm text-gray-600 mb-4">
+                Locked at: {new Date(detailedSummary.lockedAt).toLocaleString()}
+              </p>
+            )}
+            <div className="mb-4 flex gap-6 text-sm">
+              <p>
+                <strong>Total Variants:</strong> {detailedSummary.totalVariants}
+              </p>
+              <p>
+                <strong>Total Orders:</strong> {detailedSummary.totalOrders}
+              </p>
+            </div>
+            
+            {/* Group variants by component */}
+            <div className="space-y-6">
+              {Object.entries(variantsByComponent).map(([componentName, variants]) => (
+                <div key={componentName} className="border border-gray-200 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 pb-2 border-b border-gray-300">
+                    {componentName}
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-surface-dark">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Variant
+                          </th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Quantity
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-surface divide-y divide-surface-dark">
+                        {variants.map((variant) => (
+                          <tr key={variant.variantId} className="hover:bg-surface-light">
+                            <td className="px-4 py-3 text-sm text-gray-900">{variant.variantName}</td>
+                            <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right text-lg">
+                              {variant.totalQuantity}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Orders List Section */}
+          <div className="bg-surface border border-surface-dark rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">Orders - {date}</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              {detailedSummary.totalOrders} order{detailedSummary.totalOrders !== 1 ? 's' : ''} to assemble
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-surface-dark">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Business
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Employee
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Pack
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Variants
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-surface divide-y divide-surface-dark">
+                  {detailedSummary.orders.map((order) => (
+                    <tr key={order.orderId} className="hover:bg-surface-light">
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                        {order.businessName}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{order.employeeName}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{order.packName}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        <div className="space-y-1">
+                          {order.variants.map((v, idx) => (
+                            <div key={idx} className="text-xs">
+                              <span className="font-medium">{v.componentName}:</span> {v.variantName}
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
 
@@ -220,7 +375,7 @@ export default function KitchenPage() {
         </div>
       )}
 
-      {!summary && !businessSummary && !loading && (
+      {!summary && !businessSummary && !detailedSummary && !loading && (
         <div className="bg-surface border border-surface-dark rounded-lg p-12">
           <Empty
             message="No summary loaded"

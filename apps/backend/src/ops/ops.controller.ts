@@ -21,6 +21,7 @@ import { Roles, CurrentUser } from '../auth/decorators';
 import {
   KitchenSummaryDto,
   KitchenBusinessSummaryDto,
+  KitchenDetailedSummaryDto,
   DayLockDto,
   TokenPayload,
   UserRole,
@@ -155,5 +156,32 @@ export class OpsController {
 
     // For JSON format, manually send the response
     res.json(result as KitchenBusinessSummaryDto);
+  }
+
+  @Get('detailed-summary')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({
+    summary: 'Get detailed kitchen summary with variant aggregation and order details',
+  })
+  @ApiQuery({
+    name: 'date',
+    required: true,
+    description: 'Date to summarize (YYYY-MM-DD)',
+    example: '2024-01-15',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Detailed kitchen summary with variants and orders',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 403, description: 'Forbidden - SUPER_ADMIN only' })
+  async getDetailedSummary(
+    @Query('date') date: string,
+  ): Promise<KitchenDetailedSummaryDto> {
+    if (!date) {
+      throw new BadRequestException('Date query parameter is required');
+    }
+
+    return this.opsService.getDetailedSummary(date);
   }
 }

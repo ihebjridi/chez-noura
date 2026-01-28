@@ -8,6 +8,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   KitchenSummaryDto,
   KitchenBusinessSummaryDto,
+  KitchenDetailedSummaryDto,
+  KitchenOrderSummaryDto,
   DayLockDto,
   TokenPayload,
   UserRole,
@@ -28,15 +30,19 @@ export class OpsService {
       throw new ForbiddenException('Only SUPER_ADMIN can lock days');
     }
 
-    const lockDate = new Date(date);
+    // Parse date string (YYYY-MM-DD) as local date, not UTC
+    // This prevents timezone issues where "2024-01-26" becomes "2024-01-25"
+    const dateParts = date.split('-');
+    if (dateParts.length !== 3) {
+      throw new BadRequestException('Invalid date format. Use YYYY-MM-DD');
+    }
+    const [year, month, day] = dateParts.map(Number);
+    const lockDate = new Date(year, month - 1, day, 0, 0, 0, 0);
     if (isNaN(lockDate.getTime())) {
       throw new BadRequestException('Invalid date format. Use YYYY-MM-DD');
     }
 
-    // Normalize to start of day
-    lockDate.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(lockDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    const endOfDay = new Date(year, month - 1, day, 23, 59, 59, 999);
 
     // Check if already locked
     const existingLock = await this.prisma.dayLock.findUnique({
@@ -90,11 +96,16 @@ export class OpsService {
    * Check if a day is locked
    */
   async isDayLocked(date: string): Promise<boolean> {
-    const lockDate = new Date(date);
+    // Parse date string (YYYY-MM-DD) as local date, not UTC
+    const dateParts = date.split('-');
+    if (dateParts.length !== 3) {
+      return false;
+    }
+    const [year, month, day] = dateParts.map(Number);
+    const lockDate = new Date(year, month - 1, day, 0, 0, 0, 0);
     if (isNaN(lockDate.getTime())) {
       return false;
     }
-    lockDate.setHours(0, 0, 0, 0);
 
     const lock = await this.prisma.dayLock.findUnique({
       where: { lockDate: lockDate },
@@ -111,15 +122,18 @@ export class OpsService {
     date: string,
     format: 'json' | 'csv' = 'json',
   ): Promise<KitchenSummaryDto | string> {
-    const summaryDate = new Date(date);
-    if (isNaN(summaryDate.getTime())) {
+    // Parse date string (YYYY-MM-DD) as local date, not UTC
+    // This prevents timezone issues where "2024-01-26" becomes "2024-01-25"
+    const dateParts = date.split('-');
+    if (dateParts.length !== 3) {
       throw new BadRequestException('Invalid date format. Use YYYY-MM-DD');
     }
-
-    const startOfDay = new Date(summaryDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(summaryDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    const [year, month, day] = dateParts.map(Number);
+    const startOfDay = new Date(year, month - 1, day, 0, 0, 0, 0);
+    if (isNaN(startOfDay.getTime())) {
+      throw new BadRequestException('Invalid date format. Use YYYY-MM-DD');
+    }
+    const endOfDay = new Date(year, month - 1, day, 23, 59, 59, 999);
 
     // Get day lock info
     const dayLock = await this.prisma.dayLock.findUnique({
@@ -230,15 +244,18 @@ export class OpsService {
     date: string,
     format: 'json' | 'csv' = 'json',
   ): Promise<KitchenBusinessSummaryDto | string> {
-    const summaryDate = new Date(date);
-    if (isNaN(summaryDate.getTime())) {
+    // Parse date string (YYYY-MM-DD) as local date, not UTC
+    // This prevents timezone issues where "2024-01-26" becomes "2024-01-25"
+    const dateParts = date.split('-');
+    if (dateParts.length !== 3) {
       throw new BadRequestException('Invalid date format. Use YYYY-MM-DD');
     }
-
-    const startOfDay = new Date(summaryDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(summaryDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    const [year, month, day] = dateParts.map(Number);
+    const startOfDay = new Date(year, month - 1, day, 0, 0, 0, 0);
+    if (isNaN(startOfDay.getTime())) {
+      throw new BadRequestException('Invalid date format. Use YYYY-MM-DD');
+    }
+    const endOfDay = new Date(year, month - 1, day, 23, 59, 59, 999);
 
     // Get day lock info
     const dayLock = await this.prisma.dayLock.findUnique({
@@ -455,5 +472,150 @@ export class OpsService {
     }
     
     return lines.join('\n');
+  }
+
+  /**
+   * Get detailed kitchen summary for a date
+   * Includes both variant aggregation and individual order details
+   * Only includes LOCKED orders
+   */
+  async getDetailedSummary(date: string): Promise<KitchenDetailedSummaryDto> {
+    // Parse date string (YYYY-MM-DD) as local date, not UTC
+    // This prevents timezone issues where "2024-01-26" becomes "2024-01-25"
+    const dateParts = date.split('-');
+    if (dateParts.length !== 3) {
+      throw new BadRequestException('Invalid date format. Use YYYY-MM-DD');
+    }
+    const [year, month, day] = dateParts.map(Number);
+    const startOfDay = new Date(year, month - 1, day, 0, 0, 0, 0);
+    if (isNaN(startOfDay.getTime())) {
+      throw new BadRequestException('Invalid date format. Use YYYY-MM-DD');
+    }
+    const endOfDay = new Date(year, month - 1, day, 23, 59, 59, 999);
+
+    // Get day lock info
+    const dayLock = await this.prisma.dayLock.findUnique({
+      where: { lockDate: startOfDay },
+    });
+
+    // Get all LOCKED orders for the date with full details
+    const orders = await this.prisma.order.findMany({
+      where: {
+        orderDate: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+        status: 'LOCKED',
+      },
+      include: {
+        employee: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+        business: {
+          select: {
+            name: true,
+          },
+        },
+        pack: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        items: {
+          include: {
+            component: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            variant: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: [
+        { business: { name: 'asc' } },
+        { employee: { firstName: 'asc' } },
+        { employee: { lastName: 'asc' } },
+      ],
+    });
+
+    // Build order summaries
+    const orderSummaries: KitchenOrderSummaryDto[] = orders.map((order) => ({
+      orderId: order.id,
+      businessName: order.business.name,
+      employeeName: `${order.employee.firstName} ${order.employee.lastName}`,
+      packName: order.pack.name,
+      packId: order.pack.id,
+      variants: order.items.map((item) => ({
+        componentName: item.component.name,
+        variantName: item.variant.name,
+      })),
+    }));
+
+    // Aggregate variants (same logic as getSummary)
+    const variantMap = new Map<
+      string,
+      {
+        variantId: string;
+        variantName: string;
+        componentId: string;
+        componentName: string;
+        packId: string;
+        packName: string;
+        totalQuantity: number;
+      }
+    >();
+
+    for (const order of orders) {
+      for (const item of order.items) {
+        const variantId = item.variantId;
+        const existing = variantMap.get(variantId);
+
+        if (existing) {
+          existing.totalQuantity += 1;
+        } else {
+          variantMap.set(variantId, {
+            variantId: item.variant.id,
+            variantName: item.variant.name,
+            componentId: item.component.id,
+            componentName: item.component.name,
+            packId: order.pack.id,
+            packName: order.pack.name,
+            totalQuantity: 1,
+          });
+        }
+      }
+    }
+
+    const variants = Array.from(variantMap.values()).map((variant) => ({
+      variantId: variant.variantId,
+      variantName: variant.variantName,
+      componentId: variant.componentId,
+      componentName: variant.componentName,
+      packId: variant.packId,
+      packName: variant.packName,
+      totalQuantity: variant.totalQuantity,
+    }));
+
+    const totalVariants = variants.reduce((sum, v) => sum + v.totalQuantity, 0);
+
+    return {
+      date: date,
+      totalVariants,
+      totalOrders: orders.length,
+      variants,
+      orders: orderSummaries,
+      lockedAt: dayLock?.lockedAt.toISOString(),
+    };
   }
 }

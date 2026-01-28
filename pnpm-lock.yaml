@@ -4,6 +4,8 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+pnpmfileChecksum: sha256-nVOmFZ6JT8FxIhcN+S5sJXuP1DtIhTre5ZGvjJU+4tk=
+
 importers:
 
   .:
@@ -30,6 +32,12 @@ importers:
       '@contracts/core':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@types/react':
+        specifier: ^18.2.48
+        version: 18.3.27
+      '@types/react-dom':
+        specifier: ^18.2.18
+        version: 18.3.7(@types/react@18.3.27)
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -52,12 +60,6 @@ importers:
       '@types/node':
         specifier: ^20.11.0
         version: 20.19.30
-      '@types/react':
-        specifier: ^18.2.48
-        version: 18.3.27
-      '@types/react-dom':
-        specifier: ^18.2.18
-        version: 18.3.7(@types/react@18.3.27)
       autoprefixer:
         specifier: ^10.4.16
         version: 10.4.23(postcss@8.5.6)
@@ -109,6 +111,15 @@ importers:
       '@prisma/client':
         specifier: ^7.2.0
         version: 7.2.0(prisma@7.2.0(@types/react@18.3.27)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(typescript@5.9.3)
+      '@types/nodemailer':
+        specifier: ^6.4.14
+        version: 6.4.22
+      '@types/passport-jwt':
+        specifier: ^4.0.1
+        version: 4.0.1
+      '@types/uuid':
+        specifier: ^11.0.0
+        version: 11.0.0
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -176,18 +187,9 @@ importers:
       '@types/node':
         specifier: ^20.11.0
         version: 20.19.30
-      '@types/nodemailer':
-        specifier: ^6.4.14
-        version: 6.4.22
-      '@types/passport-jwt':
-        specifier: ^4.0.1
-        version: 4.0.1
       '@types/supertest':
         specifier: ^6.0.2
         version: 6.0.3
-      '@types/uuid':
-        specifier: ^11.0.0
-        version: 11.0.0
       '@typescript-eslint/eslint-plugin':
         specifier: ^6.19.0
         version: 6.21.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1)(typescript@5.9.3)
@@ -236,6 +238,12 @@ importers:
       '@contracts/core':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@types/react':
+        specifier: ^18.2.48
+        version: 18.3.27
+      '@types/react-dom':
+        specifier: ^18.2.18
+        version: 18.3.7(@types/react@18.3.27)
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -258,12 +266,6 @@ importers:
       '@types/node':
         specifier: ^20.11.0
         version: 20.19.30
-      '@types/react':
-        specifier: ^18.2.48
-        version: 18.3.27
-      '@types/react-dom':
-        specifier: ^18.2.18
-        version: 18.3.7(@types/react@18.3.27)
       autoprefixer:
         specifier: ^10.4.16
         version: 10.4.23(postcss@8.5.6)
@@ -288,6 +290,12 @@ importers:
       '@contracts/core':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@types/react':
+        specifier: ^18.2.48
+        version: 18.3.27
+      '@types/react-dom':
+        specifier: ^18.2.18
+        version: 18.3.7(@types/react@18.3.27)
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -310,12 +318,6 @@ importers:
       '@types/node':
         specifier: ^20.11.0
         version: 20.19.30
-      '@types/react':
-        specifier: ^18.2.48
-        version: 18.3.27
-      '@types/react-dom':
-        specifier: ^18.2.18
-        version: 18.3.7(@types/react@18.3.27)
       autoprefixer:
         specifier: ^10.4.16
         version: 10.4.23(postcss@8.5.6)
