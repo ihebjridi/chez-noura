@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/auth-context';
 import { LoginRequestDto } from '@contracts/core';
 import { Logo } from '../../components/logo';
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -31,7 +33,7 @@ export default function LoginPage() {
       const credentials: LoginRequestDto = { email, password };
       await login(credentials);
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      setError(err.message || t('common.messages.loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -42,13 +44,13 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white rounded-lg shadow-sm border border-gray-200 p-8">
         <div className="mb-8 text-center">
           <Logo className="justify-center mb-2" />
-          <p className="text-sm text-gray-600 mt-2">Business Admin Portal</p>
+          <p className="text-sm text-gray-600 mt-2">{t('auth.subtitle')}</p>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
+              {t('common.labels.email')}
             </label>
             <input
               id="email"
@@ -57,13 +59,13 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              placeholder="admin@company.com"
+              placeholder={t('auth.emailPlaceholder')}
             />
           </div>
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Password
+              {t('common.labels.password')}
             </label>
             <div className="relative">
               <input
@@ -73,13 +75,13 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                placeholder="••••••••"
+                placeholder={t('auth.passwordPlaceholder')}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-label={showPassword ? t('common.messages.hidePassword') : t('common.messages.showPassword')}
               >
                 {showPassword ? (
                   <EyeOff className="w-5 h-5" />
@@ -101,7 +103,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full py-2.5 px-4 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? t('auth.loggingIn') : t('auth.login')}
           </button>
         </form>
       </div>

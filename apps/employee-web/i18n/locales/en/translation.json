@@ -1,0 +1,128 @@
+{
+  "common": {
+    "buttons": {
+      "login": "Login",
+      "logout": "Logout",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "edit": "Edit",
+      "view": "View",
+      "continue": "Continue",
+      "back": "Back",
+      "refresh": "Refresh",
+      "tryAgain": "Try again",
+      "newOrder": "New Order",
+      "viewDetails": "View Details",
+      "confirm": "Confirm",
+      "placeOrder": "Place Order"
+    },
+    "labels": {
+      "email": "Email",
+      "password": "Password",
+      "name": "Name",
+      "status": "Status",
+      "date": "Date",
+      "time": "Time",
+      "actions": "Actions",
+      "loading": "Loading...",
+      "noData": "No data available",
+      "error": "Error",
+      "success": "Success",
+      "emailAddress": "Email Address"
+    },
+    "status": {
+      "active": "ACTIVE",
+      "inactive": "INACTIVE",
+      "pending": "PENDING",
+      "completed": "COMPLETED",
+      "cancelled": "CANCELLED",
+      "locked": "LOCKED",
+      "created": "CREATED",
+      "draft": "DRAFT",
+      "published": "PUBLISHED"
+    },
+    "messages": {
+      "loading": "Loading...",
+      "noDataAvailable": "No data available",
+      "errorOccurred": "An error occurred",
+      "loginFailed": "Login failed. Please check your email.",
+      "hidePassword": "Hide password",
+      "showPassword": "Show password"
+    }
+  },
+  "auth": {
+    "title": "Employee Ordering",
+    "subtitle": "Employee Ordering",
+    "emailPlaceholder": "your.email@company.com",
+    "loggingIn": "Logging in...",
+    "continue": "Continue",
+    "description": "Enter your company email to access meal ordering"
+  },
+  "menu": {
+    "title": "Order Iftar",
+    "todaysOrder": "Today's Order",
+    "orderIftar": "Order Iftar",
+    "selectPack": "Select a pack",
+    "selectVariant": "Select a variant",
+    "noMenu": "No menu available",
+    "menuUnavailable": "Menu is not available",
+    "pastDateMenu": "This menu is for a past date. Orders can only be placed for today's menu.",
+    "failedToLoadMenu": "Failed to load menu",
+    "selectComponent": "Select",
+    "confirmOrder": "Confirm Order",
+    "orderSummary": "Order Summary",
+    "total": "Total",
+    "cutoffTime": "Cutoff Time",
+    "timeRemaining": "Time Remaining",
+    "hours": "hours",
+    "minutes": "minutes",
+    "seconds": "seconds",
+    "days": "days",
+    "orderPlaced": "Order Placed",
+    "orderLocked": "Order Locked",
+    "orderCancelled": "Order Cancelled",
+    "orderCreated": "Order Created",
+    "statusMessages": {
+      "created": "Your order has been created successfully. It will be locked at the cutoff time.",
+      "locked": "Your order has been locked and can no longer be modified.",
+      "cancelled": "Your order has been cancelled."
+    }
+  },
+  "orders": {
+    "title": "My Orders",
+    "myOrders": "My Orders",
+    "noOrders": "No orders found",
+    "orderDetails": "Order Details",
+    "date": "Date",
+    "status": "Status",
+    "total": "Total",
+    "viewOrder": "View Order"
+  },
+  "calendar": {
+    "title": "Calendar",
+    "myOrders": "My Orders",
+    "viewCalendar": "View Calendar"
+  },
+  "company": {
+    "title": "My Company",
+    "subtitle": "Your affiliated company information",
+    "contactInformation": "Contact Information",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "companyId": "Company ID",
+    "loadingCompanyInfo": "Loading company information...",
+    "companyInfoNotAvailable": "Company information not available",
+    "failedToLoadCompany": "Failed to load company information"
+  },
+  "today": {
+    "title": "Today",
+    "todaysOrder": "Today's Order"
+  },
+  "layout": {
+    "back": "Back",
+    "viewOrders": "View orders",
+    "logout": "Logout"
+  }
+}

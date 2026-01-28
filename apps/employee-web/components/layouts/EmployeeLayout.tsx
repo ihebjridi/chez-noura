@@ -2,7 +2,9 @@
 
 import { ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/auth-context';
+import { LanguageSwitcher } from '../language-switcher';
 import { ShoppingCart, History, LogOut } from 'lucide-react';
 
 interface EmployeeLayoutProps {
@@ -16,6 +18,7 @@ export function EmployeeLayout({
   showBackButton = false,
   backAction,
 }: EmployeeLayoutProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
   const { logout, user } = useAuth();
@@ -55,7 +58,7 @@ export function EmployeeLayout({
               {isMenuPage && (
                 <div className="min-w-0">
                   <h1 className="text-lg font-semibold text-gray-900 truncate">
-                    Order Iftar
+                    {t('menu.orderIftar')}
                   </h1>
                   {user && (
                     <p className="text-xs text-gray-600 truncate">{user.email}</p>
@@ -63,17 +66,18 @@ export function EmployeeLayout({
                 </div>
               )}
               {isOrdersPage && (
-                <h1 className="text-lg font-semibold text-gray-900">My Orders</h1>
+                <h1 className="text-lg font-semibold text-gray-900">{t('orders.myOrders')}</h1>
               )}
             </div>
 
             {/* Right: Context actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
+              <LanguageSwitcher />
               {isMenuPage && (
                 <button
                   onClick={() => router.push('/calendar')}
                   className="p-2 hover:bg-surface-light rounded-md transition-colors relative"
-                  aria-label="View orders"
+                  aria-label={t('layout.viewOrders')}
                 >
                   <History className="w-5 h-5 text-gray-700" />
                 </button>
@@ -84,13 +88,13 @@ export function EmployeeLayout({
                   className="px-3 py-1.5 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors text-sm font-semibold min-h-[44px] flex items-center gap-2"
                 >
                   <ShoppingCart className="w-4 h-4" />
-                  <span className="hidden sm:inline">New Order</span>
+                  <span className="hidden sm:inline">{t('common.buttons.newOrder')}</span>
                 </button>
               )}
               <button
                 onClick={logout}
                 className="p-2 hover:bg-surface-light rounded-md transition-colors"
-                aria-label="Logout"
+                aria-label={t('layout.logout')}
               >
                 <LogOut className="w-5 h-5 text-gray-700" />
               </button>

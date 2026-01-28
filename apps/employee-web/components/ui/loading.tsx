@@ -1,8 +1,12 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
-export function Loading({ message = 'Loading...' }: { message?: string }) {
+export function Loading({ message }: { message?: string }) {
+  const { t } = useTranslation();
+  const defaultMessage = t('common.messages.loading');
+  
   return (
     <div className="flex flex-col items-center justify-center py-12">
       <motion.div
@@ -23,7 +27,7 @@ export function Loading({ message = 'Loading...' }: { message?: string }) {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
       >
-        {message}
+        {message || defaultMessage}
       </motion.p>
     </div>
   );

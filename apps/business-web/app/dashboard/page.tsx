@@ -24,7 +24,23 @@ export default function DashboardPage() {
 
   const formatFullDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    // Get locale from cookie or default to French
+    let locale = 'fr';
+    if (typeof document !== 'undefined') {
+      try {
+        const cookies = document.cookie.split(';');
+        const localeCookie = cookies.find(c => c.trim().startsWith('NEXT_LOCALE='));
+        if (localeCookie) {
+          const loc = localeCookie.split('=')[1].trim();
+          if (loc === 'fr' || loc === 'en') {
+            locale = loc;
+          }
+        }
+      } catch (e) {
+        // Fallback to default
+      }
+    }
+    return date.toLocaleDateString(locale, {
       weekday: 'long',
       year: 'numeric',
       month: 'long',

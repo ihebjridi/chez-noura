@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { Logo } from '../logo';
+import { LanguageSwitcher } from '../language-switcher';
 import { useAuth } from '../../contexts/auth-context';
 import {
   LayoutDashboard,
@@ -19,17 +21,18 @@ interface BusinessLayoutProps {
   children: React.ReactNode;
 }
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, current: false },
-  { name: 'Employees', href: '/employees', icon: Users, current: false },
-  { name: 'Orders', href: '/orders', icon: ShoppingCart, current: false },
-  { name: 'Invoices', href: '/invoices', icon: FileText, current: false },
-];
-
 export function BusinessLayout({ children }: BusinessLayoutProps) {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const { logout, user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const navigation = [
+    { name: t('navigation.dashboard'), href: '/dashboard', icon: LayoutDashboard, current: false },
+    { name: t('navigation.employees'), href: '/employees', icon: Users, current: false },
+    { name: t('navigation.orders'), href: '/orders', icon: ShoppingCart, current: false },
+    { name: t('navigation.invoices'), href: '/invoices', icon: FileText, current: false },
+  ];
 
   const navigationWithCurrent = navigation.map((item) => ({
     ...item,
@@ -91,7 +94,7 @@ export function BusinessLayout({ children }: BusinessLayoutProps) {
             <div className="flex items-center gap-3 mb-3 px-4">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">{user?.email}</p>
-                <p className="text-xs text-gray-500">Business Admin</p>
+                <p className="text-xs text-gray-500">{t('employees.businessAdmin')}</p>
               </div>
             </div>
             <button
@@ -99,7 +102,7 @@ export function BusinessLayout({ children }: BusinessLayoutProps) {
               className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-surface-light transition-colors"
             >
               <LogOut className="h-5 w-5" />
-              Logout
+              {t('common.buttons.logout')}
             </button>
           </div>
         </div>
@@ -118,10 +121,11 @@ export function BusinessLayout({ children }: BusinessLayoutProps) {
             </button>
             <div className="flex-1 lg:ml-0">
               <h1 className="text-xl font-semibold text-gray-900">
-                {navigationWithCurrent.find((item) => item.current)?.name || 'Business Portal'}
+                {navigationWithCurrent.find((item) => item.current)?.name || t('dashboard.businessPortal')}
               </h1>
             </div>
             <div className="flex items-center gap-4">
+              <LanguageSwitcher />
               <span className="hidden sm:inline text-sm text-gray-600">{user?.email}</span>
             </div>
           </div>
@@ -136,9 +140,9 @@ export function BusinessLayout({ children }: BusinessLayoutProps) {
         <footer className="bg-surface border-t border-surface-dark py-4 px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-600">
-              © {new Date().getFullYear()} Chez Noura. All rights reserved.
+              {t('footer.copyright', { year: new Date().getFullYear() })}
             </p>
-            <p className="text-xs text-gray-500">Business Admin Portal</p>
+            <p className="text-xs text-gray-500">{t('footer.businessAdminPortal')}</p>
           </div>
         </footer>
       </div>

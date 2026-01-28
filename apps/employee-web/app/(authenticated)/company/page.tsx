@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiClient } from '../../../lib/api-client';
 import { BusinessDto } from '@contracts/core';
 import { Loading } from '../../../components/ui/loading';
@@ -8,6 +9,7 @@ import { Error } from '../../../components/ui/error';
 import { Building2, Mail, Phone, MapPin, CheckCircle } from 'lucide-react';
 
 export default function CompanyPage() {
+  const { t } = useTranslation();
   const [business, setBusiness] = useState<BusinessDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -23,7 +25,7 @@ export default function CompanyPage() {
       const businessData = await apiClient.getMyBusiness();
       setBusiness(businessData);
     } catch (err: any) {
-      setError(err.message || 'Failed to load company information');
+      setError(err.message || t('company.failedToLoadCompany'));
     } finally {
       setLoading(false);
     }
@@ -32,7 +34,7 @@ export default function CompanyPage() {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <Loading message="Loading company information..." />
+        <Loading message={t('company.loadingCompanyInfo')} />
       </div>
     );
   }
@@ -48,7 +50,7 @@ export default function CompanyPage() {
   if (!business) {
     return (
       <div className="p-4">
-        <Error message="Company information not available" />
+        <Error message={t('company.companyInfoNotAvailable')} />
       </div>
     );
   }
@@ -56,9 +58,9 @@ export default function CompanyPage() {
   return (
     <div className="p-4 max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">My Company</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('company.title')}</h1>
         <p className="text-sm text-gray-600 mt-1">
-          Your affiliated company information
+          {t('company.subtitle')}
         </p>
       </div>
 
@@ -96,14 +98,14 @@ export default function CompanyPage() {
         {/* Contact Information */}
         <div className="space-y-4 pt-4 border-t border-surface-dark">
           <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-            Contact Information
+            {t('company.contactInformation')}
           </h3>
 
           {business.email && (
             <div className="flex items-start gap-3">
               <Mail className="w-5 h-5 text-gray-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-xs text-gray-600 mb-1">Email</p>
+                <p className="text-xs text-gray-600 mb-1">{t('company.email')}</p>
                 <a
                   href={`mailto:${business.email}`}
                   className="text-sm text-primary-600 hover:text-primary-700 font-medium"
@@ -118,7 +120,7 @@ export default function CompanyPage() {
             <div className="flex items-start gap-3">
               <Phone className="w-5 h-5 text-gray-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-xs text-gray-600 mb-1">Phone</p>
+                <p className="text-xs text-gray-600 mb-1">{t('company.phone')}</p>
                 <a
                   href={`tel:${business.phone}`}
                   className="text-sm text-primary-600 hover:text-primary-700 font-medium"
@@ -133,7 +135,7 @@ export default function CompanyPage() {
             <div className="flex items-start gap-3">
               <MapPin className="w-5 h-5 text-gray-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-xs text-gray-600 mb-1">Address</p>
+                <p className="text-xs text-gray-600 mb-1">{t('company.address')}</p>
                 <p className="text-sm text-gray-900">{business.address}</p>
               </div>
             </div>
@@ -143,7 +145,7 @@ export default function CompanyPage() {
         {/* Additional Info */}
         <div className="pt-4 border-t border-surface-dark">
           <p className="text-xs text-gray-500">
-            Company ID: {business.id}
+            {t('company.companyId')}: {business.id}
           </p>
         </div>
       </div>

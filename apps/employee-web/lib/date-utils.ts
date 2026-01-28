@@ -2,8 +2,29 @@
  * Date formatting utilities
  */
 
+// Get locale from cookie, otherwise default to French
+function getLocale(): string {
+  if (typeof window !== 'undefined') {
+    try {
+      // Get from cookie
+      const cookies = document.cookie.split(';');
+      const localeCookie = cookies.find(c => c.trim().startsWith('NEXT_LOCALE='));
+      if (localeCookie) {
+        const locale = localeCookie.split('=')[1].trim();
+        if (locale === 'fr' || locale === 'en') {
+          return locale;
+        }
+      }
+    } catch (e) {
+      // Fallback to default
+    }
+  }
+  return 'fr'; // Default to French
+}
+
 export function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('en-US', {
+  const locale = getLocale();
+  return new Date(dateString).toLocaleDateString(locale, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -11,7 +32,8 @@ export function formatDate(dateString: string): string {
 }
 
 export function formatDateTime(dateString: string): string {
-  return new Date(dateString).toLocaleString('en-US', {
+  const locale = getLocale();
+  return new Date(dateString).toLocaleString(locale, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -21,7 +43,8 @@ export function formatDateTime(dateString: string): string {
 }
 
 export function formatDateOnly(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('en-US', {
+  const locale = getLocale();
+  return new Date(dateString).toLocaleDateString(locale, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -29,7 +52,8 @@ export function formatDateOnly(dateString: string): string {
 }
 
 export function formatTime(dateString: string): string {
-  return new Date(dateString).toLocaleTimeString('en-US', {
+  const locale = getLocale();
+  return new Date(dateString).toLocaleTimeString(locale, {
     hour: '2-digit',
     minute: '2-digit',
   });

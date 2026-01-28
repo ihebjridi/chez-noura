@@ -1,0 +1,128 @@
+{
+  "common": {
+    "buttons": {
+      "login": "Connexion",
+      "logout": "Déconnexion",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "delete": "Supprimer",
+      "edit": "Modifier",
+      "view": "Voir",
+      "continue": "Continuer",
+      "back": "Retour",
+      "refresh": "Actualiser",
+      "tryAgain": "Réessayer",
+      "newOrder": "Nouvelle commande",
+      "viewDetails": "Voir les détails",
+      "confirm": "Confirmer",
+      "placeOrder": "Passer la commande"
+    },
+    "labels": {
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "name": "Nom",
+      "status": "Statut",
+      "date": "Date",
+      "time": "Heure",
+      "actions": "Actions",
+      "loading": "Chargement...",
+      "noData": "Aucune donnée disponible",
+      "error": "Erreur",
+      "success": "Succès",
+      "emailAddress": "Adresse e-mail"
+    },
+    "status": {
+      "active": "ACTIF",
+      "inactive": "INACTIF",
+      "pending": "EN ATTENTE",
+      "completed": "TERMINÉ",
+      "cancelled": "ANNULÉ",
+      "locked": "VERROUILLÉ",
+      "created": "CRÉÉ",
+      "draft": "BROUILLON",
+      "published": "PUBLIÉ"
+    },
+    "messages": {
+      "loading": "Chargement...",
+      "noDataAvailable": "Aucune donnée disponible",
+      "errorOccurred": "Une erreur s'est produite",
+      "loginFailed": "Échec de la connexion. Veuillez vérifier votre e-mail.",
+      "hidePassword": "Masquer le mot de passe",
+      "showPassword": "Afficher le mot de passe"
+    }
+  },
+  "auth": {
+    "title": "Commande d'employé",
+    "subtitle": "Commande d'employé",
+    "emailPlaceholder": "votre.email@company.com",
+    "loggingIn": "Connexion en cours...",
+    "continue": "Continuer",
+    "description": "Entrez votre e-mail professionnel pour accéder à la commande de repas"
+  },
+  "menu": {
+    "title": "Commander Iftar",
+    "todaysOrder": "Commande du jour",
+    "orderIftar": "Commander Iftar",
+    "selectPack": "Sélectionner un pack",
+    "selectVariant": "Sélectionner une variante",
+    "noMenu": "Aucun menu disponible",
+    "menuUnavailable": "Le menu n'est pas disponible",
+    "pastDateMenu": "Ce menu est pour une date passée. Les commandes ne peuvent être passées que pour le menu du jour.",
+    "failedToLoadMenu": "Échec du chargement du menu",
+    "selectComponent": "Sélectionner",
+    "confirmOrder": "Confirmer la commande",
+    "orderSummary": "Résumé de la commande",
+    "total": "Total",
+    "cutoffTime": "Heure limite",
+    "timeRemaining": "Temps restant",
+    "hours": "heures",
+    "minutes": "minutes",
+    "seconds": "secondes",
+    "days": "jours",
+    "orderPlaced": "Commande passée",
+    "orderLocked": "Commande verrouillée",
+    "orderCancelled": "Commande annulée",
+    "orderCreated": "Commande créée",
+    "statusMessages": {
+      "created": "Votre commande a été créée avec succès. Elle sera verrouillée à l'heure limite.",
+      "locked": "Votre commande a été verrouillée et ne peut plus être modifiée.",
+      "cancelled": "Votre commande a été annulée."
+    }
+  },
+  "orders": {
+    "title": "Mes commandes",
+    "myOrders": "Mes commandes",
+    "noOrders": "Aucune commande trouvée",
+    "orderDetails": "Détails de la commande",
+    "date": "Date",
+    "status": "Statut",
+    "total": "Total",
+    "viewOrder": "Voir la commande"
+  },
+  "calendar": {
+    "title": "Calendrier",
+    "myOrders": "Mes commandes",
+    "viewCalendar": "Voir le calendrier"
+  },
+  "company": {
+    "title": "Mon entreprise",
+    "subtitle": "Informations sur votre entreprise affiliée",
+    "contactInformation": "Informations de contact",
+    "email": "E-mail",
+    "phone": "Téléphone",
+    "address": "Adresse",
+    "companyId": "ID de l'entreprise",
+    "loadingCompanyInfo": "Chargement des informations de l'entreprise...",
+    "companyInfoNotAvailable": "Informations sur l'entreprise non disponibles",
+    "failedToLoadCompany": "Échec du chargement des informations de l'entreprise"
+  },
+  "today": {
+    "title": "Aujourd'hui",
+    "todaysOrder": "Commande du jour"
+  },
+  "layout": {
+    "back": "Retour",
+    "viewOrders": "Voir les commandes",
+    "logout": "Déconnexion"
+  }
+}

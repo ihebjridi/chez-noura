@@ -1,0 +1,105 @@
+{
+  "common": {
+    "buttons": {
+      "login": "Connexion",
+      "logout": "Déconnexion",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "delete": "Supprimer",
+      "edit": "Modifier",
+      "view": "Voir",
+      "continue": "Continuer",
+      "back": "Retour",
+      "refresh": "Actualiser",
+      "tryAgain": "Réessayer"
+    },
+    "labels": {
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "name": "Nom",
+      "status": "Statut",
+      "date": "Date",
+      "time": "Heure",
+      "actions": "Actions",
+      "loading": "Chargement...",
+      "noData": "Aucune donnée disponible",
+      "error": "Erreur",
+      "success": "Succès"
+    },
+    "status": {
+      "active": "ACTIF",
+      "inactive": "INACTIF",
+      "pending": "EN ATTENTE",
+      "completed": "TERMINÉ",
+      "cancelled": "ANNULÉ",
+      "locked": "VERROUILLÉ",
+      "draft": "BROUILLON",
+      "published": "PUBLIÉ"
+    },
+    "messages": {
+      "loading": "Chargement...",
+      "noDataAvailable": "Aucune donnée disponible",
+      "errorOccurred": "Une erreur s'est produite",
+      "loginFailed": "Échec de la connexion. Veuillez vérifier vos identifiants.",
+      "hidePassword": "Masquer le mot de passe",
+      "showPassword": "Afficher le mot de passe"
+    }
+  },
+  "auth": {
+    "title": "Portail d'administration",
+    "subtitle": "Portail d'administration des entreprises",
+    "emailPlaceholder": "admin@company.com",
+    "passwordPlaceholder": "••••••••",
+    "loggingIn": "Connexion en cours...",
+    "login": "Connexion"
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "businessPortal": "Portail d'entreprise",
+    "orders": "Commandes",
+    "employees": "Employés",
+    "invoices": "Factures",
+    "statistics": {
+      "totalOrders": "Total des commandes",
+      "totalEmployees": "Total des employés",
+      "totalRevenue": "Revenu total"
+    }
+  },
+  "navigation": {
+    "dashboard": "Tableau de bord",
+    "employees": "Employés",
+    "orders": "Commandes",
+    "invoices": "Factures"
+  },
+  "employees": {
+    "title": "Employés",
+    "addEmployee": "Ajouter un employé",
+    "email": "E-mail",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "status": "Statut",
+    "noEmployees": "Aucun employé trouvé",
+    "businessAdmin": "Administrateur d'entreprise"
+  },
+  "orders": {
+    "title": "Commandes",
+    "noOrders": "Aucune commande trouvée",
+    "orderDetails": "Détails de la commande",
+    "date": "Date",
+    "status": "Statut",
+    "total": "Total"
+  },
+  "invoices": {
+    "title": "Factures",
+    "noInvoices": "Aucune facture trouvée",
+    "invoiceDetails": "Détails de la facture",
+    "invoiceNumber": "Numéro de facture",
+    "date": "Date",
+    "amount": "Montant",
+    "status": "Statut"
+  },
+  "footer": {
+    "copyright": "© {{year}} Chez Noura. Tous droits réservés.",
+    "businessAdminPortal": "Portail d'administration des entreprises"
+  }
+}

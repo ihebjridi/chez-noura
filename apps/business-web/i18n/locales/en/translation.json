@@ -1,0 +1,105 @@
+{
+  "common": {
+    "buttons": {
+      "login": "Login",
+      "logout": "Logout",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "edit": "Edit",
+      "view": "View",
+      "continue": "Continue",
+      "back": "Back",
+      "refresh": "Refresh",
+      "tryAgain": "Try again"
+    },
+    "labels": {
+      "email": "Email",
+      "password": "Password",
+      "name": "Name",
+      "status": "Status",
+      "date": "Date",
+      "time": "Time",
+      "actions": "Actions",
+      "loading": "Loading...",
+      "noData": "No data available",
+      "error": "Error",
+      "success": "Success"
+    },
+    "status": {
+      "active": "ACTIVE",
+      "inactive": "INACTIVE",
+      "pending": "PENDING",
+      "completed": "COMPLETED",
+      "cancelled": "CANCELLED",
+      "locked": "LOCKED",
+      "draft": "DRAFT",
+      "published": "PUBLISHED"
+    },
+    "messages": {
+      "loading": "Loading...",
+      "noDataAvailable": "No data available",
+      "errorOccurred": "An error occurred",
+      "loginFailed": "Login failed. Please check your credentials.",
+      "hidePassword": "Hide password",
+      "showPassword": "Show password"
+    }
+  },
+  "auth": {
+    "title": "Business Admin Portal",
+    "subtitle": "Business Admin Portal",
+    "emailPlaceholder": "admin@company.com",
+    "passwordPlaceholder": "••••••••",
+    "loggingIn": "Logging in...",
+    "login": "Login"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "businessPortal": "Business Portal",
+    "orders": "Orders",
+    "employees": "Employees",
+    "invoices": "Invoices",
+    "statistics": {
+      "totalOrders": "Total Orders",
+      "totalEmployees": "Total Employees",
+      "totalRevenue": "Total Revenue"
+    }
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "employees": "Employees",
+    "orders": "Orders",
+    "invoices": "Invoices"
+  },
+  "employees": {
+    "title": "Employees",
+    "addEmployee": "Add Employee",
+    "email": "Email",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "status": "Status",
+    "noEmployees": "No employees found",
+    "businessAdmin": "Business Admin"
+  },
+  "orders": {
+    "title": "Orders",
+    "noOrders": "No orders found",
+    "orderDetails": "Order Details",
+    "date": "Date",
+    "status": "Status",
+    "total": "Total"
+  },
+  "invoices": {
+    "title": "Invoices",
+    "noInvoices": "No invoices found",
+    "invoiceDetails": "Invoice Details",
+    "invoiceNumber": "Invoice Number",
+    "date": "Date",
+    "amount": "Amount",
+    "status": "Status"
+  },
+  "footer": {
+    "copyright": "© {{year}} Chez Noura. All rights reserved.",
+    "businessAdminPortal": "Business Admin Portal"
+  }
+}

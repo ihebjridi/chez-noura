@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { AuthProvider } from '../contexts/auth-context';
+import { I18nProvider } from '../i18n';
+import { HtmlLangWrapper } from '../components/html-lang-wrapper';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -13,9 +15,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="fr">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <I18nProvider>
+          <HtmlLangWrapper>
+            <AuthProvider>{children}</AuthProvider>
+          </HtmlLangWrapper>
+        </I18nProvider>
       </body>
     </html>
   );

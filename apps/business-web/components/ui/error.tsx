@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export function Error({ 
   message,
@@ -10,6 +11,8 @@ export function Error({
   message: string;
   onRetry?: () => void;
 }) {
+  const { t } = useTranslation();
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: -10 }}
@@ -34,7 +37,7 @@ export function Error({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              Try again
+              {t('common.buttons.tryAgain')}
             </motion.button>
           )}
         </div>
