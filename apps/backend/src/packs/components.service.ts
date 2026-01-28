@@ -237,6 +237,52 @@ export class ComponentsService {
   }
 
   /**
+   * Delete a component
+   * Only SUPER_ADMIN can delete components
+   * Cannot delete if component is referenced by any OrderItems
+   */
+  async deleteComponent(componentId: string, user: TokenPayload): Promise<void> {
+    if (user.role !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Only SUPER_ADMIN can delete components');
+    }
+
+    const component = await this.prisma.component.findUnique({
+      where: { id: componentId },
+      include: {
+        variants: true,
+      },
+    });
+
+    if (!component) {
+      throw new NotFoundException(`Component with ID ${componentId} not found`);
+    }
+
+    // Check if component is referenced by any OrderItems
+    const orderItemCount = await this.prisma.orderItem.count({
+      where: { componentId },
+    });
+
+    if (orderItemCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete component: it is referenced by ${orderItemCount} order item(s). Components that have been used in orders cannot be deleted to maintain data integrity.`,
+      );
+    }
+
+    // Delete all variant images before deleting variants
+    for (const variant of component.variants) {
+      if (variant.imageUrl) {
+        await this.fileStorageService.deleteFile(variant.imageUrl);
+      }
+    }
+
+    // Delete the component
+    // Variants, PackComponents, and DailyMenuVariants will be cascade deleted automatically
+    await this.prisma.component.delete({
+      where: { id: componentId },
+    });
+  }
+
+  /**
    * Delete a variant
    * Only SUPER_ADMIN can delete variants
    * Cannot delete if variant is referenced by any OrderItems

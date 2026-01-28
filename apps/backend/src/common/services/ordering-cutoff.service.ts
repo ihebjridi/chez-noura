@@ -16,9 +16,10 @@ export class OrderingCutoffService {
   /**
    * Check if ordering is still allowed for a given date
    * @param orderDate - The date the order is for (ISO date string)
+   * @param packId - Optional pack ID to check service-level times
    * @returns true if ordering is allowed, throws BadRequestException if not
    */
-  async checkOrderingAllowed(orderDate: string): Promise<boolean> {
+  async checkOrderingAllowed(orderDate: string, packId?: string): Promise<boolean> {
     // Check if ordering is manually locked
     if (this.orderingLockService.isLocked(orderDate)) {
       throw new BadRequestException('Ordering is locked for this date');
@@ -31,7 +32,50 @@ export class OrderingCutoffService {
     endOfDay.setHours(23, 59, 59, 999);
     const now = new Date();
 
-    // Find meals available for this date
+    // If packId is provided, check service-level times first
+    if (packId) {
+      const servicePack = await this.prisma.servicePack.findUnique({
+        where: { packId },
+        include: {
+          service: true,
+        },
+      });
+
+      if (servicePack && servicePack.service.isActive && servicePack.service.isPublished) {
+        const service = servicePack.service;
+
+        // Check order start time
+        if (service.orderStartTime) {
+          const [hours, minutes] = service.orderStartTime.split(':').map(Number);
+          const orderStart = new Date(date);
+          orderStart.setHours(hours, minutes, 0, 0);
+          if (now < orderStart) {
+            throw new BadRequestException(
+              `Ordering for this service starts at ${service.orderStartTime}. Current time: ${now.toLocaleTimeString()}`,
+            );
+          }
+        }
+
+        // Check cutoff time
+        if (service.cutoffTime) {
+          const [hours, minutes] = service.cutoffTime.split(':').map(Number);
+          const cutoffTime = new Date(date);
+          cutoffTime.setHours(hours, minutes, 0, 0);
+          if (now > cutoffTime) {
+            throw new BadRequestException(
+              `Ordering cutoff time (${service.cutoffTime}) has passed for this service`,
+            );
+          }
+        }
+
+        // If service has times configured, use them and return
+        if (service.orderStartTime || service.cutoffTime) {
+          return true;
+        }
+      }
+    }
+
+    // Fallback to meal-based cutoff check
     const meals = await this.prisma.meal.findMany({
       where: {
         availableDate: {

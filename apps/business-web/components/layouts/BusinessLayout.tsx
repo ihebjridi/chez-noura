@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   LogOut,
+  Package,
 } from 'lucide-react';
 
 interface BusinessLayoutProps {
@@ -31,6 +32,7 @@ export function BusinessLayout({ children }: BusinessLayoutProps) {
   const navigation = [
     { name: t('navigation.dashboard'), href: '/dashboard', icon: LayoutDashboard, current: false },
     { name: t('navigation.employees'), href: '/employees', icon: Users, current: false },
+    { name: t('navigation.services'), href: '/services', icon: Package, current: false },
     { name: t('navigation.orders'), href: '/orders', icon: ShoppingCart, current: false },
     { name: t('navigation.invoices'), href: '/invoices', icon: FileText, current: false },
   ];

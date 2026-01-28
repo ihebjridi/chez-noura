@@ -52,7 +52,7 @@ export class EmployeesController {
     @Query('date') date: string,
     @CurrentUser() user: TokenPayload,
   ): Promise<EmployeeMenuDto> {
-    return this.employeeMenuService.getMenuByDate(date);
+    return this.employeeMenuService.getMenuByDate(date, user);
   }
 
   @Post('orders')

@@ -33,12 +33,24 @@ export function useFoodComponents() {
     }
   }, [loadComponents]);
 
+  const deleteComponent = useCallback(async (componentId: string) => {
+    try {
+      setError('');
+      await apiClient.deleteComponent(componentId);
+      await loadComponents();
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete food component');
+      throw err;
+    }
+  }, [loadComponents]);
+
   return {
     components,
     loading,
     error,
     loadComponents,
     createComponent,
+    deleteComponent,
     setError,
   };
 }

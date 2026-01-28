@@ -116,12 +116,16 @@ export function WeekCalendar({
     const menu = menus[dateStr];
     if (!menu) return 'no-menu';
     
-    // Check if past cutoff
+    // Check if before order start time
     const now = new Date();
+    const orderStartTime = menu.orderStartTime ? new Date(menu.orderStartTime) : null;
+    const isBeforeStart = orderStartTime ? now < orderStartTime : false;
+    
+    // Check if past cutoff
     const cutoffTime = menu.cutoffTime ? new Date(menu.cutoffTime) : null;
     const isPastCutoff = cutoffTime ? now > cutoffTime : false;
     
-    if (isPastCutoff) return 'closed';
+    if (isBeforeStart || isPastCutoff) return 'closed';
     return 'open';
   };
 

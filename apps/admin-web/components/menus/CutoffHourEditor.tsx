@@ -8,7 +8,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogFooter,
-} from '../../components/ui/dialog';
+} from '../ui/dialog';
 
 interface CutoffHourEditorProps {
   isOpen: boolean;

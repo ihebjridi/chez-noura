@@ -8,6 +8,12 @@ import {
   OrderDto,
   InvoiceDto,
   InvoiceSummaryDto,
+  ServiceDto,
+  ServiceWithPacksDto,
+  BusinessServiceDto,
+  ActivateServiceDto,
+  UpdateBusinessServiceDto,
+  PackWithComponentsDto,
 } from '@contracts/core';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -42,7 +48,23 @@ class ApiClient {
       throw new Error(error.message || `HTTP error! status: ${response.status}`);
     }
 
-    return response.json();
+    // Handle empty responses (204 No Content or empty 200 OK)
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
+    // Check if response has content before parsing JSON
+    const text = await response.text();
+    if (!text || text.trim() === '') {
+      return undefined as T;
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      // If parsing fails, return undefined for void responses
+      return undefined as T;
+    }
   }
 
   // Auth endpoints
@@ -96,6 +118,53 @@ class ApiClient {
 
   async getInvoice(id: string): Promise<InvoiceDto> {
     return this.request<InvoiceDto>(`/invoices/${id}`);
+  }
+
+  // Service endpoints
+  async getServices(): Promise<ServiceDto[]> {
+    return this.request<ServiceDto[]>('/services');
+  }
+
+  async getServiceById(id: string): Promise<ServiceWithPacksDto> {
+    return this.request<ServiceWithPacksDto>(`/services/${id}`);
+  }
+
+  // Pack endpoints
+  async getPackById(id: string): Promise<PackWithComponentsDto> {
+    return this.request<PackWithComponentsDto>(`/packs/${id}`);
+  }
+
+  // Business service endpoints
+  async getBusinessServices(businessId: string): Promise<BusinessServiceDto[]> {
+    return this.request<BusinessServiceDto[]>(`/businesses/${businessId}/services`);
+  }
+
+  async getBusinessService(businessId: string, serviceId: string): Promise<BusinessServiceDto> {
+    return this.request<BusinessServiceDto>(`/businesses/${businessId}/services/${serviceId}`);
+  }
+
+  async activateService(businessId: string, data: ActivateServiceDto): Promise<BusinessServiceDto> {
+    return this.request<BusinessServiceDto>(`/businesses/${businessId}/services`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateBusinessService(
+    businessId: string,
+    serviceId: string,
+    data: UpdateBusinessServiceDto,
+  ): Promise<BusinessServiceDto> {
+    return this.request<BusinessServiceDto>(`/businesses/${businessId}/services/${serviceId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deactivateService(businessId: string, serviceId: string): Promise<void> {
+    return this.request<void>(`/businesses/${businessId}/services/${serviceId}`, {
+      method: 'DELETE',
+    });
   }
 }
 

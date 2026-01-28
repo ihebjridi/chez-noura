@@ -1,9 +1,9 @@
 'use client';
 
 import { DailyMenuWithDetailsDto, DailyMenuStatus } from '@contracts/core';
-import { InlineToolbar } from '../../components/layouts/InlineToolbar';
-import { PublishConfirmModal } from '../daily-menus/[id]/components/PublishConfirmModal';
-import { DeleteConfirmModal } from '../daily-menus/[id]/components/DeleteConfirmModal';
+import { InlineToolbar } from '../layouts/InlineToolbar';
+import { PublishConfirmModal } from '../../app/daily-menus/[id]/components/PublishConfirmModal';
+import { DeleteConfirmModal } from '../../app/daily-menus/[id]/components/DeleteConfirmModal';
 import { CutoffHourEditor } from './CutoffHourEditor';
 
 interface QuickActionsBarProps {

@@ -94,8 +94,8 @@ export class OrdersService {
     }
 
     // Check if ordering is still allowed for this date (cutoff time check)
-    // This will throw if cutoff has passed
-    await this.orderingCutoffService.checkOrderingAllowed(createOrderDto.orderDate);
+    // This will throw if cutoff has passed or order start time hasn't been reached
+    await this.orderingCutoffService.checkOrderingAllowed(createOrderDto.orderDate, createOrderDto.packId);
 
     // Check for existing order for this employee on this date (idempotency)
     const nextDay = new Date(orderDate);

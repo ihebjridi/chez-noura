@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ProtectedRoute } from '../../../components/protected-route';
+import { ProtectedRoute } from '../../../components/common/protected-route';
 import { UserRole } from '@contracts/core';
 import { Loading } from '../../../components/ui/loading';
 import { apiClient } from '../../../lib/api-client';

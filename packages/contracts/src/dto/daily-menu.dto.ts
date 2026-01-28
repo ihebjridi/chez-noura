@@ -40,9 +40,34 @@ export interface DailyMenuVariantDto {
   updatedAt: string;
 }
 
+export interface DailyMenuServiceDto {
+  id: string;
+  dailyMenuId: string;
+  serviceId: string;
+  serviceName: string;
+  serviceDescription?: string;
+  packs: DailyMenuPackDto[]; // Packs in this service that are in the menu
+  variants: DailyMenuServiceVariantDto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DailyMenuServiceVariantDto {
+  id: string;
+  dailyMenuServiceId: string;
+  variantId: string;
+  variantName: string;
+  componentId: string;
+  componentName: string;
+  initialStock: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface DailyMenuWithDetailsDto extends DailyMenuDto {
   packs: DailyMenuPackDto[];
   variants: DailyMenuVariantDto[];
+  services: DailyMenuServiceDto[];
 }
 
 export interface CreateDailyMenuDto {
@@ -55,6 +80,15 @@ export interface AddPackToDailyMenuDto {
 }
 
 export interface AddVariantToDailyMenuDto {
+  variantId: string;
+  initialStock?: number;
+}
+
+export interface AddServiceToDailyMenuDto {
+  serviceId: string;
+}
+
+export interface AddVariantToDailyMenuServiceDto {
   variantId: string;
   initialStock?: number;
 }

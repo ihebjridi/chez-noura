@@ -69,11 +69,12 @@ model Business {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
-  users        User[]
-  employees    Employee[]
-  orders       Order[]
-  invoices     Invoice[]
-  activityLogs ActivityLog[]
+  users           User[]
+  employees       Employee[]
+  orders          Order[]
+  invoices        Invoice[]
+  activityLogs    ActivityLog[]
+  businessServices BusinessService[]
 
   @@index([email])
   @@index([name])
@@ -125,9 +126,12 @@ model Pack {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  packComponents  PackComponent[]
-  orders          Order[]
-  dailyMenuPacks  DailyMenuPack[]
+  packComponents      PackComponent[]
+  orders              Order[]
+  dailyMenuPacks      DailyMenuPack[]
+  servicePack         ServicePack?
+  businessServicePacks BusinessServicePack[]
+  businessServicePacksNextPack BusinessServicePack[] @relation("BusinessServicePackNextPack")
 
   @@index([isActive])
   @@index([name])
@@ -174,6 +178,7 @@ model Variant {
   component        Component          @relation(fields: [componentId], references: [id], onDelete: Cascade)
   orderItems       OrderItem[]
   dailyMenuVariants DailyMenuVariant[]
+  dailyMenuServiceVariants DailyMenuServiceVariant[]
 
   @@unique([componentId, name])
   @@index([componentId])
@@ -192,6 +197,7 @@ model DailyMenu {
 
   packs    DailyMenuPack[]
   variants DailyMenuVariant[]
+  services DailyMenuService[]
   orders   Order[]
 
   @@index([date])
@@ -281,6 +287,7 @@ model OrderItem {
 model Invoice {
   id            String        @id @default(uuid())
   businessId    String
+  serviceId     String?       // Service this invoice is for (null for legacy invoices)
   invoiceNumber String        @unique
   periodStart   DateTime
   periodEnd     DateTime
@@ -295,12 +302,17 @@ model Invoice {
   updatedAt     DateTime      @updatedAt
 
   business Business      @relation(fields: [businessId], references: [id])
+  service  Service?      @relation(fields: [serviceId], references: [id])
   items    InvoiceItem[]
 
   @@index([businessId])
+  @@index([serviceId])
+  @@index([businessId, serviceId])
   @@index([invoiceNumber])
   @@index([status])
   @@index([periodStart, periodEnd])
+  @@index([businessId, periodStart, periodEnd])
+  @@index([businessId, serviceId, periodStart, periodEnd])
 }
 
 model InvoiceItem {
@@ -349,4 +361,110 @@ model ActivityLog {
   @@index([action])
   @@index([createdAt])
   @@index([businessId, createdAt])
+}
+
+model Service {
+  id             String   @id @default(uuid())
+  name           String   @unique
+  description    String?
+  isActive       Boolean  @default(true)
+  isPublished    Boolean  @default(false)
+  orderStartTime String?  // Time in HH:MM format when orders start being accepted each day
+  cutoffTime     String?  // Time in HH:MM format when orders stop being accepted each day
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  servicePacks    ServicePack[]
+  businessServices BusinessService[]
+  invoices        Invoice[]
+  dailyMenuServices DailyMenuService[]
+
+  @@index([name])
+  @@index([isActive])
+  @@index([isPublished])
+}
+
+model ServicePack {
+  id        String   @id @default(uuid())
+  serviceId String
+  packId    String   @unique // Each pack belongs to exactly one service
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  pack    Pack    @relation(fields: [packId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId])
+  @@index([packId])
+}
+
+model BusinessService {
+  id        String   @id @default(uuid())
+  businessId String
+  serviceId  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  service  Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  businessServicePacks BusinessServicePack[]
+
+  @@unique([businessId, serviceId])
+  @@index([businessId])
+  @@index([serviceId])
+  @@index([isActive])
+}
+
+model BusinessServicePack {
+  id              String   @id @default(uuid())
+  businessServiceId String
+  packId          String
+  isActive        Boolean  @default(true)
+  nextPackId      String?  // Pack that will be active starting from effectiveDate
+  effectiveDate   DateTime? // Date when nextPackId takes effect (next service day)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  businessService BusinessService @relation(fields: [businessServiceId], references: [id], onDelete: Cascade)
+  pack            Pack            @relation(fields: [packId], references: [id], onDelete: Cascade)
+  nextPack        Pack?           @relation("BusinessServicePackNextPack", fields: [nextPackId], references: [id], onDelete: SetNull)
+
+  @@unique([businessServiceId, packId])
+  @@index([businessServiceId])
+  @@index([packId])
+  @@index([isActive])
+  @@index([effectiveDate])
+}
+
+model DailyMenuService {
+  id          String   @id @default(uuid())
+  dailyMenuId String
+  serviceId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  dailyMenu DailyMenu @relation(fields: [dailyMenuId], references: [id], onDelete: Cascade)
+  service   Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  variants  DailyMenuServiceVariant[]
+
+  @@unique([dailyMenuId, serviceId])
+  @@index([dailyMenuId])
+  @@index([serviceId])
+}
+
+model DailyMenuServiceVariant {
+  id                String   @id @default(uuid())
+  dailyMenuServiceId String
+  variantId         String
+  initialStock      Int      @default(50)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  dailyMenuService DailyMenuService @relation(fields: [dailyMenuServiceId], references: [id], onDelete: Cascade)
+  variant          Variant          @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([dailyMenuServiceId, variantId])
+  @@index([dailyMenuServiceId])
+  @@index([variantId])
 }

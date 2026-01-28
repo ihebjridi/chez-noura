@@ -29,15 +29,24 @@ import {
   UpdateVariantDto,
   DailyMenuDto,
   DailyMenuWithDetailsDto,
+  DailyMenuServiceDto,
+  DailyMenuServiceVariantDto,
   CreateDailyMenuDto,
   AddPackToDailyMenuDto,
   AddVariantToDailyMenuDto,
+  AddServiceToDailyMenuDto,
+  AddVariantToDailyMenuServiceDto,
   PublishDailyMenuResponseDto,
   ActivityLogDto,
   EmployeeDto,
   PackStatisticsDto,
   ComponentStatisticsDto,
   VariantStatisticsDto,
+  ServiceDto,
+  CreateServiceDto,
+  UpdateServiceDto,
+  ServiceWithPacksDto,
+  ServicePackDto,
 } from '@contracts/core';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -303,6 +312,53 @@ class ApiClient {
     });
   }
 
+  async removePackComponent(packId: string, componentId: string): Promise<void> {
+    return this.request<void>(`/packs/${packId}/components/${componentId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Service endpoints
+  async getServices(): Promise<ServiceDto[]> {
+    return this.request<ServiceDto[]>('/services');
+  }
+
+  async getServiceById(id: string): Promise<ServiceWithPacksDto> {
+    return this.request<ServiceWithPacksDto>(`/services/${id}`);
+  }
+
+  async createService(data: CreateServiceDto): Promise<ServiceDto> {
+    return this.request<ServiceDto>('/services', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateService(id: string, data: UpdateServiceDto): Promise<ServiceDto> {
+    return this.request<ServiceDto>(`/services/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteService(id: string): Promise<void> {
+    return this.request<void>(`/services/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async addPackToService(serviceId: string, packId: string): Promise<ServicePackDto> {
+    return this.request<ServicePackDto>(`/services/${serviceId}/packs/${packId}`, {
+      method: 'POST',
+    });
+  }
+
+  async removePackFromService(serviceId: string, packId: string): Promise<void> {
+    return this.request<void>(`/services/${serviceId}/packs/${packId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Component endpoints
   async getComponents(): Promise<ComponentDto[]> {
     return this.request<ComponentDto[]>('/components');
@@ -312,6 +368,12 @@ class ApiClient {
     return this.request<ComponentDto>('/components', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  async deleteComponent(componentId: string): Promise<void> {
+    return this.request<void>(`/components/${componentId}`, {
+      method: 'DELETE',
     });
   }
 
@@ -393,6 +455,40 @@ class ApiClient {
 
   async removeVariantFromDailyMenu(dailyMenuId: string, variantId: string): Promise<void> {
     return this.request<void>(`/daily-menus/${dailyMenuId}/variants/${variantId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async addServiceToDailyMenu(dailyMenuId: string, data: AddServiceToDailyMenuDto): Promise<DailyMenuServiceDto> {
+    return this.request<DailyMenuServiceDto>(`/daily-menus/${dailyMenuId}/services`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async removeServiceFromDailyMenu(dailyMenuId: string, serviceId: string): Promise<void> {
+    return this.request<void>(`/daily-menus/${dailyMenuId}/services/${serviceId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async addVariantToDailyMenuService(
+    dailyMenuId: string,
+    serviceId: string,
+    data: AddVariantToDailyMenuServiceDto,
+  ): Promise<DailyMenuServiceVariantDto> {
+    return this.request<DailyMenuServiceVariantDto>(`/daily-menus/${dailyMenuId}/services/${serviceId}/variants`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async removeVariantFromDailyMenuService(
+    dailyMenuId: string,
+    serviceId: string,
+    variantId: string,
+  ): Promise<void> {
+    return this.request<void>(`/daily-menus/${dailyMenuId}/services/${serviceId}/variants/${variantId}`, {
       method: 'DELETE',
     });
   }

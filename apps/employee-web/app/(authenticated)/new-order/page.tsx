@@ -165,9 +165,15 @@ function NewOrderContent() {
       if (
         errorMessage.includes('cutoff') ||
         errorMessage.includes('cut-off') ||
-        errorMessage.includes('Ordering cutoff')
+        errorMessage.includes('Ordering cutoff') ||
+        errorMessage.includes('cutoff time')
       ) {
         setError(t('common.messages.cutoffTimePassed'));
+      } else if (
+        errorMessage.includes('starts at') ||
+        errorMessage.includes('order start')
+      ) {
+        setError(errorMessage);
       } else if (
         errorMessage.includes('already ordered') ||
         errorMessage.includes('duplicate') ||

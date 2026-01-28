@@ -188,6 +188,26 @@ export class PacksService {
       throw new BadRequestException('Component is already in this pack');
     }
 
+    // Check if pack is part of a service with active business subscriptions
+    const servicePack = await this.prisma.servicePack.findUnique({
+      where: { packId },
+      include: {
+        service: {
+          include: {
+            businessServices: {
+              where: { isActive: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (servicePack && servicePack.service.businessServices.length > 0) {
+      throw new BadRequestException(
+        `Cannot modify pack components: this pack is part of service "${servicePack.service.name}" which has ${servicePack.service.businessServices.length} active business subscription(s). Pack components cannot be changed once a service is subscribed to.`,
+      );
+    }
+
     const packComponent = await this.prisma.packComponent.create({
       data: {
         packId,
@@ -201,6 +221,74 @@ export class PacksService {
     });
 
     return this.mapPackComponentToDto(packComponent);
+  }
+
+  /**
+   * Remove a component from a pack
+   * Only SUPER_ADMIN can remove components from packs
+   * Cannot remove if pack is part of a service with active business subscriptions
+   */
+  async removeComponent(
+    packId: string,
+    componentId: string,
+    user: TokenPayload,
+  ): Promise<void> {
+    if (user.role !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Only SUPER_ADMIN can remove components from packs');
+    }
+
+    // Verify pack exists
+    const pack = await this.prisma.pack.findUnique({
+      where: { id: packId },
+    });
+
+    if (!pack) {
+      throw new NotFoundException(`Pack with ID ${packId} not found`);
+    }
+
+    // Check if pack component exists
+    const packComponent = await this.prisma.packComponent.findUnique({
+      where: {
+        packId_componentId: {
+          packId,
+          componentId,
+        },
+      },
+    });
+
+    if (!packComponent) {
+      throw new NotFoundException('Component is not in this pack');
+    }
+
+    // Check if pack is part of a service with active business subscriptions
+    const servicePack = await this.prisma.servicePack.findUnique({
+      where: { packId },
+      include: {
+        service: {
+          include: {
+            businessServices: {
+              where: { isActive: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (servicePack && servicePack.service.businessServices.length > 0) {
+      throw new BadRequestException(
+        `Cannot modify pack components: this pack is part of service "${servicePack.service.name}" which has ${servicePack.service.businessServices.length} active business subscription(s). Pack components cannot be changed once a service is subscribed to.`,
+      );
+    }
+
+    // Delete the pack component
+    await this.prisma.packComponent.delete({
+      where: {
+        packId_componentId: {
+          packId,
+          componentId,
+        },
+      },
+    });
   }
 
   /**

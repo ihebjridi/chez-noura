@@ -8,6 +8,8 @@ import {
   PackDto,
   PackWithComponentsDto,
   VariantDto,
+  ServiceDto,
+  ServiceWithPacksDto,
   DailyMenuStatus,
 } from '@contracts/core';
 import { getTodayISO, getTomorrowISO } from '../../lib/date-utils';
@@ -16,8 +18,8 @@ interface DashboardState {
   selectedDate: string;
   selectedMenuId: string | null;
   sidePanelOpen: boolean;
-  sidePanelSection: 'packs' | 'variants' | null;
-  expandedPacks: Set<string>;
+  sidePanelSection: 'services' | 'variants' | null;
+  expandedServices: Set<string>;
   expandedVariants: Set<string>;
 }
 
@@ -28,15 +30,15 @@ export function useDailyMenuState() {
     selectedDate: today,
     selectedMenuId: null,
     sidePanelOpen: true, // Open by default on desktop
-    sidePanelSection: 'packs',
-    expandedPacks: new Set(),
+    sidePanelSection: 'services',
+    expandedServices: new Set(),
     expandedVariants: new Set(),
   });
 
   const [dailyMenus, setDailyMenus] = useState<DailyMenuDto[]>([]);
   const [dailyMenu, setDailyMenu] = useState<DailyMenuWithDetailsDto | null>(null);
-  const [allPacks, setAllPacks] = useState<PackDto[]>([]);
-  const [packDetails, setPackDetails] = useState<Map<string, PackWithComponentsDto>>(new Map());
+  const [allServices, setAllServices] = useState<ServiceDto[]>([]);
+  const [serviceDetails, setServiceDetails] = useState<Map<string, ServiceWithPacksDto>>(new Map());
   const [foodComponentVariants, setFoodComponentVariants] = useState<Map<string, VariantDto[]>>(new Map());
   const [variantStocks, setVariantStocks] = useState<Map<string, number>>(new Map());
   const [updatingVariants, setUpdatingVariants] = useState<Set<string>>(new Set());
@@ -105,22 +107,33 @@ export function useDailyMenuState() {
       console.log(`[useDailyMenuState] Menu loaded successfully. Status: ${menuData.status}, Date: ${menuData.date}`);
       setDailyMenu(menuData);
 
-      // Load pack details and variants
-      const packDetailsMap = new Map<string, PackWithComponentsDto>();
+      // Load service details and variants
+      const serviceDetailsMap = new Map<string, ServiceWithPacksDto>();
       const foodComponentIds = new Set<string>();
 
-      for (const pack of allPacks) {
+      // Load details for services in the menu
+      for (const menuService of menuData.services || []) {
         try {
-          const packDetail = await apiClient.getPackById(pack.id);
-          packDetailsMap.set(pack.id, packDetail);
-          packDetail.components.forEach((foodComp) => foodComponentIds.add(foodComp.componentId));
+          const serviceDetail = await apiClient.getServiceById(menuService.serviceId);
+          serviceDetailsMap.set(menuService.serviceId, serviceDetail);
+          
+          // Collect component IDs from all packs in the service
+          for (const servicePack of serviceDetail.packs) {
+            try {
+              const packDetail = await apiClient.getPackById(servicePack.packId);
+              packDetail.components.forEach((foodComp) => foodComponentIds.add(foodComp.componentId));
+            } catch (err) {
+              console.error(`[useDailyMenuState] Failed to load pack ${servicePack.packId}:`, err);
+            }
+          }
         } catch (err) {
-          console.error(`[useDailyMenuState] Failed to load pack ${pack.id}:`, err);
+          console.error(`[useDailyMenuState] Failed to load service ${menuService.serviceId}:`, err);
         }
       }
 
-      setPackDetails(packDetailsMap);
+      setServiceDetails(serviceDetailsMap);
 
+      // Load variants for all components
       const variantsMap = new Map<string, VariantDto[]>();
       for (const foodComponentId of foodComponentIds) {
         try {
@@ -132,10 +145,20 @@ export function useDailyMenuState() {
       }
       setFoodComponentVariants(variantsMap);
 
+      // Set variant stocks from both pack-level and service-level variants
       const stocksMap = new Map<string, number>();
+      // Pack-level variants (for backward compatibility)
       menuData.variants.forEach((v) => {
         stocksMap.set(v.variantId, v.initialStock);
       });
+      // Service-level variants
+      for (const menuService of menuData.services || []) {
+        menuService.variants.forEach((v) => {
+          // Use the higher stock if variant exists in both
+          const existing = stocksMap.get(v.variantId);
+          stocksMap.set(v.variantId, existing ? Math.max(existing, v.initialStock) : v.initialStock);
+        });
+      }
       setVariantStocks(stocksMap);
       
       console.log(`[useDailyMenuState] Menu details loaded successfully for ${menuData.status} menu`);
@@ -148,15 +171,15 @@ export function useDailyMenuState() {
     } finally {
       setLoading(false);
     }
-  }, [allPacks]);
+  }, []);
 
-  // Load all packs
-  const loadPacks = useCallback(async () => {
+  // Load all services
+  const loadServices = useCallback(async () => {
     try {
-      const packsData = await apiClient.getPacks();
-      setAllPacks(packsData);
+      const servicesData = await apiClient.getServices();
+      setAllServices(servicesData);
     } catch (err: any) {
-      setError(err.message || 'Failed to load packs');
+      setError(err.message || 'Failed to load services');
     }
   }, []);
 
@@ -166,7 +189,7 @@ export function useDailyMenuState() {
       setLoading(true);
       const initialDate = state.selectedDate;
       // Load menus and find menu for initial selected date
-      await Promise.all([loadPacks(), loadDailyMenus(initialDate)]);
+      await Promise.all([loadServices(), loadDailyMenus(initialDate)]);
       setLoading(false);
     };
     initialize();
@@ -210,7 +233,7 @@ export function useDailyMenuState() {
     setState((prev) => ({ ...prev, selectedMenuId: menuId }));
   }, []);
 
-  const toggleSidePanel = useCallback((section?: 'packs' | 'variants' | null) => {
+  const toggleSidePanel = useCallback((section?: 'services' | 'variants' | null) => {
     setState((prev) => ({
       ...prev,
       sidePanelOpen: section !== undefined ? section !== null : !prev.sidePanelOpen,
@@ -218,15 +241,15 @@ export function useDailyMenuState() {
     }));
   }, []);
 
-  const togglePackExpanded = useCallback((packId: string) => {
+  const toggleServiceExpanded = useCallback((serviceId: string) => {
     setState((prev) => {
-      const newSet = new Set(prev.expandedPacks);
-      if (newSet.has(packId)) {
-        newSet.delete(packId);
+      const newSet = new Set(prev.expandedServices);
+      if (newSet.has(serviceId)) {
+        newSet.delete(serviceId);
       } else {
-        newSet.add(packId);
+        newSet.add(serviceId);
       }
-      return { ...prev, expandedPacks: newSet };
+      return { ...prev, expandedServices: newSet };
     });
   }, []);
 
@@ -286,8 +309,8 @@ export function useDailyMenuState() {
     state,
     dailyMenus,
     dailyMenu,
-    allPacks,
-    packDetails,
+    allServices,
+    serviceDetails,
     foodComponentVariants,
     variantStocks,
     updatingVariants,
@@ -299,18 +322,18 @@ export function useDailyMenuState() {
     setSelectedDate,
     setSelectedMenuId,
     toggleSidePanel,
-    togglePackExpanded,
+    toggleServiceExpanded,
     toggleVariantExpanded,
     setError,
     setPublishWarnings,
     setUpdatingVariants,
     setVariantStocks,
     setDailyMenu,
-    setPackDetails,
+    setServiceDetails,
     setFoodComponentVariants,
     loadDailyMenus,
     loadDailyMenuDetails,
-    loadPacks,
+    loadServices,
     
     // Helper functions
     getPastPublishedMenus,

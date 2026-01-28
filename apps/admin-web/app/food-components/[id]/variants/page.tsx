@@ -13,13 +13,12 @@ import { Loading } from '../../../../components/ui/loading';
 import { Error } from '../../../../components/ui/error';
 import { Empty } from '../../../../components/ui/empty';
 import { PageHeader } from '../../../../components/ui/page-header';
-import { CollapsibleForm } from '../../../../components/ui/collapsible-form';
 import { FormField } from '../../../../components/ui/form-field';
 import { Input } from '../../../../components/ui/input';
 import { Checkbox } from '../../../../components/ui/checkbox';
 import { Button } from '../../../../components/ui/button';
 import { StatusBadge } from '../../../../components/ui/status-badge';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Edit2, Trash2, Plus } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -46,7 +45,8 @@ export default function FoodComponentVariantsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingVariant, setEditingVariant] = useState<VariantDto | null>(null);
+  const [expandedVariantId, setExpandedVariantId] = useState<string | null>(null);
+  const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
   const [formData, setFormData] = useState<VariantFormData>({
     name: '',
     stockQuantity: 0,
@@ -98,7 +98,7 @@ export default function FoodComponentVariantsPage() {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingVariant) return;
+    if (!editingVariantId) return;
     try {
       setError('');
       const updateData: UpdateVariantDto = {
@@ -106,8 +106,9 @@ export default function FoodComponentVariantsPage() {
         stockQuantity: formData.stockQuantity,
         isActive: formData.isActive,
       };
-      await apiClient.updateVariant(editingVariant.id, updateData, imageFile || undefined);
-      setEditingVariant(null);
+      await apiClient.updateVariant(editingVariantId, updateData, imageFile || undefined);
+      setEditingVariantId(null);
+      setExpandedVariantId(null);
       setFormData({ name: '', stockQuantity: 0, isActive: true });
       setImageFile(null);
       setImagePreview(null);
@@ -118,7 +119,8 @@ export default function FoodComponentVariantsPage() {
   };
 
   const startEdit = (variant: VariantDto) => {
-    setEditingVariant(variant);
+    setEditingVariantId(variant.id);
+    setExpandedVariantId(variant.id);
     setFormData({
       name: variant.name,
       stockQuantity: variant.stockQuantity,
@@ -130,10 +132,22 @@ export default function FoodComponentVariantsPage() {
   };
 
   const cancelEdit = () => {
-    setEditingVariant(null);
+    setEditingVariantId(null);
     setFormData({ name: '', stockQuantity: 0, isActive: true });
     setImageFile(null);
     setImagePreview(null);
+  };
+
+  const toggleExpand = (variantId: string) => {
+    if (expandedVariantId === variantId) {
+      setExpandedVariantId(null);
+      setEditingVariantId(null);
+      cancelEdit();
+    } else {
+      setExpandedVariantId(variantId);
+      setEditingVariantId(null);
+      cancelEdit();
+    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -186,7 +200,7 @@ export default function FoodComponentVariantsPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
-        <Link href="/components" className="text-primary-600 hover:text-primary-700 mb-2 inline-flex items-center gap-2">
+        <Link href="/food-components" className="text-primary-600 hover:text-primary-700 mb-2 inline-flex items-center gap-2">
           <ArrowLeft className="w-4 h-4" />
           Components
         </Link>
@@ -201,27 +215,21 @@ export default function FoodComponentVariantsPage() {
         </div>
       )}
 
-      {!showCreateForm && !editingVariant && (
+      {!showCreateForm && (
         <div className="mb-6">
-          <Button onClick={() => setShowCreateForm(true)}>
-            + New Variant
+          <Button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            New Variant
           </Button>
         </div>
       )}
 
-      {(showCreateForm || editingVariant) && (
+      {showCreateForm && (
         <div className="mb-6 bg-surface border border-surface-dark rounded-lg">
-          {showCreateForm && !editingVariant && (
-            <div className="px-6 py-4 border-b border-surface-dark">
-              <h2 className="text-lg font-semibold">Create Variant</h2>
-            </div>
-          )}
-          {editingVariant && (
-            <div className="px-6 py-4 border-b border-surface-dark">
-              <h2 className="text-lg font-semibold">Edit Variant</h2>
-            </div>
-          )}
-          <form onSubmit={editingVariant ? handleUpdate : handleCreate} className="p-6">
+          <div className="px-6 py-4 border-b border-surface-dark">
+            <h2 className="text-lg font-semibold">Create Variant</h2>
+          </div>
+          <form onSubmit={handleCreate} className="p-6">
             <div className="space-y-4">
               <FormField label="Name" required>
                 <Input
@@ -268,11 +276,13 @@ export default function FoodComponentVariantsPage() {
             </div>
             <div className="flex gap-2 mt-4">
               <Button type="submit" variant="primary">
-                {editingVariant ? 'Update Variant' : 'Create Variant'}
+                Create Variant
               </Button>
               <Button type="button" variant="ghost" onClick={() => {
-                cancelEdit();
                 setShowCreateForm(false);
+                setFormData({ name: '', stockQuantity: 0, isActive: true });
+                setImageFile(null);
+                setImagePreview(null);
               }}>
                 Cancel
               </Button>
@@ -293,109 +303,244 @@ export default function FoodComponentVariantsPage() {
           />
         </div>
       ) : (
-        <div className="bg-surface border border-surface-dark rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-surface-light">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quick Stock Update</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-surface divide-y divide-surface-dark">
-                {variants.map((variant) => {
-                  const isOutOfStock = variant.stockQuantity <= 0;
-                  return (
-                    <tr
-                      key={variant.id}
-                      className={`hover:bg-surface-light ${isOutOfStock ? 'bg-error-50' : ''}`}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {variant.imageUrl ? (
-                          <img
-                            src={`${API_BASE_URL}${variant.imageUrl}`}
-                            alt={variant.name}
-                            className="w-16 h-16 object-cover rounded-md border border-surface-dark"
-                          />
+        <div className="grid gap-4">
+          {variants.map((variant) => {
+            const isOutOfStock = variant.stockQuantity <= 0;
+            const isExpanded = expandedVariantId === variant.id;
+            const isEditing = editingVariantId === variant.id;
+            
+            return (
+              <div
+                key={variant.id}
+                className={`bg-surface border border-surface-dark rounded-lg overflow-hidden ${
+                  isOutOfStock ? 'border-error-300 bg-error-50' : ''
+                }`}
+              >
+                {/* Variant Header */}
+                <div className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      {/* Image */}
+                      {variant.imageUrl ? (
+                        <img
+                          src={`${API_BASE_URL}${variant.imageUrl}`}
+                          alt={variant.name}
+                          className="w-16 h-16 object-cover rounded-md border border-surface-dark flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-surface-light border border-surface-dark rounded-md flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
+                          No image
+                        </div>
+                      )}
+                      
+                      {/* Name and Status */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-lg font-semibold text-gray-900">{variant.name}</h3>
+                          {!variant.isActive ? (
+                            <StatusBadge status="INACTIVE" />
+                          ) : isOutOfStock ? (
+                            <StatusBadge status="OUT_OF_STOCK" />
+                          ) : (
+                            <StatusBadge status="AVAILABLE" />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4 text-sm">
+                          <span className={`font-bold ${
+                            isOutOfStock ? 'text-error-600' : 
+                            variant.stockQuantity < 10 ? 'text-warning-600' : 
+                            'text-success-600'
+                          }`}>
+                            Stock: {variant.stockQuantity}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 ml-4">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => toggleExpand(variant.id)}
+                        className="flex items-center gap-1"
+                      >
+                        {isExpanded ? (
+                          <>
+                            <ChevronUp className="h-4 w-4" />
+                            <span className="hidden sm:inline">Hide</span>
+                          </>
                         ) : (
-                          <div className="w-16 h-16 bg-surface-light border border-surface-dark rounded-md flex items-center justify-center text-xs text-gray-400">
-                            No image
+                          <>
+                            <ChevronDown className="h-4 w-4" />
+                            <span className="hidden sm:inline">Details</span>
+                          </>
+                        )}
+                      </Button>
+                      {!isEditing && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => startEdit(variant)}
+                          className="flex items-center gap-1"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                          <span className="hidden sm:inline">Edit</span>
+                        </Button>
+                      )}
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleDeleteClick(variant.id)}
+                        className="flex items-center gap-1"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="hidden sm:inline">Delete</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Expanded Content */}
+                {isExpanded && (
+                  <div className="border-t border-surface-dark bg-surface-light">
+                    <div className="p-4">
+                      {isEditing ? (
+                        /* Edit Form */
+                        <form onSubmit={handleUpdate} className="space-y-4">
+                          <div className="space-y-4">
+                            <FormField label="Name" required>
+                              <Input
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                required
+                                placeholder="e.g., Lentil Soup, Chicken Tagine"
+                              />
+                            </FormField>
+                            <FormField label="Stock Quantity" required>
+                              <Input
+                                type="number"
+                                min="0"
+                                value={formData.stockQuantity}
+                                onChange={(e) => setFormData({ ...formData, stockQuantity: parseInt(e.target.value) || 0 })}
+                                required
+                              />
+                            </FormField>
+                            <FormField label="">
+                              <Checkbox
+                                label="Active"
+                                checked={formData.isActive}
+                                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                              />
+                            </FormField>
+                            <FormField label="Image">
+                              <input
+                                type="file"
+                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                onChange={handleImageChange}
+                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                              />
+                              {imagePreview && (
+                                <div className="mt-2">
+                                  <img
+                                    src={imagePreview}
+                                    alt="Preview"
+                                    className="w-32 h-32 object-cover rounded-md border border-surface-dark"
+                                  />
+                                </div>
+                              )}
+                            </FormField>
                           </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{variant.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`font-bold ${
-                          isOutOfStock ? 'text-error-600' : 
-                          variant.stockQuantity < 10 ? 'text-warning-600' : 
-                          'text-success-600'
-                        }`}>
-                          {variant.stockQuantity}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {!variant.isActive ? (
-                          <StatusBadge status="INACTIVE" />
-                        ) : isOutOfStock ? (
-                          <StatusBadge status="OUT_OF_STOCK" />
-                        ) : (
-                          <StatusBadge status="AVAILABLE" />
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="danger"
-                            onClick={() => quickUpdateStock(variant.id, variant.stockQuantity - 1)}
-                            disabled={variant.stockQuantity <= 0}
-                          >
-                            -1
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="primary"
-                            onClick={() => quickUpdateStock(variant.id, variant.stockQuantity + 1)}
-                          >
-                            +1
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="primary"
-                            onClick={() => quickUpdateStock(variant.id, variant.stockQuantity + 10)}
-                          >
-                            +10
-                          </Button>
+                          <div className="flex gap-2 pt-4 border-t border-surface-dark">
+                            <Button type="submit" variant="primary">
+                              Update Variant
+                            </Button>
+                            <Button type="button" variant="ghost" onClick={cancelEdit}>
+                              Cancel
+                            </Button>
+                          </div>
+                        </form>
+                      ) : (
+                        /* Details View */
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Name</label>
+                              <p className="text-sm text-gray-900 mt-1">{variant.name}</p>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Stock Quantity</label>
+                              <p className={`text-sm font-semibold mt-1 ${
+                                isOutOfStock ? 'text-error-600' : 
+                                variant.stockQuantity < 10 ? 'text-warning-600' : 
+                                'text-success-600'
+                              }`}>
+                                {variant.stockQuantity}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Status</label>
+                              <div className="mt-1">
+                                {!variant.isActive ? (
+                                  <StatusBadge status="INACTIVE" />
+                                ) : isOutOfStock ? (
+                                  <StatusBadge status="OUT_OF_STOCK" />
+                                ) : (
+                                  <StatusBadge status="AVAILABLE" />
+                                )}
+                              </div>
+                            </div>
+                            {variant.imageUrl && (
+                              <div>
+                                <label className="text-sm font-medium text-gray-500">Image</label>
+                                <div className="mt-1">
+                                  <img
+                                    src={`${API_BASE_URL}${variant.imageUrl}`}
+                                    alt={variant.name}
+                                    className="w-24 h-24 object-cover rounded-md border border-surface-dark"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Quick Stock Update */}
+                          <div className="pt-4 border-t border-surface-dark">
+                            <label className="text-sm font-medium text-gray-500 mb-2 block">Quick Stock Update</label>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="danger"
+                                onClick={() => quickUpdateStock(variant.id, variant.stockQuantity - 1)}
+                                disabled={variant.stockQuantity <= 0}
+                              >
+                                -1
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="primary"
+                                onClick={() => quickUpdateStock(variant.id, variant.stockQuantity + 1)}
+                              >
+                                +1
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="primary"
+                                onClick={() => quickUpdateStock(variant.id, variant.stockQuantity + 10)}
+                              >
+                                +10
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => startEdit(variant)}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="danger"
-                            onClick={() => handleDeleteClick(variant.id)}
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 

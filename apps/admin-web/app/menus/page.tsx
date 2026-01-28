@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { QuickActionsBar } from '../components/QuickActionsBar';
-import { DailyMenuView } from '../components/DailyMenuView';
-import { MenuCalendar } from '../components/MenuCalendar';
-import { SidePanel } from '../components/SidePanel';
+import { QuickActionsBar } from '../../components/menus/QuickActionsBar';
+import { DailyMenuView } from '../../components/menus/DailyMenuView';
+import { MenuCalendar } from '../../components/menus/MenuCalendar';
+import { SidePanel } from '../../components/menus/SidePanel';
 import { useDailyMenuState } from '../hooks/useDailyMenuState';
 import { apiClient } from '../../lib/api-client';
 import { PublishDailyMenuResponseDto, DailyMenuStatus } from '@contracts/core';
@@ -21,8 +21,8 @@ export default function MenusPage() {
     state,
     dailyMenus,
     dailyMenu,
-    allPacks,
-    packDetails,
+    allServices,
+    serviceDetails,
     foodComponentVariants,
     variantStocks,
     updatingVariants,
@@ -32,13 +32,13 @@ export default function MenusPage() {
     setSelectedDate,
     setSelectedMenuId,
     toggleSidePanel,
-    togglePackExpanded,
+    toggleServiceExpanded,
     setError,
     setPublishWarnings,
     setUpdatingVariants,
     setVariantStocks,
     setDailyMenu,
-    setPackDetails,
+    setServiceDetails,
     setFoodComponentVariants,
     loadDailyMenus,
     loadDailyMenuDetails,
@@ -47,7 +47,7 @@ export default function MenusPage() {
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showCutoffEditor, setShowCutoffEditor] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['packs']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['services']));
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [createMenuCutoffHour, setCreateMenuCutoffHour] = useState('14:00');
 
@@ -78,25 +78,28 @@ export default function MenusPage() {
     }
   };
 
-  // Pack toggle handler
-  const handlePackToggle = async (packId: string, checked: boolean) => {
+  // Service toggle handler
+  const handleServiceToggle = async (serviceId: string, checked: boolean) => {
     if (!dailyMenu || isReadOnly) return;
 
-    if (checked && !dailyMenu.packs.some((p) => p.packId === packId)) {
-      const pack = allPacks.find((p) => p.id === packId);
-      if (pack) {
+    if (checked && !dailyMenu.services.some((s) => s.serviceId === serviceId)) {
+      const service = allServices.find((s) => s.id === serviceId);
+      if (service) {
+        // Optimistically add service
         setDailyMenu((prev) => {
           if (!prev) return prev;
           return {
             ...prev,
-            packs: [
-              ...prev.packs,
+            services: [
+              ...prev.services,
               {
-                id: `temp-${packId}`,
+                id: `temp-${serviceId}`,
                 dailyMenuId: prev.id,
-                packId: pack.id,
-                packName: pack.name,
-                packPrice: pack.price,
+                serviceId: service.id,
+                serviceName: service.name,
+                serviceDescription: service.description,
+                packs: [],
+                variants: [],
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
               },
@@ -106,39 +109,39 @@ export default function MenusPage() {
 
         try {
           setError('');
-          const result = await apiClient.addPackToDailyMenu(dailyMenu.id, { packId });
+          const result = await apiClient.addServiceToDailyMenu(dailyMenu.id, { serviceId });
 
+          // Update the menu with the real service data
           setDailyMenu((prev) => {
             if (!prev) return prev;
             return {
               ...prev,
-              packs: prev.packs.map((p) =>
-                p.packId === packId && p.id.startsWith('temp-')
-                  ? {
-                      id: result.id,
-                      dailyMenuId: result.dailyMenuId,
-                      packId: result.packId,
-                      packName: pack?.name || result.packName,
-                      packPrice: pack?.price || result.packPrice,
-                      createdAt: result.createdAt,
-                      updatedAt: result.updatedAt,
-                    }
-                  : p
+              services: prev.services.map((s) =>
+                s.serviceId === serviceId && s.id.startsWith('temp-') ? result : s
               ),
             };
           });
 
-          if (!packDetails.has(packId)) {
+          // Load service details and pack details
+          if (!serviceDetails.has(serviceId)) {
             try {
-              const packDetail = await apiClient.getPackById(packId);
-              setPackDetails((prev) => {
+              const serviceDetail = await apiClient.getServiceById(serviceId);
+              setServiceDetails((prev) => {
                 const newMap = new Map(prev);
-                newMap.set(packId, packDetail);
+                newMap.set(serviceId, serviceDetail);
                 return newMap;
               });
 
+              // Load variants for all components in all packs of the service
               const foodComponentIds = new Set<string>();
-              packDetail.components.forEach((foodComp) => foodComponentIds.add(foodComp.componentId));
+              for (const servicePack of serviceDetail.packs) {
+                try {
+                  const packDetail = await apiClient.getPackById(servicePack.packId);
+                  packDetail.components.forEach((foodComp) => foodComponentIds.add(foodComp.componentId));
+                } catch (err) {
+                  console.error(`Failed to load pack ${servicePack.packId}:`, err);
+                }
+              }
 
               const variantsMap = new Map(foodComponentVariants);
               for (const foodComponentId of foodComponentIds) {
@@ -153,73 +156,107 @@ export default function MenusPage() {
               }
               setFoodComponentVariants(variantsMap);
             } catch (err) {
-              console.error(`Failed to load pack details:`, err);
+              console.error(`Failed to load service details:`, err);
             }
           }
         } catch (err: any) {
-          setError(err.message || 'Failed to add pack');
+          setError(err.message || 'Failed to add service');
           setDailyMenu((prev) => {
             if (!prev) return prev;
             return {
               ...prev,
-              packs: prev.packs.filter((p) => !(p.packId === packId && p.id.startsWith('temp-'))),
+              services: prev.services.filter((s) => !(s.serviceId === serviceId && s.id.startsWith('temp-'))),
             };
           });
         }
       }
-    } else if (!checked && dailyMenu.packs.some((p) => p.packId === packId)) {
-      setError('Pack cannot be removed once added. This is a backend limitation.');
+    } else if (!checked && dailyMenu.services.some((s) => s.serviceId === serviceId)) {
+      // Only allow removal from DRAFT menus
+      if (dailyMenu.status !== DailyMenuStatus.DRAFT) {
+        setError('Service cannot be removed once the menu is published. This is a backend limitation.');
+        return;
+      }
+
+      try {
+        setError('');
+        await apiClient.removeServiceFromDailyMenu(dailyMenu.id, serviceId);
+        setDailyMenu((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            services: prev.services.filter((s) => s.serviceId !== serviceId),
+          };
+        });
+      } catch (err: any) {
+        setError(err.message || 'Failed to remove service');
+      }
     }
   };
 
-  // Variant toggle handler
-  const handleVariantToggle = async (variantId: string, checked: boolean, foodComponentId: string) => {
+  // Service variant toggle handler
+  const handleServiceVariantToggle = async (
+    serviceId: string,
+    variantId: string,
+    checked: boolean,
+    componentId: string,
+  ) => {
     if (!dailyMenu || isReadOnly) return;
 
-    if (checked && !dailyMenu.variants.some((v) => v.variantId === variantId)) {
+    const menuService = dailyMenu.services.find((s) => s.serviceId === serviceId);
+    if (!menuService) {
+      setError('Service is not added to this menu');
+      return;
+    }
+
+    if (checked && !menuService.variants.some((v) => v.variantId === variantId)) {
       const stock = variantStocks.get(variantId) || 50;
       if (stock <= 0) {
         setError('Please enter a stock quantity (greater than 0) before adding the variant');
         return;
       }
 
-      const variants = foodComponentVariants.get(foodComponentId) || [];
+      const variants = foodComponentVariants.get(componentId) || [];
       const variant = variants.find((v) => v.id === variantId);
 
-      let foodComponentName = '';
-      for (const [, packDetail] of packDetails.entries()) {
-        const foundFoodComponent = packDetail.components.find((c) => c.componentId === foodComponentId);
-        if (foundFoodComponent) {
-          foodComponentName = foundFoodComponent.componentName;
-          break;
-        }
+      if (!variant) {
+        setError('Variant not found');
+        return;
       }
 
       setUpdatingVariants((prev) => new Set(prev).add(variantId));
+      
+      // Optimistically add variant
       setDailyMenu((prev) => {
-        if (!prev || !variant) return prev;
+        if (!prev) return prev;
         return {
           ...prev,
-          variants: [
-            ...prev.variants,
-            {
-              id: `temp-${variantId}`,
-              dailyMenuId: prev.id,
-              variantId: variant.id,
-              variantName: variant.name,
-              componentId: foodComponentId,
-              componentName: foodComponentName,
-              initialStock: stock,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            },
-          ],
+          services: prev.services.map((s) =>
+            s.serviceId === serviceId
+              ? {
+                  ...s,
+                  variants: [
+                    ...s.variants,
+                    {
+                      id: `temp-${variantId}`,
+                      dailyMenuServiceId: s.id,
+                      variantId: variant.id,
+                      variantName: variant.name,
+                      componentId: componentId,
+                      componentName: variant.componentName,
+                      initialStock: stock,
+                      createdAt: new Date().toISOString(),
+                      updatedAt: new Date().toISOString(),
+                    },
+                  ],
+                }
+              : s
+          ),
         };
       });
 
       try {
         setError('');
-        const result = await apiClient.addVariantToDailyMenu(dailyMenu.id, {
+        const result = await apiClient.addVariantToDailyMenuService(dailyMenu.id, serviceId, {
           variantId,
           initialStock: stock,
         });
@@ -228,8 +265,15 @@ export default function MenusPage() {
           if (!prev) return prev;
           return {
             ...prev,
-            variants: prev.variants.map((v) =>
-              v.variantId === variantId && v.id.startsWith('temp-') ? result : v
+            services: prev.services.map((s) =>
+              s.serviceId === serviceId
+                ? {
+                    ...s,
+                    variants: s.variants.map((v) =>
+                      v.variantId === variantId && v.id.startsWith('temp-') ? result : v
+                    ),
+                  }
+                : s
             ),
           };
         });
@@ -239,7 +283,14 @@ export default function MenusPage() {
           if (!prev) return prev;
           return {
             ...prev,
-            variants: prev.variants.filter((v) => !(v.variantId === variantId && v.id.startsWith('temp-'))),
+            services: prev.services.map((s) =>
+              s.serviceId === serviceId
+                ? {
+                    ...s,
+                    variants: s.variants.filter((v) => !(v.variantId === variantId && v.id.startsWith('temp-'))),
+                  }
+                : s
+            ),
           };
         });
       } finally {
@@ -249,26 +300,32 @@ export default function MenusPage() {
           return newSet;
         });
       }
-    } else if (!checked && dailyMenu.variants.some((v) => v.variantId === variantId)) {
+    } else if (!checked && menuService.variants.some((v) => v.variantId === variantId)) {
       // Only allow removal from DRAFT menus
       if (dailyMenu.status !== DailyMenuStatus.DRAFT) {
         setError('Variant cannot be removed once the menu is published. This is a backend limitation.');
         return;
       }
 
-      // Remove variant from DRAFT menu
       setUpdatingVariants((prev) => new Set(prev).add(variantId));
       setDailyMenu((prev) => {
         if (!prev) return prev;
         return {
           ...prev,
-          variants: prev.variants.filter((v) => v.variantId !== variantId),
+          services: prev.services.map((s) =>
+            s.serviceId === serviceId
+              ? {
+                  ...s,
+                  variants: s.variants.filter((v) => v.variantId !== variantId),
+                }
+              : s
+          ),
         };
       });
 
       try {
         setError('');
-        await apiClient.removeVariantFromDailyMenu(dailyMenu.id, variantId);
+        await apiClient.removeVariantFromDailyMenuService(dailyMenu.id, serviceId, variantId);
       } catch (err: any) {
         setError(err.message || 'Failed to remove variant');
         // Revert the UI change on error
@@ -283,8 +340,13 @@ export default function MenusPage() {
     }
   };
 
-  // Stock change handler
-  const handleStockChange = (variantId: string, stock: number, isExisting: boolean) => {
+  // Stock change handler for service variants
+  const handleServiceVariantStockChange = (
+    serviceId: string,
+    variantId: string,
+    stock: number,
+    isExisting: boolean,
+  ) => {
     if (isReadOnly) return;
     
     setVariantStocks((prev) => {
@@ -298,8 +360,15 @@ export default function MenusPage() {
         if (!prev) return prev;
         return {
           ...prev,
-          variants: prev.variants.map((v) =>
-            v.variantId === variantId ? { ...v, initialStock: stock } : v
+          services: prev.services.map((s) =>
+            s.serviceId === serviceId
+              ? {
+                  ...s,
+                  variants: s.variants.map((v) =>
+                    v.variantId === variantId ? { ...v, initialStock: stock } : v
+                  ),
+                }
+              : s
           ),
         };
       });
@@ -510,18 +579,18 @@ export default function MenusPage() {
               {dailyMenu && !loading && (
                 <DailyMenuView
                   dailyMenu={dailyMenu}
-                  allPacks={allPacks}
-                  packDetails={packDetails}
+                  allServices={allServices}
+                  serviceDetails={serviceDetails}
                   foodComponentVariants={foodComponentVariants}
                   variantStocks={variantStocks}
                   updatingVariants={updatingVariants}
-                  expandedPacks={state.expandedPacks}
+                  expandedServices={state.expandedServices}
                   expandedSections={expandedSections}
                   isReadOnly={isReadOnly}
-                  onPackToggle={handlePackToggle}
-                  onTogglePackVariants={togglePackExpanded}
-                  onVariantToggle={handleVariantToggle}
-                  onStockChange={handleStockChange}
+                  onServiceToggle={handleServiceToggle}
+                  onToggleServiceVariants={toggleServiceExpanded}
+                  onVariantToggle={handleServiceVariantToggle}
+                  onStockChange={handleServiceVariantStockChange}
                   onToggleSection={toggleSection}
                 />
               )}
@@ -532,7 +601,7 @@ export default function MenusPage() {
               {/* Side Panel Toggle Button (Mobile) */}
               {!state.sidePanelOpen && (
                 <button
-                  onClick={() => toggleSidePanel('packs')}
+                  onClick={() => toggleSidePanel('services')}
                   className="lg:hidden fixed bottom-4 right-4 p-3 bg-primary-600 text-white rounded-full shadow-lg hover:bg-primary-700 transition-colors z-40"
                   aria-label="Toggle side panel"
                 >
@@ -545,7 +614,7 @@ export default function MenusPage() {
                 <SidePanel
                   isOpen={state.sidePanelOpen || true}
                   section={state.sidePanelSection}
-                  allPacks={allPacks}
+                  allServices={allServices}
                   onClose={() => toggleSidePanel(null)}
                   onSectionChange={(section) => toggleSidePanel(section)}
                 />

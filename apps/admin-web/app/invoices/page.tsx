@@ -191,6 +191,9 @@ export default function InvoicesPage() {
             <h2 className="text-xl font-semibold mb-4">Invoice {selectedInvoice.invoiceNumber}</h2>
             <div className="space-y-2 mb-6">
               <p className="font-normal"><strong>Business:</strong> {selectedInvoice.businessName} ({selectedInvoice.businessEmail})</p>
+              {selectedInvoice.serviceName && (
+                <p className="font-normal"><strong>Service:</strong> {selectedInvoice.serviceName}</p>
+              )}
               <p className="font-normal"><strong>Period:</strong> {selectedInvoice.periodStart} to {selectedInvoice.periodEnd}</p>
               <p className="font-normal">
                 <strong>Status:</strong>{' '}
@@ -259,6 +262,7 @@ export default function InvoicesPage() {
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Business</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
@@ -274,6 +278,9 @@ export default function InvoicesPage() {
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{invoice.invoiceNumber}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{invoice.businessName}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {invoice.serviceName || <span className="text-gray-400 italic">No service</span>}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {invoice.periodStart} to {invoice.periodEnd}
                         </td>

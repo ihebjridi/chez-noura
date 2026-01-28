@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Logo } from '../logo';
+import { Logo } from '../common/logo';
 import { useAuth } from '../../contexts/auth-context';
 import {
   Building2,
@@ -18,6 +18,7 @@ import {
   LayoutDashboard,
   Layers,
   Grid3x3,
+  Settings,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -28,8 +29,9 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, current: false },
   { name: 'Menus', href: '/menus', icon: Calendar, current: false },
   { name: 'Businesses', href: '/businesses', icon: Building2, current: false },
+  { name: 'Services', href: '/services', icon: Settings, current: false },
   { name: 'Packs', href: '/packs', icon: Package, current: false },
-  { name: 'Components', href: '/components', icon: Layers, current: false },
+  { name: 'Components', href: '/food-components', icon: Layers, current: false },
   { name: 'Variants', href: '/variants', icon: Grid3x3, current: false },
   { name: 'Orders', href: '/orders', icon: ShoppingCart, current: false },
   { name: 'Kitchen', href: '/kitchen', icon: ChefHat, current: false },

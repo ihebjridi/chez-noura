@@ -16,6 +16,8 @@ import { OpsModule } from './ops/ops.module';
 import { PacksModule } from './packs/packs.module';
 import { DailyMenusModule } from './daily-menus/daily-menus.module';
 import { ActivityLogsModule } from './activity-logs/activity-logs.module';
+import { ServicesModule } from './services/services.module';
+import { BusinessServicesModule } from './business-services/business-services.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { WinstonModule } from 'nest-winston';
@@ -55,6 +57,8 @@ import * as winston from 'winston';
     PacksModule,
     DailyMenusModule,
     ActivityLogsModule,
+    ServicesModule,
+    BusinessServicesModule,
   ],
   controllers: [],
   providers: [

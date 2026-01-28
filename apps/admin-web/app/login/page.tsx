@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/auth-context';
 import { LoginRequestDto } from '@contracts/core';
-import { Logo } from '../../components/logo';
+import { Logo } from '../../components/common/logo';
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {

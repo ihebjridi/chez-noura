@@ -4,16 +4,19 @@ import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { apiClient } from '../../lib/api-client';
-import { OrderDto } from '@contracts/core';
+import { OrderDto, BusinessServiceDto } from '@contracts/core';
 import { Loading } from '../../components/ui/loading';
 import { Empty } from '../../components/ui/empty';
 import { Error } from '../../components/ui/error';
 import { Card } from '../../components/ui/card';
-import { Users, ShoppingCart, DollarSign, TrendingUp, RefreshCw } from 'lucide-react';
+import { Users, ShoppingCart, DollarSign, TrendingUp, RefreshCw, Package, CheckCircle2 } from 'lucide-react';
 import { getTodayISO } from '../../lib/date-utils';
+import { useBusinessServices } from '../../hooks/useBusinessServices';
+import { useAuth } from '../../contexts/auth-context';
 
 export default function DashboardPage() {
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
   const [orders, setOrders] = useState<OrderDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -21,6 +24,7 @@ export default function DashboardPage() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [expandedPack, setExpandedPack] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const { businessServices, loadBusinessServices, loading: servicesLoading } = useBusinessServices();
 
   const today = getTodayISO();
 
@@ -52,7 +56,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadOrders();
-  }, []);
+    if (user?.businessId) {
+      loadBusinessServices();
+    }
+  }, [user, loadBusinessServices]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -163,6 +170,11 @@ export default function DashboardPage() {
     return sum + (isNaN(amount) ? 0 : amount);
   }, 0);
   const uniqueEmployees = new Set(dailyOrders.map(order => order.employeeId)).size;
+
+  // Get active subscribed services
+  const activeServices = useMemo(() => {
+    return businessServices.filter((bs) => bs.isActive);
+  }, [businessServices]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8">
@@ -337,10 +349,57 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Subscribed Services */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('dashboard.subscribedServices')}</h2>
+        {servicesLoading ? (
+          <div className="bg-surface border border-surface-dark rounded-lg p-12">
+            <Loading message={t('dashboard.loadingServices')} />
+          </div>
+        ) : activeServices.length === 0 ? (
+          <div className="bg-surface border border-surface-dark rounded-lg p-12">
+            <Empty
+              message={t('dashboard.noSubscribedServices')}
+              description={t('dashboard.noSubscribedServicesDescription')}
+            />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {activeServices.map((businessService) => (
+              <Card key={businessService.id} className="hover:scale-[1.02] transition-transform duration-200">
+                <div className="p-5">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <Package className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 text-lg">{businessService.serviceName}</h3>
+                        {businessService.serviceDescription && (
+                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">{businessService.serviceDescription}</p>
+                        )}
+                      </div>
+                    </div>
+                    <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
+                  </div>
+                  <div className="pt-3 border-t border-gray-200">
+                    <p className="text-sm text-gray-600">
+                      {businessService.packs.filter((p) => p.isActive).length === 1
+                        ? t('services.packsActivated', { count: 1 })
+                        : t('services.packsActivated_plural', { count: businessService.packs.filter((p) => p.isActive).length })}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Quick Actions */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('dashboard.quickActions')}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Link 
             href="/employees" 
             className="bg-white border-2 border-gray-200 rounded-2xl hover:border-primary-400 hover:shadow-xl transition-all duration-200 cursor-pointer block p-6 group transform hover:scale-105"
@@ -352,6 +411,19 @@ export default function DashboardPage() {
               <h2 className="text-xl font-bold text-black group-hover:text-primary-600 transition-colors">{t('navigation.employees')}</h2>
             </div>
             <p className="text-gray-600 font-medium">{t('dashboard.manageEmployeeAccounts')}</p>
+          </Link>
+
+          <Link 
+            href="/services" 
+            className="bg-white border-2 border-gray-200 rounded-2xl hover:border-green-400 hover:shadow-xl transition-all duration-200 cursor-pointer block p-6 group transform hover:scale-105"
+          >
+            <div className="flex items-center gap-4 mb-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                <Package className="w-6 h-6 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-black group-hover:text-green-600 transition-colors">{t('navigation.services')}</h2>
+            </div>
+            <p className="text-gray-600 font-medium">{t('dashboard.manageServices')}</p>
           </Link>
 
           <Link 

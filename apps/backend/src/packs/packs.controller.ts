@@ -3,10 +3,13 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
   UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -152,6 +155,27 @@ export class PacksController {
     @Param('id') packId: string,
   ): Promise<PackComponentDto[]> {
     return this.packsService.getPackComponents(packId);
+  }
+
+  @Delete(':id/components/:componentId')
+  @Roles(UserRole.SUPER_ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remove a component from a pack' })
+  @ApiParam({ name: 'id', description: 'Pack ID' })
+  @ApiParam({ name: 'componentId', description: 'Component ID' })
+  @ApiResponse({
+    status: 204,
+    description: 'Component removed from pack successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request (pack is part of subscribed service)' })
+  @ApiResponse({ status: 404, description: 'Pack or pack component not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - SUPER_ADMIN only' })
+  async removeComponent(
+    @Param('id') packId: string,
+    @Param('componentId') componentId: string,
+    @CurrentUser() user: TokenPayload,
+  ): Promise<void> {
+    return this.packsService.removeComponent(packId, componentId, user);
   }
 
   @Get(':id/statistics')

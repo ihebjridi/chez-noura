@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { LayoutDashboard, Users, ShoppingCart, FileText } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, FileText, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function BottomNavigation() {
@@ -13,6 +13,7 @@ export function BottomNavigation() {
   const navigation = [
     { name: t('navigation.dashboard'), href: '/dashboard', icon: LayoutDashboard },
     { name: t('navigation.employees'), href: '/employees', icon: Users },
+    { name: t('navigation.services'), href: '/services', icon: Package },
     { name: t('navigation.orders'), href: '/orders', icon: ShoppingCart },
     { name: t('navigation.invoices'), href: '/invoices', icon: FileText },
   ];
@@ -23,7 +24,7 @@ export function BottomNavigation() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t-2 border-gray-200 lg:hidden">
-      <div className="grid grid-cols-4 h-16">
+      <div className="grid grid-cols-5 h-16">
         {navigation.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);

@@ -42,12 +42,24 @@ export function useCalendarStatus(
       };
     }
 
-    // Check if past cutoff
+    // Check if before order start time
     const now = new Date();
+    const orderStartTime = menu.orderStartTime ? new Date(menu.orderStartTime) : null;
+    const isBeforeStart = orderStartTime ? now < orderStartTime : false;
+
+    // Check if past cutoff
     const cutoffTime = menu.cutoffTime ? new Date(menu.cutoffTime) : null;
     const isPastCutoff = cutoffTime ? now > cutoffTime : false;
 
-    // If menu is locked (status would be in menu, but we check cutoff)
+    // If before order start time, status is 'closed'
+    if (isBeforeStart) {
+      return {
+        status: 'closed',
+        menu,
+        isPastCutoff: false,
+      };
+    }
+
     // If past cutoff, status is 'closed'
     if (isPastCutoff) {
       return {
@@ -57,7 +69,7 @@ export function useCalendarStatus(
       };
     }
 
-    // Menu is available and before cutoff, status is 'open'
+    // Menu is available and within ordering window, status is 'open'
     return {
       status: 'open',
       menu,

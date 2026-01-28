@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Calendar } from 'lucide-react';
 import { StatusBadge } from '../../app/daily-menus/[id]/components/StatusBadge';
 import { DailyMenuStatus, DailyMenuDto } from '@contracts/core';
-import { MenuCalendar } from '../../app/components/MenuCalendar';
+import { MenuCalendar } from '../menus/MenuCalendar';
 import { getTodayISO, getTomorrowISO } from '../../lib/date-utils';
 
 interface StickyHeaderProps {

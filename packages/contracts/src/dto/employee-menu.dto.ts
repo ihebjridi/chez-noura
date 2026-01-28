@@ -13,4 +13,5 @@ export interface EmployeeMenuDto {
   status: string; // Should be 'PUBLISHED'
   packs: AvailablePackDto[];
   cutoffTime?: string; // ISO datetime string - when ordering closes for this date
+  orderStartTime?: string; // ISO datetime string - when ordering opens for this date
 }

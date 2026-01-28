@@ -27,14 +27,20 @@ import {
   DailyMenuWithDetailsDto,
   DailyMenuPackDto,
   DailyMenuVariantDto,
+  DailyMenuServiceDto,
+  DailyMenuServiceVariantDto,
   CreateDailyMenuDto,
   AddPackToDailyMenuDto,
   AddVariantToDailyMenuDto,
+  AddServiceToDailyMenuDto,
+  AddVariantToDailyMenuServiceDto,
   PublishDailyMenuResponseDto,
 } from '@contracts/core';
 import { CreateDailyMenuValidationDto } from './dto/create-daily-menu.dto';
 import { AddPackToDailyMenuValidationDto } from './dto/add-pack-to-daily-menu.dto';
 import { AddVariantToDailyMenuValidationDto } from './dto/add-variant-to-daily-menu.dto';
+import { AddServiceToDailyMenuValidationDto } from './dto/add-service-to-daily-menu.dto';
+import { AddVariantToDailyMenuServiceValidationDto } from './dto/add-variant-to-daily-menu-service.dto';
 import { UpdateCutoffHourValidationDto } from './dto/update-cutoff-hour.dto';
 
 @ApiTags('daily-menus')
@@ -194,6 +200,74 @@ export class DailyMenusController {
     @Body() updateDto: UpdateCutoffHourValidationDto,
   ): Promise<DailyMenuDto> {
     return this.dailyMenusService.updateCutoffHour(id, updateDto.cutoffHour);
+  }
+
+  @Post(':id/services')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Add a service to daily menu (automatically adds all packs from the service)' })
+  @ApiResponse({
+    status: 201,
+    description: 'Service added to daily menu',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 404, description: 'Daily menu or service not found' })
+  async addService(
+    @Param('id') id: string,
+    @Body() addServiceDto: AddServiceToDailyMenuValidationDto,
+  ): Promise<DailyMenuServiceDto> {
+    return this.dailyMenusService.addService(id, addServiceDto);
+  }
+
+  @Delete(':id/services/:serviceId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Remove a service from daily menu (DRAFT only, removes all packs and variants)' })
+  @ApiResponse({
+    status: 204,
+    description: 'Service removed from daily menu successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - Only DRAFT menus allow service removal' })
+  @ApiResponse({ status: 404, description: 'Daily menu or service not found' })
+  async removeService(
+    @Param('id') id: string,
+    @Param('serviceId') serviceId: string,
+  ): Promise<void> {
+    return this.dailyMenusService.removeService(id, serviceId);
+  }
+
+  @Post(':id/services/:serviceId/variants')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Add a variant to a service in daily menu (applies to all packs in the service)' })
+  @ApiResponse({
+    status: 201,
+    description: 'Variant added to service in daily menu',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 404, description: 'Daily menu, service, or variant not found' })
+  async addServiceVariant(
+    @Param('id') id: string,
+    @Param('serviceId') serviceId: string,
+    @Body() addVariantDto: AddVariantToDailyMenuServiceValidationDto,
+  ): Promise<DailyMenuServiceVariantDto> {
+    return this.dailyMenusService.addServiceVariant(id, serviceId, addVariantDto);
+  }
+
+  @Delete(':id/services/:serviceId/variants/:variantId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Remove a variant from a service in daily menu (DRAFT only)' })
+  @ApiResponse({
+    status: 204,
+    description: 'Variant removed from service in daily menu successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - Only DRAFT menus allow variant removal' })
+  @ApiResponse({ status: 404, description: 'Daily menu, service, or variant not found' })
+  async removeServiceVariant(
+    @Param('id') id: string,
+    @Param('serviceId') serviceId: string,
+    @Param('variantId') variantId: string,
+  ): Promise<void> {
+    return this.dailyMenusService.removeServiceVariant(id, serviceId, variantId);
   }
 
   @Delete(':id')

@@ -3,11 +3,14 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -64,6 +67,25 @@ export class ComponentsController {
   })
   async findAllComponents(): Promise<ComponentDto[]> {
     return this.componentsService.findAllComponents();
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.SUPER_ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete a component' })
+  @ApiParam({ name: 'id', description: 'Component ID' })
+  @ApiResponse({
+    status: 204,
+    description: 'Component deleted successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Cannot delete: component is referenced by order items' })
+  @ApiResponse({ status: 404, description: 'Component not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - SUPER_ADMIN only' })
+  async deleteComponent(
+    @Param('id') componentId: string,
+    @CurrentUser() user: TokenPayload,
+  ): Promise<void> {
+    return this.componentsService.deleteComponent(componentId, user);
   }
 
   @Post(':id/variants')

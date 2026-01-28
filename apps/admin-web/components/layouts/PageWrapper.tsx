@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { AdminLayout } from './AdminLayout';
-import { ProtectedRoute } from '../protected-route';
+import { ProtectedRoute } from '../common/protected-route';
 import { UserRole } from '@contracts/core';
 
 interface PageWrapperProps {

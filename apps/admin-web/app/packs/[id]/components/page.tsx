@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ProtectedRoute } from '../../../../components/protected-route';
+import { ProtectedRoute } from '../../../../components/common/protected-route';
 import { useAuth } from '../../../../contexts/auth-context';
 import { apiClient } from '../../../../lib/api-client';
 import {

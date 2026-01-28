@@ -21,6 +21,8 @@ export interface InvoiceDto {
   businessId: string;
   businessName: string;
   businessEmail: string;
+  serviceId?: string; // Service this invoice is for
+  serviceName?: string; // Service name
   invoiceNumber: string;
   periodStart: string; // ISO date string
   periodEnd: string; // ISO date string
@@ -54,6 +56,8 @@ export interface InvoiceSummaryDto {
   id: string;
   invoiceNumber: string;
   businessName: string;
+  serviceId?: string; // Service this invoice is for
+  serviceName?: string; // Service name
   periodStart: string;
   periodEnd: string;
   status: InvoiceStatus;
