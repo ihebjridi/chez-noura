@@ -323,6 +323,287 @@ export class InvoicesService {
   }
 
   /**
+   * Generate invoices for a specific business
+   * If date range is provided, generate for that period
+   * If not provided, generate for all uninvoiced LOCKED orders
+   */
+  async generateBusinessInvoices(
+    businessId: string,
+    periodStart: string | undefined,
+    periodEnd: string | undefined,
+    user: TokenPayload,
+  ): Promise<InvoiceDto[]> {
+    if (user.role !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Only SUPER_ADMIN can generate invoices');
+    }
+
+    // Verify business exists
+    const business = await this.prisma.business.findUnique({
+      where: { id: businessId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    });
+
+    if (!business) {
+      throw new NotFoundException(`Business with ID ${businessId} not found`);
+    }
+
+    let startDate: Date | undefined;
+    let endDate: Date | undefined;
+
+    if (periodStart && periodEnd) {
+      startDate = new Date(periodStart);
+      endDate = new Date(periodEnd);
+
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        throw new BadRequestException('Invalid date format. Use YYYY-MM-DD');
+      }
+
+      if (startDate > endDate) {
+        throw new BadRequestException('periodStart must be before periodEnd');
+      }
+
+      // Normalize dates to start/end of day
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+    }
+
+    // Find LOCKED orders for the business
+    const whereClause: any = {
+      businessId,
+      status: 'LOCKED',
+    };
+
+    if (startDate && endDate) {
+      whereClause.orderDate = {
+        gte: startDate,
+        lte: endDate,
+      };
+    }
+
+    const allOrders = await this.prisma.order.findMany({
+      where: whereClause,
+      include: {
+        business: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        pack: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+          },
+        },
+      },
+      orderBy: {
+        orderDate: 'asc',
+      },
+    });
+
+    if (allOrders.length === 0) {
+      throw new BadRequestException(
+        `No LOCKED orders found for business ${business.name}${startDate && endDate ? ` in the specified period` : ''}`,
+      );
+    }
+
+    // Find orders that are already in non-DRAFT invoices
+    const invoiceItems = await this.prisma.invoiceItem.findMany({
+      where: {
+        orderId: {
+          in: allOrders.map((o) => o.id),
+        },
+        invoice: {
+          status: {
+            not: 'DRAFT', // Exclude orders in DRAFT invoices (can be regenerated)
+          },
+        },
+      },
+      select: {
+        orderId: true,
+      },
+    });
+
+    const excludedOrderIds = new Set(invoiceItems.map((item) => item.orderId));
+
+    // Filter to only orders that aren't already invoiced
+    const availableOrders = allOrders.filter(
+      (order) => !excludedOrderIds.has(order.id),
+    );
+
+    if (availableOrders.length === 0) {
+      throw new BadRequestException(
+        `All orders for business ${business.name} are already invoiced`,
+      );
+    }
+
+    // Determine actual period dates
+    const actualStartDate = startDate || new Date(Math.min(...availableOrders.map(o => o.orderDate.getTime())));
+    const actualEndDate = endDate || new Date(Math.max(...availableOrders.map(o => o.orderDate.getTime())));
+
+    // Normalize if not provided
+    if (!startDate) {
+      actualStartDate.setHours(0, 0, 0, 0);
+    }
+    if (!endDate) {
+      actualEndDate.setHours(23, 59, 59, 999);
+    }
+
+    // Check if invoice already exists for this business/period (idempotency)
+    const existingInvoice = await this.prisma.invoice.findFirst({
+      where: {
+        businessId,
+        periodStart: actualStartDate,
+        periodEnd: actualEndDate,
+        status: {
+          in: ['DRAFT', 'ISSUED'], // Don't regenerate if already issued
+        },
+      },
+    });
+
+    if (existingInvoice) {
+      // Return existing invoice (idempotent behavior)
+      const invoice = await this.getInvoiceById(existingInvoice.id, user);
+      return [invoice];
+    }
+
+    // Calculate totals (pack-based: one pack per order)
+    let subtotal = 0;
+    const invoiceItemsData: Array<{
+      orderId: string;
+      orderDate: Date;
+      packName: string;
+      quantity: number; // Always 1 (one pack per order)
+      unitPrice: number; // Pack price
+      totalPrice: number; // Pack price × quantity
+    }> = [];
+
+    for (const order of availableOrders) {
+      const packPrice = Number(order.pack.price);
+      const quantity = 1; // One pack per order
+      const totalPrice = packPrice * quantity;
+      subtotal += totalPrice;
+
+      invoiceItemsData.push({
+        orderId: order.id,
+        orderDate: order.orderDate,
+        packName: order.pack.name,
+        quantity,
+        unitPrice: packPrice,
+        totalPrice,
+      });
+    }
+
+    // Calculate due date (30 days from period end)
+    const dueDate = new Date(actualEndDate);
+    dueDate.setDate(dueDate.getDate() + 30);
+
+    // Generate invoice number
+    let invoiceNumber = this.generateInvoiceNumber();
+    let attempts = 0;
+    while (
+      await this.prisma.invoice.findUnique({
+        where: { invoiceNumber },
+      })
+    ) {
+      invoiceNumber = this.generateInvoiceNumber();
+      attempts++;
+      if (attempts > 10) {
+        throw new Error('Failed to generate unique invoice number');
+      }
+    }
+
+    // Create invoice with items in a transaction
+    const invoice = await this.prisma.$transaction(async (tx) => {
+      // Check again for race condition
+      const existing = await tx.invoice.findFirst({
+        where: {
+          businessId,
+          periodStart: actualStartDate,
+          periodEnd: actualEndDate,
+          status: {
+            in: ['DRAFT', 'ISSUED'],
+          },
+        },
+      });
+
+      if (existing) {
+        throw new ConflictException(
+          'Invoice already exists for this business and period',
+        );
+      }
+
+      // Verify no order is already in another invoice (double-check for race conditions)
+      const existingItems = await tx.invoiceItem.findMany({
+        where: {
+          orderId: {
+            in: invoiceItemsData.map((item) => item.orderId),
+          },
+        },
+        select: {
+          orderId: true,
+        },
+      });
+
+      if (existingItems.length > 0) {
+        throw new ConflictException(
+          `Some orders are already included in other invoices: ${existingItems.map((i) => i.orderId).join(', ')}`,
+        );
+      }
+
+      // Create invoice
+      try {
+        const newInvoice = await tx.invoice.create({
+          data: {
+            businessId,
+            invoiceNumber,
+            periodStart: actualStartDate,
+            periodEnd: actualEndDate,
+            status: InvoiceStatus.DRAFT,
+            subtotal,
+            tax: null, // No tax by default
+            total: subtotal, // total = subtotal + tax (tax is null)
+            dueDate,
+            items: {
+              create: invoiceItemsData,
+            },
+          },
+          include: {
+            business: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+            items: true,
+          },
+        });
+
+        return newInvoice;
+      } catch (error) {
+        // Handle unique constraint violation on orderId
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          throw new ConflictException(
+            'One or more orders are already included in another invoice',
+          );
+        }
+        throw error;
+      }
+    });
+
+    return [this.mapInvoiceToDto(invoice)];
+  }
+
+  /**
    * Get all invoices (admin view)
    */
   async getAdminInvoices(user: TokenPayload): Promise<InvoiceSummaryDto[]> {

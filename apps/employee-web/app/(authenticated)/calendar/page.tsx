@@ -136,10 +136,10 @@ function OrderHistoryContent() {
   }
 
   return (
-    <div className="p-4 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto pb-20 lg:pb-4">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{t('orders.orderHistory')}</h1>
-        <p className="text-sm text-gray-600 mt-1">
+        <h1 className="text-3xl font-bold text-black mb-2">{t('orders.orderHistory')}</h1>
+        <p className="text-base text-gray-600 font-medium">
           {t('orders.viewAllPastUpcoming')}
         </p>
       </div>
@@ -156,7 +156,7 @@ function OrderHistoryContent() {
 
       {/* Orders List */}
       {orders.length === 0 ? (
-        <div className="bg-surface border border-surface-dark rounded-lg p-8 w-full max-w-md mx-auto">
+        <div className="bg-white border-2 border-gray-200 rounded-2xl shadow-md p-8 w-full max-w-md mx-auto">
           <Empty
             message={t('common.labels.noOrdersYet')}
             description={t('common.labels.placeFirstOrder')}
@@ -164,7 +164,7 @@ function OrderHistoryContent() {
           <div className="mt-6 text-center">
             <button
               onClick={() => router.push('/new-order')}
-              className="px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors font-semibold min-h-[44px]"
+              className="px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-primary-600 to-primary-700 text-white hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95 min-h-[44px]"
             >
               {t('common.buttons.placeOrder')}
             </button>
@@ -261,7 +261,7 @@ function OrderHistoryContent() {
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="p-2 rounded-md border border-surface-dark hover:bg-surface-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  className="p-2 rounded-xl border-2 border-gray-200 hover:border-primary-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-200 transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center shadow-sm hover:shadow-md"
                   aria-label={t('common.labels.previousPage')}
                 >
                   <ChevronLeft className="w-5 h-5" />
@@ -279,10 +279,10 @@ function OrderHistoryContent() {
                         <button
                           key={page}
                           onClick={() => handlePageChange(page)}
-                          className={`px-3 py-2 rounded-md text-sm font-medium min-h-[44px] min-w-[44px] transition-colors ${
+                          className={`px-4 py-2 rounded-xl text-sm font-semibold min-h-[44px] min-w-[44px] transition-all duration-200 ${
                             currentPage === page
-                              ? 'bg-primary-600 text-white'
-                              : 'bg-surface border border-surface-dark text-gray-700 hover:bg-surface-light'
+                              ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-md'
+                              : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-primary-300 hover:bg-gray-50 shadow-sm hover:shadow-md'
                           }`}
                         >
                           {page}
@@ -305,7 +305,7 @@ function OrderHistoryContent() {
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="p-2 rounded-md border border-surface-dark hover:bg-surface-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  className="p-2 rounded-xl border-2 border-gray-200 hover:border-primary-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-200 transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center shadow-sm hover:shadow-md"
                   aria-label={t('common.labels.nextPage')}
                 >
                   <ChevronRight className="w-5 h-5" />

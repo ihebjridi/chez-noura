@@ -8,6 +8,11 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Chez Noura - Business Admin',
   description: 'B2B Corporate Catering Platform - Business Admin Dashboard',
+  icons: {
+    icon: '/chez-noura-logo.svg',
+    shortcut: '/chez-noura-logo.svg',
+    apple: '/chez-noura-logo.svg',
+  },
 };
 
 export default function RootLayout({

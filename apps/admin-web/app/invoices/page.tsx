@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useInvoices } from '../../hooks/useInvoices';
+import { useBusinesses } from '../../hooks/useBusinesses';
 import { Loading } from '../../components/ui/loading';
 import { Error } from '../../components/ui/error';
 import { Empty } from '../../components/ui/empty';
@@ -22,16 +23,23 @@ export default function InvoicesPage() {
     loadInvoices,
     loadInvoiceDetail,
     generateInvoices,
+    generateBusinessInvoices,
     setSelectedInvoice,
     setError,
   } = useInvoices();
+  const { businesses, loadBusinesses } = useBusinesses();
   const [showGenerateForm, setShowGenerateForm] = useState(false);
   const [generateStart, setGenerateStart] = useState('');
   const [generateEnd, setGenerateEnd] = useState('');
+  const [showBusinessForm, setShowBusinessForm] = useState(false);
+  const [selectedBusinessId, setSelectedBusinessId] = useState('');
+  const [businessStart, setBusinessStart] = useState('');
+  const [businessEnd, setBusinessEnd] = useState('');
 
   useEffect(() => {
     loadInvoices();
-  }, [loadInvoices]);
+    loadBusinesses();
+  }, [loadInvoices, loadBusinesses]);
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +59,35 @@ export default function InvoicesPage() {
     }
   };
 
+  const handleGenerateBusiness = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBusinessId) {
+      setError('Please select a business');
+      return;
+    }
+
+    // If both dates are provided, validate they're both set
+    if ((businessStart && !businessEnd) || (!businessStart && businessEnd)) {
+      setError('Please provide both start and end dates, or leave both empty');
+      return;
+    }
+
+    try {
+      setError('');
+      await generateBusinessInvoices(
+        selectedBusinessId,
+        businessStart || undefined,
+        businessEnd || undefined,
+      );
+      setShowBusinessForm(false);
+      setSelectedBusinessId('');
+      setBusinessStart('');
+      setBusinessEnd('');
+    } catch (err: any) {
+      // Error is already set by the hook
+    }
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <PageHeader
@@ -64,35 +101,81 @@ export default function InvoicesPage() {
         </div>
       )}
 
-      <CollapsibleForm
-        title="Generate Invoices"
-        isOpen={showGenerateForm}
-        onToggle={() => setShowGenerateForm(!showGenerateForm)}
-        onSubmit={handleGenerate}
-        onCancel={() => {
-          setShowGenerateForm(false);
-          setGenerateStart('');
-          setGenerateEnd('');
-        }}
-        submitLabel={loading ? 'Generating...' : 'Generate'}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Period Start" required>
-            <DateInput
-              value={generateStart}
-              onChange={(e) => setGenerateStart(e.target.value)}
-              required
-            />
-          </FormField>
-          <FormField label="Period End" required>
-            <DateInput
-              value={generateEnd}
-              onChange={(e) => setGenerateEnd(e.target.value)}
-              required
-            />
-          </FormField>
-        </div>
-      </CollapsibleForm>
+      <div className="space-y-4 mb-6">
+        <CollapsibleForm
+          title="Generate Invoices"
+          isOpen={showGenerateForm}
+          onToggle={() => setShowGenerateForm(!showGenerateForm)}
+          onSubmit={handleGenerate}
+          onCancel={() => {
+            setShowGenerateForm(false);
+            setGenerateStart('');
+            setGenerateEnd('');
+          }}
+          submitLabel={loading ? 'Generating...' : 'Generate'}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField label="Period Start" required>
+              <DateInput
+                value={generateStart}
+                onChange={(e) => setGenerateStart(e.target.value)}
+                required
+              />
+            </FormField>
+            <FormField label="Period End" required>
+              <DateInput
+                value={generateEnd}
+                onChange={(e) => setGenerateEnd(e.target.value)}
+                required
+              />
+            </FormField>
+          </div>
+        </CollapsibleForm>
+
+        <CollapsibleForm
+          title="Generate Invoice for Business"
+          isOpen={showBusinessForm}
+          onToggle={() => setShowBusinessForm(!showBusinessForm)}
+          onSubmit={handleGenerateBusiness}
+          onCancel={() => {
+            setShowBusinessForm(false);
+            setSelectedBusinessId('');
+            setBusinessStart('');
+            setBusinessEnd('');
+          }}
+          submitLabel={loading ? 'Generating...' : 'Generate'}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField label="Business" required>
+              <select
+                value={selectedBusinessId}
+                onChange={(e) => setSelectedBusinessId(e.target.value)}
+                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-background border-surface-dark"
+                required
+              >
+                <option value="">Select a business</option>
+                {businesses.map((business) => (
+                  <option key={business.id} value={business.id}>
+                    {business.name}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+            <FormField label="Period Start (optional)" helpText="Leave empty to include all uninvoiced orders">
+              <DateInput
+                value={businessStart}
+                onChange={(e) => setBusinessStart(e.target.value)}
+              />
+            </FormField>
+            <FormField label="Period End (optional)" helpText="Leave empty to include all uninvoiced orders">
+              <DateInput
+                value={businessEnd}
+                onChange={(e) => setBusinessEnd(e.target.value)}
+              />
+            </FormField>
+          </div>
+        </CollapsibleForm>
+      </div>
 
       {selectedInvoice ? (
         <div>

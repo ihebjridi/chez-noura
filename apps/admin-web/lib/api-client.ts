@@ -163,6 +163,17 @@ class ApiClient {
     });
   }
 
+  async generateBusinessInvoices(businessId: string, start?: string, end?: string): Promise<InvoiceDto[]> {
+    const queryParams = new URLSearchParams();
+    if (start) queryParams.append('start', start);
+    if (end) queryParams.append('end', end);
+    const queryString = queryParams.toString();
+    const url = `/invoices/generate/business/${businessId}${queryString ? `?${queryString}` : ''}`;
+    return this.request<InvoiceDto[]>(url, {
+      method: 'POST',
+    });
+  }
+
   // Business endpoints
   async getBusinesses(): Promise<BusinessDto[]> {
     return this.request<BusinessDto[]>('/businesses');

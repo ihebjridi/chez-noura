@@ -122,23 +122,23 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-4">{t('orders.title')}</h1>
+        <h1 className="text-3xl font-bold text-black mb-4">{t('orders.title')}</h1>
         
         {/* Date Filter Tabs */}
-        <div className="bg-surface border border-surface-dark rounded-lg p-4">
-          <div className="flex items-center gap-2 flex-wrap">
+        <div className="bg-white border-2 border-gray-200 rounded-2xl p-5 shadow-md">
+          <div className="flex items-center gap-3 flex-wrap">
             <button
               onClick={() => {
                 setDateFilter('all');
                 setCustomDate('');
               }}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-5 py-2.5 rounded-xl font-semibold transition-all duration-200 ${
                 dateFilter === 'all'
-                  ? 'bg-primary-50 text-primary-700 border-2 border-primary-500'
-                  : 'bg-surface-light text-gray-700 hover:bg-surface-dark border-2 border-transparent'
+                  ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200 hover:border-primary-300 shadow-sm hover:shadow-md'
               }`}
             >
               {t('common.buttons.allOrders')}
@@ -146,16 +146,16 @@ export default function OrdersPage() {
             <div className="relative">
               <button
                 onClick={() => setShowDatePicker(!showDatePicker)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors border-2 ${
+                className={`px-5 py-2.5 rounded-xl font-semibold transition-all duration-200 border-2 ${
                   dateFilter === 'custom'
-                    ? 'bg-primary-50 text-primary-700 border-primary-500'
-                    : 'bg-surface-light text-gray-700 hover:bg-surface-dark border-transparent'
+                    ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200 hover:border-primary-300 shadow-sm hover:shadow-md'
                 }`}
               >
                 {customDate ? new Date(customDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : t('common.buttons.customDate')}
               </button>
               {showDatePicker && (
-                <div className="absolute top-full mt-2 left-0 bg-surface border border-surface-dark rounded-lg shadow-lg p-3 z-50">
+                <div className="absolute top-full mt-2 left-0 bg-white border-2 border-gray-200 rounded-xl shadow-xl p-4 z-50">
                   <input
                     type="date"
                     value={customDate}
@@ -167,7 +167,7 @@ export default function OrdersPage() {
                       }
                       setShowDatePicker(false);
                     }}
-                    className="px-3 py-2 border border-surface-dark rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-background"
+                    className="px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium"
                   />
                 </div>
               )}
@@ -185,14 +185,14 @@ export default function OrdersPage() {
 
       {/* Loading State */}
       {loading && (
-        <div className="bg-surface border border-surface-dark rounded-lg p-12">
+        <div className="bg-white border-2 border-gray-200 rounded-2xl shadow-md p-12">
           <Loading message={t('orders.loadingOrders')} />
         </div>
       )}
 
       {/* Empty State */}
       {!loading && filteredOrders.length === 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-12">
+        <div className="bg-white border-2 border-gray-200 rounded-2xl shadow-md p-12">
           <Empty
             message={t('orders.noOrders')}
             description={t('orders.noOrdersDescription')}
@@ -219,11 +219,11 @@ export default function OrdersPage() {
               .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
 
             return (
-              <div key={dateKey} className="bg-surface border border-surface-dark rounded-lg overflow-hidden">
+              <div key={dateKey} className="bg-white border-2 border-gray-200 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200">
                 {/* Date Header */}
                 <button
                   onClick={() => setExpandedDate(expandedDate === dateKey ? null : dateKey)}
-                  className="w-full px-6 py-4 bg-surface-light hover:bg-surface-dark transition-colors flex items-center justify-between"
+                  className="w-full px-6 py-4 bg-gray-50 hover:bg-gray-100 transition-all duration-200 flex items-center justify-between"
                 >
                   <div className="flex items-center gap-4">
                     {expandedDate === dateKey ? (
@@ -251,7 +251,7 @@ export default function OrdersPage() {
                       );
 
                       return (
-                        <div key={employeeId} className="border border-surface-dark rounded-lg overflow-hidden">
+                        <div key={employeeId} className="border-2 border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
                           {/* Employee Header */}
                           <button
                             onClick={() =>
@@ -259,7 +259,7 @@ export default function OrdersPage() {
                                 expandedEmployeeId === employeeId ? null : employeeId
                               )
                             }
-                            className="w-full px-4 py-3 bg-primary-50 hover:bg-primary-100 transition-colors flex items-center justify-between"
+                            className="w-full px-4 py-3 bg-gradient-to-r from-primary-50 to-primary-100 hover:from-primary-100 hover:to-primary-200 transition-all duration-200 flex items-center justify-between"
                           >
                             <div className="flex items-center gap-3">
                               <Users className="w-5 h-5 text-primary-600" />
@@ -293,7 +293,7 @@ export default function OrdersPage() {
                               {employeeOrders.map((order) => (
                                 <div
                                   key={order.id}
-                                  className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+                                  className="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 hover:border-primary-300 transition-all duration-200"
                                 >
                                   <div className="flex justify-between items-start mb-3">
                                     <div className="flex-1">
@@ -327,7 +327,7 @@ export default function OrdersPage() {
                                         expandedOrderId === order.id ? null : order.id
                                       )
                                     }
-                                    className="w-full text-left text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+                                    className="w-full text-left text-sm text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-primary-50 transition-all duration-200 border-2 border-transparent hover:border-primary-200"
                                   >
                                     {expandedOrderId === order.id ? (
                                       <>

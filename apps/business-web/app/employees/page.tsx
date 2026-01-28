@@ -156,11 +156,11 @@ export default function EmployeesPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">{t('employees.title')}</h1>
-        <p className="mt-1 text-sm text-gray-600 font-normal">{t('employees.subtitle')}</p>
+        <h1 className="text-3xl font-bold text-black mb-2">{t('employees.title')}</h1>
+        <p className="text-base text-gray-600 font-medium">{t('employees.subtitle')}</p>
       </div>
 
       {/* Error Display */}
@@ -178,13 +178,13 @@ export default function EmployeesPage() {
       )}
 
       {/* Inline Invite Form */}
-      <div className="mb-6 bg-surface border border-surface-dark rounded-lg">
+      <div className="mb-6 bg-white border-2 border-gray-200 rounded-2xl shadow-md">
         <button
           onClick={() => setShowInviteForm(!showInviteForm)}
-          className="w-full px-6 py-4 flex justify-between items-center text-left hover:bg-surface-light transition-colors"
+          className="w-full px-6 py-4 flex justify-between items-center text-left hover:bg-gray-50 transition-all duration-200 rounded-t-2xl"
         >
-          <span className="font-semibold">{t('common.buttons.inviteNewEmployee')}</span>
-          <span className="text-gray-500">{showInviteForm ? '−' : '+'}</span>
+          <span className="font-bold text-lg text-black">{t('common.buttons.inviteNewEmployee')}</span>
+          <span className="text-2xl text-primary-600 font-bold">{showInviteForm ? '−' : '+'}</span>
         </button>
         {showInviteForm && (
           <div className="px-6 py-4 border-t border-surface-dark">
@@ -199,7 +199,7 @@ export default function EmployeesPage() {
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
                 placeholder={t('employees.emailPlaceholder')}
-                className="w-full px-3 py-2 border border-surface-dark rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-background"
+                className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium transition-all duration-200"
               />
             </div>
             <div>
@@ -212,7 +212,7 @@ export default function EmployeesPage() {
                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                 required
                 placeholder={t('employees.firstNamePlaceholder')}
-                className="w-full px-3 py-2 border border-surface-dark rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-background"
+                className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium transition-all duration-200"
               />
             </div>
             <div>
@@ -225,13 +225,13 @@ export default function EmployeesPage() {
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                 required
                 placeholder={t('employees.lastNamePlaceholder')}
-                className="w-full px-3 py-2 border border-surface-dark rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-background"
+                className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium transition-all duration-200"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <button
                 type="submit"
-                className="px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+                className="px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-primary-600 to-primary-700 text-white hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
               >
                 {t('common.buttons.sendInvitation')}
               </button>
@@ -241,7 +241,7 @@ export default function EmployeesPage() {
                   setShowInviteForm(false);
                   setFormData({ email: '', firstName: '', lastName: '', businessId: user?.businessId || '' });
                 }}
-                className="px-4 py-2 bg-surface text-gray-700 font-medium rounded-lg hover:bg-surface-dark transition-colors"
+                className="px-5 py-2.5 rounded-xl font-semibold bg-white text-gray-700 hover:bg-gray-50 transition-all duration-200 border-2 border-gray-200 hover:border-primary-300 shadow-sm hover:shadow-md"
               >
                 {t('common.buttons.cancel')}
               </button>
@@ -253,14 +253,14 @@ export default function EmployeesPage() {
 
       {/* Loading State */}
       {loading && (
-        <div className="bg-surface border border-surface-dark rounded-lg p-12">
+        <div className="bg-white border-2 border-gray-200 rounded-2xl shadow-md p-12">
           <Loading message={t('employees.loadingEmployees')} />
         </div>
       )}
 
       {/* Empty State */}
       {!loading && employees.length === 0 && (
-        <div className="bg-surface border border-surface-dark rounded-lg p-12">
+        <div className="bg-white border-2 border-gray-200 rounded-2xl shadow-md p-12">
           <Empty
             message={t('employees.noEmployees')}
             description={t('employees.noEmployeesDescription')}
@@ -270,7 +270,7 @@ export default function EmployeesPage() {
 
       {/* Search and Employee List */}
       {!loading && employees.length > 0 && (
-        <div className="bg-surface border border-surface-dark rounded-lg">
+        <div className="bg-white border-2 border-gray-200 rounded-2xl shadow-md">
           {/* Search Bar */}
           <div className="p-4 border-b border-surface-dark">
             <div className="relative">
@@ -280,7 +280,7 @@ export default function EmployeesPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('employees.searchPlaceholder')}
-                className="w-full pl-10 pr-4 py-2 border border-surface-dark rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-background text-gray-900"
+                className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium transition-all duration-200"
               />
             </div>
             {searchQuery && (
@@ -293,7 +293,7 @@ export default function EmployeesPage() {
           {/* Employee List Table */}
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-surface-light border-b border-surface-dark">
+              <thead className="bg-gray-50 border-b-2 border-gray-200">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     {t('employees.employee')}
@@ -328,7 +328,7 @@ export default function EmployeesPage() {
 
                     return (
                       <React.Fragment key={employee.id}>
-                        <tr className="hover:bg-surface-light transition-colors">
+                        <tr className="hover:bg-gray-50 transition-colors duration-200">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className="flex-shrink-0 mr-3">
@@ -375,7 +375,7 @@ export default function EmployeesPage() {
                                   onClick={() =>
                                     setExpandedEmployeeId(isExpanded ? null : employee.id)
                                   }
-                                  className="px-3 py-1.5 text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-md transition-colors flex items-center gap-1 font-medium"
+                                  className="px-4 py-2 text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-xl transition-all duration-200 flex items-center gap-1 font-semibold border-2 border-primary-200 hover:border-primary-300 shadow-sm hover:shadow-md"
                                 >
                                   {isExpanded ? (
                                     <>
@@ -393,14 +393,14 @@ export default function EmployeesPage() {
                               {employee.status === EntityStatus.ACTIVE ? (
                                 <button
                                   onClick={() => handleDisable(employee.id)}
-                                  className="px-3 py-1.5 bg-destructive text-white text-sm font-medium rounded-md hover:bg-destructive-hover transition-colors"
+                                  className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white text-sm font-semibold rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
                                 >
                                   {t('common.buttons.disable')}
                                 </button>
                               ) : (
                                 <button
                                   onClick={() => handleEnable(employee.id)}
-                                  className="px-3 py-1.5 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 transition-colors"
+                                  className="px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white text-sm font-semibold rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
                                 >
                                   {t('common.buttons.enable')}
                                 </button>
@@ -464,7 +464,7 @@ export default function EmployeesPage() {
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="p-2 rounded-md border border-surface-dark hover:bg-surface-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  className="p-2 rounded-xl border-2 border-gray-200 hover:border-primary-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-200 transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center shadow-sm hover:shadow-md"
                   aria-label={t('employees.previousPage')}
                 >
                   <ChevronLeft className="w-5 h-5" />
@@ -482,10 +482,10 @@ export default function EmployeesPage() {
                         <button
                           key={page}
                           onClick={() => handlePageChange(page)}
-                          className={`px-3 py-2 rounded-md text-sm font-medium min-h-[44px] min-w-[44px] transition-colors ${
+                          className={`px-4 py-2 rounded-xl text-sm font-semibold min-h-[44px] min-w-[44px] transition-all duration-200 ${
                             currentPage === page
-                              ? 'bg-primary-600 text-white'
-                              : 'bg-surface border border-surface-dark text-gray-700 hover:bg-surface-light'
+                              ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-md'
+                              : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-primary-300 hover:bg-gray-50 shadow-sm hover:shadow-md'
                           }`}
                         >
                           {page}
@@ -508,7 +508,7 @@ export default function EmployeesPage() {
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="p-2 rounded-md border border-surface-dark hover:bg-surface-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  className="p-2 rounded-xl border-2 border-gray-200 hover:border-primary-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-200 transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center shadow-sm hover:shadow-md"
                   aria-label={t('employees.nextPage')}
                 >
                   <ChevronRight className="w-5 h-5" />
@@ -521,7 +521,7 @@ export default function EmployeesPage() {
 
       {/* Empty State for Search */}
       {!loading && employees.length > 0 && filteredEmployees.length === 0 && (
-        <div className="bg-surface border border-surface-dark rounded-lg p-12">
+        <div className="bg-white border-2 border-gray-200 rounded-2xl shadow-md p-12">
           <Empty
             message={t('employees.noSearchResults')}
             description={t('employees.noSearchResultsDescription')}

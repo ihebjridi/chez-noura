@@ -48,6 +48,20 @@ export function useInvoices() {
     }
   }, [loadInvoices]);
 
+  const generateBusinessInvoices = useCallback(async (businessId: string, startDate?: string, endDate?: string) => {
+    try {
+      setLoading(true);
+      setError('');
+      await apiClient.generateBusinessInvoices(businessId, startDate, endDate);
+      await loadInvoices();
+    } catch (err: any) {
+      setError(err.message || 'Failed to generate business invoices');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [loadInvoices]);
+
   return {
     invoices,
     selectedInvoice,
@@ -56,6 +70,7 @@ export function useInvoices() {
     loadInvoices,
     loadInvoiceDetail,
     generateInvoices,
+    generateBusinessInvoices,
     setSelectedInvoice,
     setError,
   };

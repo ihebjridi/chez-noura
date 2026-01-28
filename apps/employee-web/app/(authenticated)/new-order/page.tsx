@@ -225,7 +225,7 @@ function NewOrderContent() {
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto pb-20 lg:pb-4">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-black mb-2">{t('newOrder.title')}</h1>
         <div className="flex items-center gap-2">
@@ -336,7 +336,7 @@ function NewOrderContent() {
                       setSelectedPack(null);
                       setSelections({});
                     }}
-                    className="text-sm text-primary-600 hover:text-primary-700 font-medium min-h-[44px] px-2"
+                    className="px-4 py-2 rounded-xl font-semibold text-primary-600 hover:text-primary-700 hover:bg-primary-50 transition-all duration-200 border-2 border-transparent hover:border-primary-200 min-h-[44px]"
                   >
                     {t('common.labels.change')}
                   </button>

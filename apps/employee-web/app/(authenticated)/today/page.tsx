@@ -132,10 +132,10 @@ export default function TodayPage() {
   }
 
   return (
-    <div className="p-4 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto pb-20 lg:pb-4">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{t('today.title')}</h1>
-        <p className="text-sm text-gray-600 mt-1">
+        <h1 className="text-3xl font-bold text-black mb-2">{t('today.title')}</h1>
+        <p className="text-base text-gray-600 font-medium">
           {new Date().toLocaleDateString(i18n.language || 'fr', {
             weekday: 'long',
             year: 'numeric',
@@ -181,7 +181,7 @@ export default function TodayPage() {
           })()}
 
           {/* Pack Summary */}
-          <div className="bg-surface border border-surface-dark rounded-lg p-4">
+          <div className="bg-white border-2 border-gray-200 rounded-2xl shadow-md p-5">
             <div className="flex items-center gap-2 mb-4">
               <Package className="w-5 h-5 text-primary-600" />
               <h3 className="font-semibold text-gray-900 text-lg">{todayOrder.packName}</h3>
@@ -244,7 +244,7 @@ export default function TodayPage() {
           {/* View All Orders */}
           <button
             onClick={() => router.push('/calendar')}
-            className="w-full px-4 py-3 bg-surface border border-surface-dark rounded-lg hover:bg-surface-light transition-colors font-medium text-gray-700 flex items-center justify-center gap-2 min-h-[44px]"
+            className="w-full px-5 py-2.5 rounded-xl font-semibold bg-white text-gray-700 hover:bg-gray-50 transition-all duration-200 border-2 border-gray-200 hover:border-primary-300 shadow-sm hover:shadow-md flex items-center justify-center gap-2 min-h-[44px]"
           >
             {t('today.viewOrderHistory')}
             <ArrowRight className="w-4 h-4" />
@@ -254,21 +254,21 @@ export default function TodayPage() {
         /* No Order, Menu Available */
         <div className="space-y-4">
           {menu.packs && menu.packs.length > 0 ? (
-            <div className="bg-surface border border-surface-dark rounded-lg p-6 text-center">
+            <div className="bg-white border-2 border-gray-200 rounded-2xl shadow-md p-6 text-center">
               <Empty
                 message={t('today.noOrderToday')}
                 description={t('today.noOrderTodayDescription')}
               />
               <button
                 onClick={() => router.push(`/new-order?date=${today}`)}
-                className="mt-6 px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors font-semibold min-h-[44px] inline-flex items-center gap-2"
+                className="mt-6 px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-primary-600 to-primary-700 text-white hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95 min-h-[44px] inline-flex items-center gap-2"
               >
                 {t('common.buttons.orderNow')}
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           ) : (
-            <div className="bg-surface border border-surface-dark rounded-lg p-6 text-center">
+            <div className="bg-white border-2 border-gray-200 rounded-2xl shadow-md p-6 text-center">
               <Empty
                 message={menu.status === 'PUBLISHED' ? t('today.menuPublishedNoPacks') : t('today.menuNotAvailableOrdering')}
                 description={menu.status === 'PUBLISHED' ? t('today.contactBusinessAdmin') : `${t('today.menuStatus')}: ${menu.status}`}
@@ -278,7 +278,7 @@ export default function TodayPage() {
         </div>
       ) : (
         /* No Menu Available */
-        <div className="bg-surface border border-surface-dark rounded-lg p-6 text-center">
+        <div className="bg-white border-2 border-gray-200 rounded-2xl shadow-md p-6 text-center">
           <Empty
             message={t('today.noMenuAvailableToday')}
             description={t('today.checkBackLater')}

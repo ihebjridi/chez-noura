@@ -69,6 +69,51 @@ export class InvoicesController {
     return this.invoicesService.generateInvoices(start, end, user);
   }
 
+  @Post('generate/business/:businessId')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({
+    summary: 'Generate draft invoices for a specific business (idempotent)',
+    description: 'Generate invoices for a business. If date range is provided, generate for that period. Otherwise, generate for all uninvoiced LOCKED orders.',
+  })
+  @ApiParam({
+    name: 'businessId',
+    description: 'Business ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiQuery({
+    name: 'start',
+    required: false,
+    description: 'Period start date (YYYY-MM-DD). If not provided, uses earliest order date.',
+    example: '2024-01-01',
+  })
+  @ApiQuery({
+    name: 'end',
+    required: false,
+    description: 'Period end date (YYYY-MM-DD). If not provided, uses latest order date.',
+    example: '2024-01-31',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Invoice generated successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 403, description: 'Forbidden - SUPER_ADMIN only' })
+  @ApiResponse({ status: 404, description: 'Business not found' })
+  @ApiResponse({ status: 409, description: 'Conflict - invoice already exists' })
+  async generateBusinessInvoices(
+    @Param('businessId') businessId: string,
+    @Query('start') start: string | undefined,
+    @Query('end') end: string | undefined,
+    @CurrentUser() user: TokenPayload,
+  ): Promise<InvoiceDto[]> {
+    return this.invoicesService.generateBusinessInvoices(
+      businessId,
+      start,
+      end,
+      user,
+    );
+  }
+
   @Get('admin')
   @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Get all invoices (admin view)' })

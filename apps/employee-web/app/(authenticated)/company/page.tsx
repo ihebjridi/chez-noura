@@ -56,15 +56,15 @@ export default function CompanyPage() {
   }
 
   return (
-    <div className="p-4 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto pb-20 lg:pb-4">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{t('company.title')}</h1>
-        <p className="text-sm text-gray-600 mt-1">
+        <h1 className="text-3xl font-bold text-black mb-2">{t('company.title')}</h1>
+        <p className="text-base text-gray-600 font-medium">
           {t('company.subtitle')}
         </p>
       </div>
 
-      <div className="bg-surface border border-surface-dark rounded-lg p-6 space-y-6">
+      <div className="bg-white border-2 border-gray-200 rounded-2xl shadow-md p-6 space-y-6">
         {/* Company Name */}
         <div>
           <div className="flex items-center gap-3 mb-2">
