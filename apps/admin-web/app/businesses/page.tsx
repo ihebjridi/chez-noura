@@ -15,6 +15,8 @@ import { StatusBadge } from '../../components/ui/status-badge';
 import { Button } from '../../components/ui/button';
 import { EmployeeListModal } from '../../components/business/employee-list-modal';
 import { CredentialsModal } from '../../components/business/credentials-modal';
+import { ServiceSubscriptions } from '../../components/business/service-subscriptions';
+import { AssignServiceModal } from '../../components/business/assign-service-modal';
 import { apiClient } from '../../lib/api-client';
 import { formatDateTime } from '../../lib/date-utils';
 import { 
@@ -26,7 +28,9 @@ import {
   Power, 
   PowerOff,
   Key,
-  AlertTriangle
+  AlertTriangle,
+  Package,
+  Plus
 } from 'lucide-react';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -76,6 +80,17 @@ export default function BusinessesPage() {
   const [businessesWithFailedDelete, setBusinessesWithFailedDelete] = useState<Set<string>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [expandedActivityLogs, setExpandedActivityLogs] = useState<Set<string>>(new Set());
+  const [expandedServiceSubscriptions, setExpandedServiceSubscriptions] = useState<Set<string>>(new Set());
+  const [serviceSubscriptionsRefreshTrigger, setServiceSubscriptionsRefreshTrigger] = useState<Map<string, number>>(new Map());
+  const [assignServiceModal, setAssignServiceModal] = useState<{
+    isOpen: boolean;
+    businessId: string;
+    businessName: string;
+  }>({
+    isOpen: false,
+    businessId: '',
+    businessName: '',
+  });
   const [activityLogsByBusiness, setActivityLogsByBusiness] = useState<Map<string, ActivityLogDto[]>>(new Map());
   const [loadingLogsByBusiness, setLoadingLogsByBusiness] = useState<Set<string>>(new Set());
   const [errorLogsByBusiness, setErrorLogsByBusiness] = useState<Map<string, string>>(new Map());
@@ -264,6 +279,18 @@ export default function BusinessesPage() {
           newLogs.delete(businessId);
           return newLogs;
         });
+      } else {
+        newSet.add(businessId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleServiceSubscriptions = (businessId: string) => {
+    setExpandedServiceSubscriptions((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(businessId)) {
+        newSet.delete(businessId);
       } else {
         newSet.add(businessId);
       }
@@ -515,6 +542,18 @@ export default function BusinessesPage() {
                         <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex items-center gap-2 flex-wrap">
                             <button
+                              onClick={() => setAssignServiceModal({
+                                isOpen: true,
+                                businessId: business.id,
+                                businessName: business.name,
+                              })}
+                              disabled={isLoading}
+                              className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Assign Service"
+                            >
+                              <Package className="w-4 h-4" />
+                            </button>
+                            <button
                               onClick={() => handleViewEmployees(business)}
                               disabled={isLoading}
                               className="p-2 text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -659,6 +698,48 @@ export default function BusinessesPage() {
                                   })()}
                                 </div>
                               )}
+
+                              {/* Service Subscriptions Section */}
+                              <div className="mt-4 pt-4 border-t border-gray-200">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <button
+                                    onClick={() => toggleServiceSubscriptions(business.id)}
+                                    className="p-1 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                                    title="Toggle service subscriptions"
+                                  >
+                                    {expandedServiceSubscriptions.has(business.id) ? (
+                                      <ChevronDown className="w-4 h-4" />
+                                    ) : (
+                                      <ChevronRight className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                  <Package className="w-4 h-4 text-gray-600" />
+                                  <h4 className="text-sm font-semibold text-gray-900">Service Subscriptions</h4>
+                                </div>
+                                {expandedServiceSubscriptions.has(business.id) && (
+                                  <ServiceSubscriptions
+                                    key={`${business.id}-${serviceSubscriptionsRefreshTrigger.get(business.id) || 0}`}
+                                    businessId={business.id}
+                                    refreshTrigger={serviceSubscriptionsRefreshTrigger.get(business.id)}
+                                    onServiceActivated={() => {
+                                      // Trigger refresh
+                                      setServiceSubscriptionsRefreshTrigger((prev) => {
+                                        const newMap = new Map(prev);
+                                        newMap.set(business.id, (newMap.get(business.id) || 0) + 1);
+                                        return newMap;
+                                      });
+                                    }}
+                                    onServiceDeactivated={() => {
+                                      // Trigger refresh
+                                      setServiceSubscriptionsRefreshTrigger((prev) => {
+                                        const newMap = new Map(prev);
+                                        newMap.set(business.id, (newMap.get(business.id) || 0) + 1);
+                                        return newMap;
+                                      });
+                                    }}
+                                  />
+                                )}
+                              </div>
                             </div>
                           </td>
                         </tr>
@@ -693,6 +774,28 @@ export default function BusinessesPage() {
         businessName={credentialsModal.businessName}
         email={credentialsModal.email}
         password={credentialsModal.password}
+      />
+
+      {/* Assign Service Modal */}
+      <AssignServiceModal
+        isOpen={assignServiceModal.isOpen}
+        onClose={() => setAssignServiceModal({ isOpen: false, businessId: '', businessName: '' })}
+        businessId={assignServiceModal.businessId}
+        businessName={assignServiceModal.businessName}
+        onServiceAssigned={() => {
+          // Expand service subscriptions if not already expanded, so user can see the newly assigned service
+          if (assignServiceModal.businessId) {
+            if (!expandedServiceSubscriptions.has(assignServiceModal.businessId)) {
+              setExpandedServiceSubscriptions((prev) => new Set(prev).add(assignServiceModal.businessId));
+            }
+            // Trigger refresh of service subscriptions component
+            setServiceSubscriptionsRefreshTrigger((prev) => {
+              const newMap = new Map(prev);
+              newMap.set(assignServiceModal.businessId, (newMap.get(assignServiceModal.businessId) || 0) + 1);
+              return newMap;
+            });
+          }
+        }}
       />
 
       {/* Disable/Enable Confirmation Modal */}

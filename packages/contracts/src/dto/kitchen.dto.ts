@@ -12,6 +12,8 @@ export interface VariantSummaryDto {
   componentName: string;
   packId: string;
   packName: string;
+  serviceId?: string;      // Service this pack belongs to
+  serviceName?: string;     // Service name
   totalQuantity: number;
 }
 
@@ -34,6 +36,8 @@ export interface VariantSummaryWithBusinessDto {
   componentName: string;
   packId: string;
   packName: string;
+  serviceId?: string;      // Service this pack belongs to
+  serviceName?: string;     // Service name
   totalQuantity: number;
   businesses: BusinessVariantSummaryDto[];
 }
@@ -79,6 +83,8 @@ export interface KitchenOrderSummaryDto {
   employeeName: string;
   packName: string;
   packId: string;
+  serviceId?: string;      // Service this pack belongs to
+  serviceName?: string;     // Service name
   variants: Array<{
     componentName: string;
     variantName: string;

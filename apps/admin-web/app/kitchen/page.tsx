@@ -285,6 +285,9 @@ export default function KitchenPage() {
                       Employee
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Service
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Pack
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -299,6 +302,7 @@ export default function KitchenPage() {
                         {order.businessName}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900">{order.employeeName}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{order.serviceName || <span className="text-gray-400 italic">No service</span>}</td>
                       <td className="px-4 py-3 text-sm text-gray-900">{order.packName}</td>
                       <td className="px-4 py-3 text-sm text-gray-900">
                         <div className="space-y-1">
@@ -333,6 +337,7 @@ export default function KitchenPage() {
             <table className="w-full">
               <thead className="bg-surface-dark">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pack</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Component</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variant</th>
@@ -342,6 +347,7 @@ export default function KitchenPage() {
               <tbody className="bg-surface divide-y divide-surface-dark">
                 {summary.variants.map((variant) => (
                   <tr key={variant.variantId} className="hover:bg-surface-light">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{variant.serviceName || <span className="text-gray-400 italic">No service</span>}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{variant.packName}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{variant.componentName}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{variant.variantName}</td>
@@ -370,7 +376,7 @@ export default function KitchenPage() {
               <div key={variant.variantId} className="border border-gray-200 rounded-lg p-4">
                 <h3 className="font-semibold text-gray-900 mb-2">{variant.variantName}</h3>
                 <p className="text-sm text-gray-600 mb-2">
-                  <strong>Pack:</strong> {variant.packName} | <strong>Component:</strong> {variant.componentName}
+                  <strong>Service:</strong> {variant.serviceName || <span className="text-gray-400 italic">No service</span>} | <strong>Pack:</strong> {variant.packName} | <strong>Component:</strong> {variant.componentName}
                 </p>
                 <p className="text-sm text-gray-600 mb-3">
                   Total Quantity: <strong>{variant.totalQuantity}</strong>

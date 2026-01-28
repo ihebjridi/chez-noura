@@ -47,6 +47,8 @@ import {
   UpdateServiceDto,
   ServiceWithPacksDto,
   ServicePackDto,
+  BusinessServiceDto,
+  ActivateServiceDto,
 } from '@contracts/core';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -543,6 +545,27 @@ class ApiClient {
 
   async getVariantStatistics(variantId: string): Promise<VariantStatisticsDto> {
     return this.request<VariantStatisticsDto>(`/variants/${variantId}/statistics`);
+  }
+
+  // Business Service endpoints
+  async getBusinessServices(businessId: string): Promise<BusinessServiceDto[]> {
+    return this.request<BusinessServiceDto[]>(`/businesses/${businessId}/services`);
+  }
+
+  async activateBusinessService(
+    businessId: string,
+    data: ActivateServiceDto,
+  ): Promise<BusinessServiceDto> {
+    return this.request<BusinessServiceDto>(`/businesses/${businessId}/services`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deactivateBusinessService(businessId: string, serviceId: string): Promise<void> {
+    return this.request<void>(`/businesses/${businessId}/services/${serviceId}`, {
+      method: 'DELETE',
+    });
   }
 }
 

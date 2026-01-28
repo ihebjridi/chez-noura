@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { apiClient } from '../lib/api-client';
-import { BusinessDto, CreateBusinessDto, EmployeeDto } from '@contracts/core';
+import { BusinessDto, CreateBusinessDto, EmployeeDto, BusinessServiceDto, ActivateServiceDto } from '@contracts/core';
 
 export function useBusinesses() {
   const [businesses, setBusinesses] = useState<BusinessDto[]>([]);
@@ -88,6 +88,36 @@ export function useBusinesses() {
     }
   }, []);
 
+  const getBusinessServices = useCallback(async (businessId: string): Promise<BusinessServiceDto[]> => {
+    try {
+      setError('');
+      return await apiClient.getBusinessServices(businessId);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load business services');
+      throw err;
+    }
+  }, []);
+
+  const activateBusinessService = useCallback(async (businessId: string, data: ActivateServiceDto): Promise<BusinessServiceDto> => {
+    try {
+      setError('');
+      return await apiClient.activateBusinessService(businessId, data);
+    } catch (err: any) {
+      setError(err.message || 'Failed to activate service');
+      throw err;
+    }
+  }, []);
+
+  const deactivateBusinessService = useCallback(async (businessId: string, serviceId: string): Promise<void> => {
+    try {
+      setError('');
+      await apiClient.deactivateBusinessService(businessId, serviceId);
+    } catch (err: any) {
+      setError(err.message || 'Failed to deactivate service');
+      throw err;
+    }
+  }, []);
+
   return {
     businesses,
     loading,
@@ -99,6 +129,9 @@ export function useBusinesses() {
     enableBusiness,
     forceDeleteBusiness,
     getBusinessEmployees,
+    getBusinessServices,
+    activateBusinessService,
+    deactivateBusinessService,
     setError,
   };
 }

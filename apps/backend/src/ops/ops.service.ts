@@ -171,6 +171,19 @@ export class OpsService {
                 id: true,
                 name: true,
               },
+              include: {
+                servicePack: {
+                  select: {
+                    serviceId: true,
+                    service: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -187,6 +200,8 @@ export class OpsService {
         componentName: string;
         packId: string;
         packName: string;
+        serviceId?: string;
+        serviceName?: string;
         totalQuantity: number;
       }
     >();
@@ -194,6 +209,11 @@ export class OpsService {
     for (const item of orderItems) {
       const variantId = item.variantId;
       const existing = variantMap.get(variantId);
+
+      // Get service information from pack
+      const servicePack = item.order.pack.servicePack;
+      const serviceId = servicePack?.serviceId;
+      const serviceName = servicePack?.service?.name;
 
       if (existing) {
         existing.totalQuantity += 1; // Each order item represents one variant selection
@@ -205,6 +225,8 @@ export class OpsService {
           componentName: item.component.name,
           packId: item.order.pack.id,
           packName: item.order.pack.name,
+          serviceId: serviceId || undefined,
+          serviceName: serviceName || undefined,
           totalQuantity: 1,
         });
       }
@@ -217,6 +239,8 @@ export class OpsService {
       componentName: variant.componentName,
       packId: variant.packId,
       packName: variant.packName,
+      serviceId: variant.serviceId,
+      serviceName: variant.serviceName,
       totalQuantity: variant.totalQuantity,
     }));
 
@@ -325,6 +349,19 @@ export class OpsService {
                 id: true,
                 name: true,
               },
+              include: {
+                servicePack: {
+                  select: {
+                    serviceId: true,
+                    service: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -341,6 +378,8 @@ export class OpsService {
         componentName: string;
         packId: string;
         packName: string;
+        serviceId?: string;
+        serviceName?: string;
         businesses: Map<
           string,
           {
@@ -360,6 +399,11 @@ export class OpsService {
       const businessId = business.id;
       const businessName = business.name;
 
+      // Get service information from pack
+      const servicePack = item.order.pack.servicePack;
+      const serviceId = servicePack?.serviceId;
+      const serviceName = servicePack?.service?.name;
+
       let variantData = variantMap.get(variantId);
       if (!variantData) {
         variantData = {
@@ -369,6 +413,8 @@ export class OpsService {
           componentName: item.component.name,
           packId: item.order.pack.id,
           packName: item.order.pack.name,
+          serviceId: serviceId || undefined,
+          serviceName: serviceName || undefined,
           businesses: new Map(),
           totalQuantity: 0,
         };
@@ -396,6 +442,8 @@ export class OpsService {
       componentName: variant.componentName,
       packId: variant.packId,
       packName: variant.packName,
+      serviceId: variant.serviceId,
+      serviceName: variant.serviceName,
       totalQuantity: variant.totalQuantity,
       businesses: Array.from(variant.businesses.values()),
     }));
@@ -527,6 +575,19 @@ export class OpsService {
             id: true,
             name: true,
           },
+          include: {
+            servicePack: {
+              select: {
+                serviceId: true,
+                service: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
         },
         items: {
           include: {
@@ -553,17 +614,22 @@ export class OpsService {
     });
 
     // Build order summaries
-    const orderSummaries: KitchenOrderSummaryDto[] = orders.map((order) => ({
-      orderId: order.id,
-      businessName: order.business.name,
-      employeeName: `${order.employee.firstName} ${order.employee.lastName}`,
-      packName: order.pack.name,
-      packId: order.pack.id,
-      variants: order.items.map((item) => ({
-        componentName: item.component.name,
-        variantName: item.variant.name,
-      })),
-    }));
+    const orderSummaries: KitchenOrderSummaryDto[] = orders.map((order) => {
+      const servicePack = order.pack.servicePack;
+      return {
+        orderId: order.id,
+        businessName: order.business.name,
+        employeeName: `${order.employee.firstName} ${order.employee.lastName}`,
+        packName: order.pack.name,
+        packId: order.pack.id,
+        serviceId: servicePack?.serviceId || undefined,
+        serviceName: servicePack?.service?.name || undefined,
+        variants: order.items.map((item) => ({
+          componentName: item.component.name,
+          variantName: item.variant.name,
+        })),
+      };
+    });
 
     // Aggregate variants (same logic as getSummary)
     const variantMap = new Map<
@@ -575,11 +641,18 @@ export class OpsService {
         componentName: string;
         packId: string;
         packName: string;
+        serviceId?: string;
+        serviceName?: string;
         totalQuantity: number;
       }
     >();
 
     for (const order of orders) {
+      // Get service information from pack
+      const servicePack = order.pack.servicePack;
+      const serviceId = servicePack?.serviceId;
+      const serviceName = servicePack?.service?.name;
+
       for (const item of order.items) {
         const variantId = item.variantId;
         const existing = variantMap.get(variantId);
@@ -594,6 +667,8 @@ export class OpsService {
             componentName: item.component.name,
             packId: order.pack.id,
             packName: order.pack.name,
+            serviceId: serviceId || undefined,
+            serviceName: serviceName || undefined,
             totalQuantity: 1,
           });
         }
@@ -607,6 +682,8 @@ export class OpsService {
       componentName: variant.componentName,
       packId: variant.packId,
       packName: variant.packName,
+      serviceId: variant.serviceId,
+      serviceName: variant.serviceName,
       totalQuantity: variant.totalQuantity,
     }));
 
