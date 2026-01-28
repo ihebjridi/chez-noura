@@ -49,3 +49,5 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+
+variant-images/

@@ -19,7 +19,7 @@ import { CheckCircle, Clock, Package, AlertCircle, Calendar, ChevronRight } from
 import { getTodayISO, getTomorrowISO } from '../../../lib/date-utils';
 
 function NewOrderContent() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [menu, setMenu] = useState<EmployeeMenuDto | null>(null);
@@ -123,7 +123,8 @@ function NewOrderContent() {
         const readyDate = new Date(cutoffDate.getTime() + 2 * 60 * 60 * 1000); // +2 hours
         const now = new Date();
         const isToday = readyDate.toDateString() === now.toDateString();
-        const timeStr = readyDate.toLocaleTimeString('en-US', {
+        const locale = i18n.language || 'fr';
+        const timeStr = readyDate.toLocaleTimeString(locale, {
           hour: 'numeric',
           minute: '2-digit',
           hour12: true,
@@ -514,15 +515,18 @@ function NewOrderContent() {
   );
 }
 
+function LoadingFallback() {
+  const { t } = useTranslation();
+  return (
+    <div className="flex-1 flex items-center justify-center">
+      <Loading message={t('common.messages.loading')} />
+    </div>
+  );
+}
+
 export default function NewOrderPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex-1 flex items-center justify-center">
-          <Loading message={t('common.messages.loading')} />
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingFallback />}>
       <NewOrderContent />
     </Suspense>
   );

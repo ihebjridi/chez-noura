@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loading } from '../../../components/ui/loading';
@@ -27,15 +27,18 @@ function OrdersContent() {
   );
 }
 
+function LoadingFallback() {
+  const { t } = useTranslation();
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <Loading message={t('common.messages.loading')} />
+    </div>
+  );
+}
+
 export default function OrdersPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <Loading message={t('common.messages.loading')} />
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingFallback />}>
       <OrdersContent />
     </Suspense>
   );

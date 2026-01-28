@@ -258,15 +258,18 @@ function OrderConfirmContent() {
   );
 }
 
+function LoadingFallback() {
+  const { t } = useTranslation();
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <Loading message={t('common.messages.loading')} />
+    </div>
+  );
+}
+
 export default function OrderConfirmPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <Loading message={t('common.messages.loading')} />
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingFallback />}>
       <OrderConfirmContent />
     </Suspense>
   );
