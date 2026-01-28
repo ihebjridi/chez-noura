@@ -104,6 +104,17 @@ export function useDailyMenuState() {
         throw new Error(`Menu with ID ${menuId} not found`);
       }
       
+      // Ensure services, packs, and variants arrays exist
+      if (!menuData.services) {
+        menuData.services = [];
+      }
+      if (!menuData.packs) {
+        menuData.packs = [];
+      }
+      if (!menuData.variants) {
+        menuData.variants = [];
+      }
+      
       console.log(`[useDailyMenuState] Menu loaded successfully. Status: ${menuData.status}, Date: ${menuData.date}`);
       setDailyMenu(menuData);
 
@@ -112,7 +123,7 @@ export function useDailyMenuState() {
       const foodComponentIds = new Set<string>();
 
       // Load details for services in the menu
-      for (const menuService of menuData.services || []) {
+      for (const menuService of menuData.services) {
         try {
           const serviceDetail = await apiClient.getServiceById(menuService.serviceId);
           serviceDetailsMap.set(menuService.serviceId, serviceDetail);

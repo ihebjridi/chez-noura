@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BusinessServiceDto, ServiceDto, ActivateServiceDto } from '@contracts/core';
+import { BusinessServiceDto, ServiceDto, ServiceWithPacksDto, ActivateServiceDto } from '@contracts/core';
 import { apiClient } from '../../lib/api-client';
 import { Loading } from '../ui/loading';
 import { Error } from '../ui/error';
@@ -29,7 +29,7 @@ export function ServiceSubscriptions({
   const [showActivateForm, setShowActivateForm] = useState(false);
   const [selectedServiceId, setSelectedServiceId] = useState('');
   const [selectedPackId, setSelectedPackId] = useState('');
-  const [servicePacks, setServicePacks] = useState<Map<string, ServiceDto>>(new Map());
+  const [servicePacks, setServicePacks] = useState<Map<string, ServiceWithPacksDto>>(new Map());
   const [loadingPacks, setLoadingPacks] = useState<Set<string>>(new Set());
   const [activating, setActivating] = useState(false);
   const [deactivatingServiceId, setDeactivatingServiceId] = useState<string | null>(null);
@@ -193,7 +193,7 @@ export function ServiceSubscriptions({
                 </label>
                 {isLoadingPacks ? (
                   <div className="text-sm text-gray-500">Loading packs...</div>
-                ) : selectedService && selectedService.packs.length > 0 ? (
+                ) : selectedService && selectedService.packs && selectedService.packs.length > 0 ? (
                   <div className="space-y-2">
                     {selectedService.packs.map((pack) => (
                       <label

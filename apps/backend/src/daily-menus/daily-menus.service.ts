@@ -76,7 +76,15 @@ export class DailyMenusService {
         },
         services: {
           include: {
-            service: true,
+            service: {
+              include: {
+                servicePacks: {
+                  include: {
+                    pack: true,
+                  },
+                },
+              },
+            },
             variants: {
               include: {
                 variant: {
@@ -985,15 +993,16 @@ export class DailyMenusService {
     // Get packs for each service
     const servicePackMap = new Map<string, any[]>();
     for (const dailyMenuService of menu.services || []) {
-      const servicePackIds = dailyMenuService.service.servicePacks.map((sp: any) => sp.packId);
-      const menuPacks = menu.packs.filter((p: any) => servicePackIds.includes(p.packId));
+      const servicePacks = dailyMenuService.service?.servicePacks || [];
+      const servicePackIds = servicePacks.map((sp: any) => sp.packId);
+      const menuPacks = (menu.packs || []).filter((p: any) => servicePackIds.includes(p.packId));
       servicePackMap.set(dailyMenuService.id, menuPacks);
     }
 
     return {
       ...this.mapToDto(menu),
-      packs: menu.packs.map((p: any) => this.mapPackToDto(p)),
-      variants: menu.variants.map((v: any) => this.mapVariantToDto(v)),
+      packs: (menu.packs || []).map((p: any) => this.mapPackToDto(p)),
+      variants: (menu.variants || []).map((v: any) => this.mapVariantToDto(v)),
       services: (menu.services || []).map((s: any) => {
         const menuPacks = servicePackMap.get(s.id) || [];
         return this.mapDailyMenuServiceToDto(s, s.service, menuPacks);
@@ -1006,8 +1015,8 @@ export class DailyMenusService {
       id: dailyMenuPack.id,
       dailyMenuId: dailyMenuPack.dailyMenuId,
       packId: dailyMenuPack.packId,
-      packName: dailyMenuPack.pack.name,
-      packPrice: Number(dailyMenuPack.pack.price),
+      packName: dailyMenuPack.pack?.name || 'Unknown Pack',
+      packPrice: Number(dailyMenuPack.pack?.price || 0),
       createdAt: dailyMenuPack.createdAt.toISOString(),
       updatedAt: dailyMenuPack.updatedAt.toISOString(),
     };
@@ -1018,9 +1027,9 @@ export class DailyMenusService {
       id: dailyMenuVariant.id,
       dailyMenuId: dailyMenuVariant.dailyMenuId,
       variantId: dailyMenuVariant.variantId,
-      variantName: dailyMenuVariant.variant.name,
-      componentId: dailyMenuVariant.variant.componentId,
-      componentName: dailyMenuVariant.variant.component.name,
+      variantName: dailyMenuVariant.variant?.name || 'Unknown Variant',
+      componentId: dailyMenuVariant.variant?.componentId || '',
+      componentName: dailyMenuVariant.variant?.component?.name || 'Unknown Component',
       initialStock: dailyMenuVariant.initialStock,
       createdAt: dailyMenuVariant.createdAt.toISOString(),
       updatedAt: dailyMenuVariant.updatedAt.toISOString(),
@@ -1036,9 +1045,9 @@ export class DailyMenusService {
       id: dailyMenuService.id,
       dailyMenuId: dailyMenuService.dailyMenuId,
       serviceId: dailyMenuService.serviceId,
-      serviceName: service.name,
-      serviceDescription: service.description || undefined,
-      packs: menuPacks.map((p: any) => this.mapPackToDto(p)),
+      serviceName: service?.name || 'Unknown Service',
+      serviceDescription: service?.description || undefined,
+      packs: (menuPacks || []).map((p: any) => this.mapPackToDto(p)),
       variants: (dailyMenuService.variants || []).map((v: any) =>
         this.mapDailyMenuServiceVariantToDto(v),
       ),
@@ -1052,9 +1061,9 @@ export class DailyMenusService {
       id: dailyMenuServiceVariant.id,
       dailyMenuServiceId: dailyMenuServiceVariant.dailyMenuServiceId,
       variantId: dailyMenuServiceVariant.variantId,
-      variantName: dailyMenuServiceVariant.variant.name,
-      componentId: dailyMenuServiceVariant.variant.componentId,
-      componentName: dailyMenuServiceVariant.variant.component.name,
+      variantName: dailyMenuServiceVariant.variant?.name || 'Unknown Variant',
+      componentId: dailyMenuServiceVariant.variant?.componentId || '',
+      componentName: dailyMenuServiceVariant.variant?.component?.name || 'Unknown Component',
       initialStock: dailyMenuServiceVariant.initialStock,
       createdAt: dailyMenuServiceVariant.createdAt.toISOString(),
       updatedAt: dailyMenuServiceVariant.updatedAt.toISOString(),

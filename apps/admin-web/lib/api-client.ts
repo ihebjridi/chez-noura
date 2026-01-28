@@ -80,8 +80,22 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'An error occurred' }));
-      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      try {
+        const errorText = await response.text();
+        if (errorText) {
+          try {
+            const error = JSON.parse(errorText);
+            errorMessage = error.message || error.error || errorMessage;
+          } catch {
+            // If not JSON, use the text as error message
+            errorMessage = errorText || errorMessage;
+          }
+        }
+      } catch {
+        // If we can't read the error, use the default message
+      }
+      throw new Error(errorMessage);
     }
 
     // Handle empty responses (204 No Content or empty 200 OK)
@@ -96,7 +110,12 @@ class ApiClient {
     }
 
     try {
-      return JSON.parse(text);
+      const parsed = JSON.parse(text);
+      // Validate that parsed data is not null/undefined for expected array responses
+      if (Array.isArray(parsed) || (parsed && typeof parsed === 'object')) {
+        return parsed;
+      }
+      return parsed;
     } catch {
       // If parsing fails, return undefined for void responses
       return undefined as T;

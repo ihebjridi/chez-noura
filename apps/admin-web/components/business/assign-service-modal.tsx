@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ServiceDto, ActivateServiceDto } from '@contracts/core';
+import { ServiceDto, ServiceWithPacksDto, ActivateServiceDto } from '@contracts/core';
 import { apiClient } from '../../lib/api-client';
 import { Button } from '../ui/button';
 import { Error } from '../ui/error';
@@ -28,7 +28,7 @@ export function AssignServiceModal({
   const [error, setError] = useState('');
   const [selectedServiceId, setSelectedServiceId] = useState('');
   const [selectedPackId, setSelectedPackId] = useState('');
-  const [servicePacks, setServicePacks] = useState<Map<string, ServiceDto>>(new Map());
+  const [servicePacks, setServicePacks] = useState<Map<string, ServiceWithPacksDto>>(new Map());
   const [loadingPacks, setLoadingPacks] = useState<Set<string>>(new Set());
   const [assigning, setAssigning] = useState(false);
 
@@ -184,7 +184,7 @@ export function AssignServiceModal({
                 </label>
                 {isLoadingPacks ? (
                   <div className="text-sm text-gray-500 py-2">Loading packs...</div>
-                ) : selectedService && selectedService.packs.length > 0 ? (
+                ) : selectedService && selectedService.packs && selectedService.packs.length > 0 ? (
                   <div className="space-y-2 max-h-60 overflow-y-auto border border-gray-200 rounded-md p-3">
                     {selectedService.packs.map((pack) => (
                       <label

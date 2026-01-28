@@ -4,13 +4,10 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaPg } from '@prisma/adapter-pg';
 import "dotenv/config";
 
+const connectionString = `${process.env.DATABASE_URL}`;
 
-
-const connectionString = `${process.env.DATABASE_URL}`
-
-const adapter = new PrismaPg({ connectionString })
-const prisma = new PrismaClient({ adapter })
-
+const adapter = new PrismaPg({ connectionString });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log('🌱 Starting seed...');
@@ -31,900 +28,1148 @@ async function main() {
   });
   console.log('✅ SUPER_ADMIN created:', superAdmin.email);
 
-  // Create Components
-  console.log('\nCreating Components...');
-  const soupComponent = await prisma.component.upsert({
-    where: { name: 'Soup' },
+  // ============================================================================
+  // COMPONENTS
+  // ============================================================================
+  console.log('\n📦 Creating Components...');
+  
+  const fruitsComponent = await prisma.component.upsert({
+    where: { name: 'Fruits' },
     update: {},
-    create: { name: 'Soup' },
+    create: { name: 'Fruits' },
   });
-  console.log('✅ Component created: Soup');
+  console.log('✅ Component: Fruits');
 
-  const mainCourseComponent = await prisma.component.upsert({
-    where: { name: 'Main Course' },
+  const boissonComponent = await prisma.component.upsert({
+    where: { name: 'Boisson' },
     update: {},
-    create: { name: 'Main Course' },
+    create: { name: 'Boisson' },
   });
-  console.log('✅ Component created: Main Course');
+  console.log('✅ Component: Boisson');
+
+  const douceurRamadanComponent = await prisma.component.upsert({
+    where: { name: 'Douceur du Ramadan' },
+    update: {},
+    create: { name: 'Douceur du Ramadan' },
+  });
+  console.log('✅ Component: Douceur du Ramadan');
+
+  const soupeComponent = await prisma.component.upsert({
+    where: { name: 'Soupe' },
+    update: {},
+    create: { name: 'Soupe' },
+  });
+  console.log('✅ Component: Soupe');
+
+  const platPrincipalComponent = await prisma.component.upsert({
+    where: { name: 'Plat Principal' },
+    update: {},
+    create: { name: 'Plat Principal' },
+  });
+  console.log('✅ Component: Plat Principal');
+
+  const saladeComponent = await prisma.component.upsert({
+    where: { name: 'Salade' },
+    update: {},
+    create: { name: 'Salade' },
+  });
+  console.log('✅ Component: Salade');
+
+  const specialiteTunisienneComponent = await prisma.component.upsert({
+    where: { name: 'Spécialité Tunisienne' },
+    update: {},
+    create: { name: 'Spécialité Tunisienne' },
+  });
+  console.log('✅ Component: Spécialité Tunisienne');
 
   const dessertComponent = await prisma.component.upsert({
     where: { name: 'Dessert' },
     update: {},
     create: { name: 'Dessert' },
   });
-  console.log('✅ Component created: Dessert');
+  console.log('✅ Component: Dessert');
 
-  const beverageComponent = await prisma.component.upsert({
-    where: { name: 'Beverage' },
-    update: {},
-    create: { name: 'Beverage' },
-  });
-  console.log('✅ Component created: Beverage');
+  // ============================================================================
+  // VARIANTS - COLLATION SERVICE
+  // ============================================================================
+  console.log('\n🍎 Creating Variants for Collation Service...');
 
-  const saladComponent = await prisma.component.upsert({
-    where: { name: 'Salad' },
-    update: {},
-    create: { name: 'Salad' },
-  });
-  console.log('✅ Component created: Salad');
-
-  // Create Variants for Soup
-  console.log('\nCreating Variants for Soup...');
-  const chorba = await prisma.variant.upsert({
+  // Fruits variants
+  const dattesDegletNour = await prisma.variant.upsert({
     where: {
       componentId_name: {
-        componentId: soupComponent.id,
-        name: 'Chorba',
+        componentId: fruitsComponent.id,
+        name: 'Dattes Deglet Nour',
       },
     },
     update: {},
     create: {
-      componentId: soupComponent.id,
-      name: 'Chorba',
+      componentId: fruitsComponent.id,
+      name: 'Dattes Deglet Nour',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Chorba');
+  console.log('✅ Variant: Dattes Deglet Nour');
 
-  const chorbaLentilles = await prisma.variant.upsert({
+  const dattesFarcies = await prisma.variant.upsert({
     where: {
       componentId_name: {
-        componentId: soupComponent.id,
-        name: 'Chorba Lentilles',
+        componentId: fruitsComponent.id,
+        name: 'Dattes Farcies',
       },
     },
     update: {},
     create: {
-      componentId: soupComponent.id,
-      name: 'Chorba Lentilles',
+      componentId: fruitsComponent.id,
+      name: 'Dattes Farcies',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Chorba Lentilles');
+  console.log('✅ Variant: Dattes Farcies');
 
-  const chorbaPotiron = await prisma.variant.upsert({
+  const fruitsSaison = await prisma.variant.upsert({
     where: {
       componentId_name: {
-        componentId: soupComponent.id,
-        name: 'Chorba Potiron',
+        componentId: fruitsComponent.id,
+        name: 'Fruits de Saison',
       },
     },
     update: {},
     create: {
-      componentId: soupComponent.id,
-      name: 'Chorba Potiron',
+      componentId: fruitsComponent.id,
+      name: 'Fruits de Saison',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Chorba Potiron');
+  console.log('✅ Variant: Fruits de Saison');
 
-  // Create Variants for Main Course
-  console.log('\nCreating Variants for Main Course...');
-  const brik = await prisma.variant.upsert({
+  const saladeFruits = await prisma.variant.upsert({
     where: {
       componentId_name: {
-        componentId: mainCourseComponent.id,
-        name: 'Brik',
+        componentId: fruitsComponent.id,
+        name: 'Salade de Fruits',
       },
     },
     update: {},
     create: {
-      componentId: mainCourseComponent.id,
-      name: 'Brik',
+      componentId: fruitsComponent.id,
+      name: 'Salade de Fruits',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Brik');
+  console.log('✅ Variant: Salade de Fruits');
 
-  const couscousViande = await prisma.variant.upsert({
+  // Boisson variants
+  const eauMinerale = await prisma.variant.upsert({
     where: {
       componentId_name: {
-        componentId: mainCourseComponent.id,
-        name: 'Couscous Viande',
+        componentId: boissonComponent.id,
+        name: 'Eau Minérale',
       },
     },
     update: {},
     create: {
-      componentId: mainCourseComponent.id,
-      name: 'Couscous Viande',
+      componentId: boissonComponent.id,
+      name: 'Eau Minérale',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Couscous Viande');
+  console.log('✅ Variant: Eau Minérale');
 
-  const croquette = await prisma.variant.upsert({
+  const eauPlate = await prisma.variant.upsert({
     where: {
       componentId_name: {
-        componentId: mainCourseComponent.id,
-        name: 'Croquette',
+        componentId: boissonComponent.id,
+        name: 'Eau Plate',
       },
     },
     update: {},
     create: {
-      componentId: mainCourseComponent.id,
-      name: 'Croquette',
+      componentId: boissonComponent.id,
+      name: 'Eau Plate',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Croquette');
+  console.log('✅ Variant: Eau Plate');
+
+  // Douceur du Ramadan variants
+  const dro3Tunisien = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: douceurRamadanComponent.id,
+        name: 'Dro3 Tunisien',
+      },
+    },
+    update: {},
+    create: {
+      componentId: douceurRamadanComponent.id,
+      name: 'Dro3 Tunisien',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Dro3 Tunisien');
+
+  const masfoufDattes = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: douceurRamadanComponent.id,
+        name: 'Masfouf aux Dattes',
+      },
+    },
+    update: {},
+    create: {
+      componentId: douceurRamadanComponent.id,
+      name: 'Masfouf aux Dattes',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Masfouf aux Dattes');
+
+  const gateauMaison = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: douceurRamadanComponent.id,
+        name: 'Morceau de Gâteau Maison',
+      },
+    },
+    update: {},
+    create: {
+      componentId: douceurRamadanComponent.id,
+      name: 'Morceau de Gâteau Maison',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Morceau de Gâteau Maison');
+
+  const cremeFleurOranger = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: douceurRamadanComponent.id,
+        name: 'Crème Dessert à la Fleur d\'Oranger',
+      },
+    },
+    update: {},
+    create: {
+      componentId: douceurRamadanComponent.id,
+      name: 'Crème Dessert à la Fleur d\'Oranger',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Crème Dessert à la Fleur d\'Oranger');
+
+  const cremeVanille = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: douceurRamadanComponent.id,
+        name: 'Crème Vanille Maison',
+      },
+    },
+    update: {},
+    create: {
+      componentId: douceurRamadanComponent.id,
+      name: 'Crème Vanille Maison',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Crème Vanille Maison');
+
+  const rizLaitTunisien = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: douceurRamadanComponent.id,
+        name: 'Riz au Lait Tunisien',
+      },
+    },
+    update: {},
+    create: {
+      componentId: douceurRamadanComponent.id,
+      name: 'Riz au Lait Tunisien',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Riz au Lait Tunisien');
+
+  // ============================================================================
+  // VARIANTS - RUPTURE DE JEÛNE SERVICE
+  // ============================================================================
+  console.log('\n🍲 Creating Variants for Rupture de Jeûne Service...');
+
+  // Soupe variants
+  const chorbaFrik = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: soupeComponent.id,
+        name: 'Chorba Frik Tunisienne',
+      },
+    },
+    update: {},
+    create: {
+      componentId: soupeComponent.id,
+      name: 'Chorba Frik Tunisienne',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Chorba Frik Tunisienne');
+
+  const soupeLentilles = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: soupeComponent.id,
+        name: 'Soupe de Lentilles',
+      },
+    },
+    update: {},
+    create: {
+      componentId: soupeComponent.id,
+      name: 'Soupe de Lentilles',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Soupe de Lentilles');
+
+  const soupePoisChiches = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: soupeComponent.id,
+        name: 'Soupe de Pois Chiches',
+      },
+    },
+    update: {},
+    create: {
+      componentId: soupeComponent.id,
+      name: 'Soupe de Pois Chiches',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Soupe de Pois Chiches');
+
+  const veloutePotiron = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: soupeComponent.id,
+        name: 'Velouté de Potiron',
+      },
+    },
+    update: {},
+    create: {
+      componentId: soupeComponent.id,
+      name: 'Velouté de Potiron',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Velouté de Potiron');
+
+  // Plat Principal variants
+  const couscousPoulet = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: platPrincipalComponent.id,
+        name: 'Couscous Poulet',
+      },
+    },
+    update: {},
+    create: {
+      componentId: platPrincipalComponent.id,
+      name: 'Couscous Poulet',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Couscous Poulet');
+
+  const couscousAgneau = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: platPrincipalComponent.id,
+        name: 'Couscous Agneau',
+      },
+    },
+    update: {},
+    create: {
+      componentId: platPrincipalComponent.id,
+      name: 'Couscous Agneau',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Couscous Agneau');
+
+  const rizTunisienEpices = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: platPrincipalComponent.id,
+        name: 'Riz Tunisien aux Épices',
+      },
+    },
+    update: {},
+    create: {
+      componentId: platPrincipalComponent.id,
+      name: 'Riz Tunisien aux Épices',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Riz Tunisien aux Épices');
+
+  const patesTunisiennes = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: platPrincipalComponent.id,
+        name: 'Pâtes Tunisiennes à la Sauce Rouge',
+      },
+    },
+    update: {},
+    create: {
+      componentId: platPrincipalComponent.id,
+      name: 'Pâtes Tunisiennes à la Sauce Rouge',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Pâtes Tunisiennes à la Sauce Rouge');
 
   const ojjaMerguez = await prisma.variant.upsert({
     where: {
       componentId_name: {
-        componentId: mainCourseComponent.id,
+        componentId: platPrincipalComponent.id,
         name: 'Ojja Merguez',
       },
     },
     update: {},
     create: {
-      componentId: mainCourseComponent.id,
+      componentId: platPrincipalComponent.id,
       name: 'Ojja Merguez',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Ojja Merguez');
+  console.log('✅ Variant: Ojja Merguez');
 
-  const rizLegumes = await prisma.variant.upsert({
+  const pouletMqualli = await prisma.variant.upsert({
     where: {
       componentId_name: {
-        componentId: mainCourseComponent.id,
-        name: 'Riz Légumes',
+        componentId: platPrincipalComponent.id,
+        name: 'Poulet Mqualli',
       },
     },
     update: {},
     create: {
-      componentId: mainCourseComponent.id,
-      name: 'Riz Légumes',
+      componentId: platPrincipalComponent.id,
+      name: 'Poulet Mqualli',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Riz Légumes');
+  console.log('✅ Variant: Poulet Mqualli');
 
-  const tajine = await prisma.variant.upsert({
+  // Salade variants
+  const saladeMechouia = await prisma.variant.upsert({
     where: {
       componentId_name: {
-        componentId: mainCourseComponent.id,
-        name: 'Tajine',
+        componentId: saladeComponent.id,
+        name: 'Salade Mechouia',
       },
     },
     update: {},
     create: {
-      componentId: mainCourseComponent.id,
-      name: 'Tajine',
+      componentId: saladeComponent.id,
+      name: 'Salade Mechouia',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Tajine');
-
-  // Create Variants for Dessert
-  console.log('\nCreating Variants for Dessert...');
-  const zlebya = await prisma.variant.upsert({
-    where: {
-      componentId_name: {
-        componentId: dessertComponent.id,
-        name: 'Zlebya',
-      },
-    },
-    update: {},
-    create: {
-      componentId: dessertComponent.id,
-      name: 'Zlebya',
-      stockQuantity: 100,
-      isActive: true,
-    },
-  });
-  console.log('✅ Variant created: Zlebya');
-
-  // Create Variants for Beverage
-  console.log('\nCreating Variants for Beverage...');
-  // No beverage images in variant-images directory
-
-  // Create Variants for Salad
-  console.log('\nCreating Variants for Salad...');
-  const saladeMechoueya = await prisma.variant.upsert({
-    where: {
-      componentId_name: {
-        componentId: saladComponent.id,
-        name: 'Salade Mechoueya',
-      },
-    },
-    update: {},
-    create: {
-      componentId: saladComponent.id,
-      name: 'Salade Mechoueya',
-      stockQuantity: 100,
-      isActive: true,
-    },
-  });
-  console.log('✅ Variant created: Salade Mechoueya');
-
-  const saladePatates = await prisma.variant.upsert({
-    where: {
-      componentId_name: {
-        componentId: saladComponent.id,
-        name: 'Salade Patates',
-      },
-    },
-    update: {},
-    create: {
-      componentId: saladComponent.id,
-      name: 'Salade Patates',
-      stockQuantity: 100,
-      isActive: true,
-    },
-  });
-  console.log('✅ Variant created: Salade Patates');
+  console.log('✅ Variant: Salade Mechouia');
 
   const saladeTunisienne = await prisma.variant.upsert({
     where: {
       componentId_name: {
-        componentId: saladComponent.id,
+        componentId: saladeComponent.id,
         name: 'Salade Tunisienne',
       },
     },
     update: {},
     create: {
-      componentId: saladComponent.id,
+      componentId: saladeComponent.id,
       name: 'Salade Tunisienne',
       stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Variant created: Salade Tunisienne');
+  console.log('✅ Variant: Salade Tunisienne');
 
-  // Create Packs
-  console.log('\nCreating Packs...');
-  const standardPack = await prisma.pack.upsert({
-    where: { name: 'Standard Pack' },
+  const saladePommesTerre = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: saladeComponent.id,
+        name: 'Salade de Pommes de Terre',
+      },
+    },
     update: {},
     create: {
-      name: 'Standard Pack',
-      price: 25.00,
+      componentId: saladeComponent.id,
+      name: 'Salade de Pommes de Terre',
+      stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Pack created: Standard Pack');
+  console.log('✅ Variant: Salade de Pommes de Terre');
 
-  const premiumPack = await prisma.pack.upsert({
-    where: { name: 'Premium Pack' },
+  const saladeCarottesCumin = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: saladeComponent.id,
+        name: 'Salade de Carottes au Cumin',
+      },
+    },
     update: {},
     create: {
-      name: 'Premium Pack',
-      price: 35.00,
+      componentId: saladeComponent.id,
+      name: 'Salade de Carottes au Cumin',
+      stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Pack created: Premium Pack');
+  console.log('✅ Variant: Salade de Carottes au Cumin');
 
-  // Create PackComponents for Standard Pack
-  console.log('\nCreating PackComponents for Standard Pack...');
-  await prisma.packComponent.upsert({
+  // Spécialité Tunisienne variants
+  const brikOeuf = await prisma.variant.upsert({
     where: {
-      packId_componentId: {
-        packId: standardPack.id,
-        componentId: soupComponent.id,
+      componentId_name: {
+        componentId: specialiteTunisienneComponent.id,
+        name: 'Brik à l\'Œuf',
       },
     },
     update: {},
     create: {
-      packId: standardPack.id,
-      componentId: soupComponent.id,
-      required: true,
-      orderIndex: 0,
-    },
-  });
-  console.log('✅ PackComponent created: Standard Pack - Soup (required)');
-
-  await prisma.packComponent.upsert({
-    where: {
-      packId_componentId: {
-        packId: standardPack.id,
-        componentId: mainCourseComponent.id,
-      },
-    },
-    update: {},
-    create: {
-      packId: standardPack.id,
-      componentId: mainCourseComponent.id,
-      required: true,
-      orderIndex: 1,
-    },
-  });
-  console.log('✅ PackComponent created: Standard Pack - Main Course (required)');
-
-  await prisma.packComponent.upsert({
-    where: {
-      packId_componentId: {
-        packId: standardPack.id,
-        componentId: saladComponent.id,
-      },
-    },
-    update: {},
-    create: {
-      packId: standardPack.id,
-      componentId: saladComponent.id,
-      required: false,
-      orderIndex: 2,
-    },
-  });
-  console.log('✅ PackComponent created: Standard Pack - Salad (optional)');
-
-  await prisma.packComponent.upsert({
-    where: {
-      packId_componentId: {
-        packId: standardPack.id,
-        componentId: dessertComponent.id,
-      },
-    },
-    update: {},
-    create: {
-      packId: standardPack.id,
-      componentId: dessertComponent.id,
-      required: true,
-      orderIndex: 3,
-    },
-  });
-  console.log('✅ PackComponent created: Standard Pack - Dessert (required)');
-
-  await prisma.packComponent.upsert({
-    where: {
-      packId_componentId: {
-        packId: standardPack.id,
-        componentId: beverageComponent.id,
-      },
-    },
-    update: {},
-    create: {
-      packId: standardPack.id,
-      componentId: beverageComponent.id,
-      required: false,
-      orderIndex: 4,
-    },
-  });
-  console.log('✅ PackComponent created: Standard Pack - Beverage (optional)');
-
-  // Create PackComponents for Premium Pack
-  console.log('\nCreating PackComponents for Premium Pack...');
-  await prisma.packComponent.upsert({
-    where: {
-      packId_componentId: {
-        packId: premiumPack.id,
-        componentId: soupComponent.id,
-      },
-    },
-    update: {},
-    create: {
-      packId: premiumPack.id,
-      componentId: soupComponent.id,
-      required: true,
-      orderIndex: 0,
-    },
-  });
-  console.log('✅ PackComponent created: Premium Pack - Soup (required)');
-
-  await prisma.packComponent.upsert({
-    where: {
-      packId_componentId: {
-        packId: premiumPack.id,
-        componentId: saladComponent.id,
-      },
-    },
-    update: {},
-    create: {
-      packId: premiumPack.id,
-      componentId: saladComponent.id,
-      required: true,
-      orderIndex: 1,
-    },
-  });
-  console.log('✅ PackComponent created: Premium Pack - Salad (required)');
-
-  await prisma.packComponent.upsert({
-    where: {
-      packId_componentId: {
-        packId: premiumPack.id,
-        componentId: mainCourseComponent.id,
-      },
-    },
-    update: {},
-    create: {
-      packId: premiumPack.id,
-      componentId: mainCourseComponent.id,
-      required: true,
-      orderIndex: 2,
-    },
-  });
-  console.log('✅ PackComponent created: Premium Pack - Main Course (required)');
-
-  await prisma.packComponent.upsert({
-    where: {
-      packId_componentId: {
-        packId: premiumPack.id,
-        componentId: dessertComponent.id,
-      },
-    },
-    update: {},
-    create: {
-      packId: premiumPack.id,
-      componentId: dessertComponent.id,
-      required: true,
-      orderIndex: 3,
-    },
-  });
-  console.log('✅ PackComponent created: Premium Pack - Dessert (required)');
-
-  await prisma.packComponent.upsert({
-    where: {
-      packId_componentId: {
-        packId: premiumPack.id,
-        componentId: beverageComponent.id,
-      },
-    },
-    update: {},
-    create: {
-      packId: premiumPack.id,
-      componentId: beverageComponent.id,
-      required: true,
-      orderIndex: 4,
-    },
-  });
-  console.log('✅ PackComponent created: Premium Pack - Beverage (required)');
-
-  // Create Packs for Rupture de Jeune
-  console.log('\nCreating Packs for Rupture de Jeune...');
-  const ruptureDeJeuneBasicPack = await prisma.pack.upsert({
-    where: { name: 'Rupture de Jeune Basic Pack' },
-    update: {},
-    create: {
-      name: 'Rupture de Jeune Basic Pack',
-      price: 22.00,
+      componentId: specialiteTunisienneComponent.id,
+      name: 'Brik à l\'Œuf',
+      stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Pack created: Rupture de Jeune Basic Pack');
+  console.log('✅ Variant: Brik à l\'Œuf');
 
-  const ruptureDeJeunePremiumPack = await prisma.pack.upsert({
-    where: { name: 'Rupture de Jeune Premium Pack' },
+  const brikThon = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: specialiteTunisienneComponent.id,
+        name: 'Brik Thon',
+      },
+    },
     update: {},
     create: {
-      name: 'Rupture de Jeune Premium Pack',
-      price: 30.00,
+      componentId: specialiteTunisienneComponent.id,
+      name: 'Brik Thon',
+      stockQuantity: 100,
       isActive: true,
     },
   });
-  console.log('✅ Pack created: Rupture de Jeune Premium Pack');
+  console.log('✅ Variant: Brik Thon');
 
-  // Create PackComponents for Rupture de Jeune Basic Pack
-  console.log('\nCreating PackComponents for Rupture de Jeune Basic Pack...');
-  await prisma.packComponent.upsert({
+  const brikDanouni = await prisma.variant.upsert({
     where: {
-      packId_componentId: {
-        packId: ruptureDeJeuneBasicPack.id,
-        componentId: soupComponent.id,
+      componentId_name: {
+        componentId: specialiteTunisienneComponent.id,
+        name: 'Brik Danouni',
       },
     },
     update: {},
     create: {
-      packId: ruptureDeJeuneBasicPack.id,
-      componentId: soupComponent.id,
-      required: true,
-      orderIndex: 0,
+      componentId: specialiteTunisienneComponent.id,
+      name: 'Brik Danouni',
+      stockQuantity: 100,
+      isActive: true,
     },
   });
-  console.log('✅ PackComponent created: Rupture de Jeune Basic Pack - Soup (required)');
+  console.log('✅ Variant: Brik Danouni');
 
-  await prisma.packComponent.upsert({
+  const tajinePoulet = await prisma.variant.upsert({
     where: {
-      packId_componentId: {
-        packId: ruptureDeJeuneBasicPack.id,
-        componentId: mainCourseComponent.id,
+      componentId_name: {
+        componentId: specialiteTunisienneComponent.id,
+        name: 'Tajine Poulet',
       },
     },
     update: {},
     create: {
-      packId: ruptureDeJeuneBasicPack.id,
-      componentId: mainCourseComponent.id,
-      required: true,
-      orderIndex: 1,
+      componentId: specialiteTunisienneComponent.id,
+      name: 'Tajine Poulet',
+      stockQuantity: 100,
+      isActive: true,
     },
   });
-  console.log('✅ PackComponent created: Rupture de Jeune Basic Pack - Main Course (required)');
+  console.log('✅ Variant: Tajine Poulet');
 
-  await prisma.packComponent.upsert({
+  const tajineThon = await prisma.variant.upsert({
     where: {
-      packId_componentId: {
-        packId: ruptureDeJeuneBasicPack.id,
+      componentId_name: {
+        componentId: specialiteTunisienneComponent.id,
+        name: 'Tajine Thon',
+      },
+    },
+    update: {},
+    create: {
+      componentId: specialiteTunisienneComponent.id,
+      name: 'Tajine Thon',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Tajine Thon');
+
+  const tajineViande = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: specialiteTunisienneComponent.id,
+        name: 'Tajine Viande',
+      },
+    },
+    update: {},
+    create: {
+      componentId: specialiteTunisienneComponent.id,
+      name: 'Tajine Viande',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Tajine Viande');
+
+  const bouletteViandeEpicee = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: specialiteTunisienneComponent.id,
+        name: 'Boulette de Viande Épicée',
+      },
+    },
+    update: {},
+    create: {
+      componentId: specialiteTunisienneComponent.id,
+      name: 'Boulette de Viande Épicée',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Boulette de Viande Épicée');
+
+  // Dessert variants
+  const bambalouni = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
         componentId: dessertComponent.id,
+        name: 'Bambalouni Tunisien',
       },
     },
     update: {},
     create: {
-      packId: ruptureDeJeuneBasicPack.id,
       componentId: dessertComponent.id,
-      required: true,
-      orderIndex: 2,
+      name: 'Bambalouni Tunisien',
+      stockQuantity: 100,
+      isActive: true,
     },
   });
-  console.log('✅ PackComponent created: Rupture de Jeune Basic Pack - Dessert (required)');
+  console.log('✅ Variant: Bambalouni Tunisien');
 
-  await prisma.packComponent.upsert({
+  const zlebia = await prisma.variant.upsert({
     where: {
-      packId_componentId: {
-        packId: ruptureDeJeuneBasicPack.id,
-        componentId: beverageComponent.id,
-      },
-    },
-    update: {},
-    create: {
-      packId: ruptureDeJeuneBasicPack.id,
-      componentId: beverageComponent.id,
-      required: false,
-      orderIndex: 3,
-    },
-  });
-  console.log('✅ PackComponent created: Rupture de Jeune Basic Pack - Beverage (optional)');
-
-  // Create PackComponents for Rupture de Jeune Premium Pack
-  console.log('\nCreating PackComponents for Rupture de Jeune Premium Pack...');
-  await prisma.packComponent.upsert({
-    where: {
-      packId_componentId: {
-        packId: ruptureDeJeunePremiumPack.id,
-        componentId: soupComponent.id,
-      },
-    },
-    update: {},
-    create: {
-      packId: ruptureDeJeunePremiumPack.id,
-      componentId: soupComponent.id,
-      required: true,
-      orderIndex: 0,
-    },
-  });
-  console.log('✅ PackComponent created: Rupture de Jeune Premium Pack - Soup (required)');
-
-  await prisma.packComponent.upsert({
-    where: {
-      packId_componentId: {
-        packId: ruptureDeJeunePremiumPack.id,
-        componentId: saladComponent.id,
-      },
-    },
-    update: {},
-    create: {
-      packId: ruptureDeJeunePremiumPack.id,
-      componentId: saladComponent.id,
-      required: true,
-      orderIndex: 1,
-    },
-  });
-  console.log('✅ PackComponent created: Rupture de Jeune Premium Pack - Salad (required)');
-
-  await prisma.packComponent.upsert({
-    where: {
-      packId_componentId: {
-        packId: ruptureDeJeunePremiumPack.id,
-        componentId: mainCourseComponent.id,
-      },
-    },
-    update: {},
-    create: {
-      packId: ruptureDeJeunePremiumPack.id,
-      componentId: mainCourseComponent.id,
-      required: true,
-      orderIndex: 2,
-    },
-  });
-  console.log('✅ PackComponent created: Rupture de Jeune Premium Pack - Main Course (required)');
-
-  await prisma.packComponent.upsert({
-    where: {
-      packId_componentId: {
-        packId: ruptureDeJeunePremiumPack.id,
+      componentId_name: {
         componentId: dessertComponent.id,
+        name: 'Zlebia Tunisienne',
       },
     },
     update: {},
     create: {
-      packId: ruptureDeJeunePremiumPack.id,
       componentId: dessertComponent.id,
-      required: true,
-      orderIndex: 3,
+      name: 'Zlebia Tunisienne',
+      stockQuantity: 100,
+      isActive: true,
     },
   });
-  console.log('✅ PackComponent created: Rupture de Jeune Premium Pack - Dessert (required)');
+  console.log('✅ Variant: Zlebia Tunisienne');
 
-  await prisma.packComponent.upsert({
+  const mkharekMiel = await prisma.variant.upsert({
     where: {
-      packId_componentId: {
-        packId: ruptureDeJeunePremiumPack.id,
-        componentId: beverageComponent.id,
+      componentId_name: {
+        componentId: dessertComponent.id,
+        name: 'Mkharek au Miel',
       },
     },
     update: {},
     create: {
-      packId: ruptureDeJeunePremiumPack.id,
-      componentId: beverageComponent.id,
-      required: true,
-      orderIndex: 4,
+      componentId: dessertComponent.id,
+      name: 'Mkharek au Miel',
+      stockQuantity: 100,
+      isActive: true,
     },
   });
-  console.log('✅ PackComponent created: Rupture de Jeune Premium Pack - Beverage (required)');
+  console.log('✅ Variant: Mkharek au Miel');
 
-  // Create Packs for Collation
-  console.log('\nCreating Packs for Collation...');
+  const baklawa = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: dessertComponent.id,
+        name: 'Baklawa Tunisienne',
+      },
+    },
+    update: {},
+    create: {
+      componentId: dessertComponent.id,
+      name: 'Baklawa Tunisienne',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Baklawa Tunisienne');
+
+  const cakeDattes = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: dessertComponent.id,
+        name: 'Cake Maison aux Dattes',
+      },
+    },
+    update: {},
+    create: {
+      componentId: dessertComponent.id,
+      name: 'Cake Maison aux Dattes',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Cake Maison aux Dattes');
+
+  const fruitsFraisSaison = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: dessertComponent.id,
+        name: 'Fruits Frais de Saison',
+      },
+    },
+    update: {},
+    create: {
+      componentId: dessertComponent.id,
+      name: 'Fruits Frais de Saison',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Fruits Frais de Saison');
+
+  const assortimentPatisseries = await prisma.variant.upsert({
+    where: {
+      componentId_name: {
+        componentId: dessertComponent.id,
+        name: 'Assortiment de Pâtisseries Tunisiennes',
+      },
+    },
+    update: {},
+    create: {
+      componentId: dessertComponent.id,
+      name: 'Assortiment de Pâtisseries Tunisiennes',
+      stockQuantity: 100,
+      isActive: true,
+    },
+  });
+  console.log('✅ Variant: Assortiment de Pâtisseries Tunisiennes');
+
+  // ============================================================================
+  // PACKS - COLLATION SERVICE
+  // ============================================================================
+  console.log('\n📦 Creating Packs for Collation Service...');
+
   const collationBasicPack = await prisma.pack.upsert({
-    where: { name: 'Collation Basic Pack' },
+    where: { name: 'Basic Pack' },
     update: {},
     create: {
-      name: 'Collation Basic Pack',
+      name: 'Basic Pack',
       price: 15.00,
       isActive: true,
     },
   });
-  console.log('✅ Pack created: Collation Basic Pack');
+  console.log('✅ Pack: Basic Pack (15.00 TND)');
 
-  const collationPremiumPack = await prisma.pack.upsert({
-    where: { name: 'Collation Premium Pack' },
+  // PackComponents for Collation Basic Pack
+  await prisma.packComponent.upsert({
+    where: {
+      packId_componentId: {
+        packId: collationBasicPack.id,
+        componentId: fruitsComponent.id,
+      },
+    },
     update: {},
     create: {
-      name: 'Collation Premium Pack',
-      price: 20.00,
+      packId: collationBasicPack.id,
+      componentId: fruitsComponent.id,
+      required: false,
+      orderIndex: 0,
+    },
+  });
+  console.log('  → Component: Fruits (optional)');
+
+  await prisma.packComponent.upsert({
+    where: {
+      packId_componentId: {
+        packId: collationBasicPack.id,
+        componentId: boissonComponent.id,
+      },
+    },
+    update: {},
+    create: {
+      packId: collationBasicPack.id,
+      componentId: boissonComponent.id,
+      required: false,
+      orderIndex: 1,
+    },
+  });
+  console.log('  → Component: Boisson (optional)');
+
+  await prisma.packComponent.upsert({
+    where: {
+      packId_componentId: {
+        packId: collationBasicPack.id,
+        componentId: douceurRamadanComponent.id,
+      },
+    },
+    update: {},
+    create: {
+      packId: collationBasicPack.id,
+      componentId: douceurRamadanComponent.id,
+      required: false,
+      orderIndex: 2,
+    },
+  });
+  console.log('  → Component: Douceur du Ramadan (optional)');
+
+  // ============================================================================
+  // PACKS - RUPTURE DE JEÛNE SERVICE
+  // ============================================================================
+  console.log('\n📦 Creating Packs for Rupture de Jeûne Service...');
+
+  const ruptureBasicPack = await prisma.pack.upsert({
+    where: { name: 'Basic' },
+    update: {},
+    create: {
+      name: 'Basic',
+      price: 22.00,
       isActive: true,
     },
   });
-  console.log('✅ Pack created: Collation Premium Pack');
+  console.log('✅ Pack: Basic (22.00 TND)');
 
-  // Create PackComponents for Collation Basic Pack
-  console.log('\nCreating PackComponents for Collation Basic Pack...');
+  const ruptureBasicPlusPack = await prisma.pack.upsert({
+    where: { name: 'Basic+' },
+    update: {},
+    create: {
+      name: 'Basic+',
+      price: 28.00,
+      isActive: true,
+    },
+  });
+  console.log('✅ Pack: Basic+ (28.00 TND)');
+
+  const rupturePremiumPack = await prisma.pack.upsert({
+    where: { name: 'Premium' },
+    update: {},
+    create: {
+      name: 'Premium',
+      price: 35.00,
+      isActive: true,
+    },
+  });
+  console.log('✅ Pack: Premium (35.00 TND)');
+
+  // PackComponents for Rupture Basic Pack
   await prisma.packComponent.upsert({
     where: {
       packId_componentId: {
-        packId: collationBasicPack.id,
-        componentId: mainCourseComponent.id,
+        packId: ruptureBasicPack.id,
+        componentId: boissonComponent.id,
       },
     },
     update: {},
     create: {
-      packId: collationBasicPack.id,
-      componentId: mainCourseComponent.id,
-      required: true,
+      packId: ruptureBasicPack.id,
+      componentId: boissonComponent.id,
+      required: false,
       orderIndex: 0,
     },
   });
-  console.log('✅ PackComponent created: Collation Basic Pack - Main Course (required)');
+  console.log('  → Basic: Boisson (optional)');
 
   await prisma.packComponent.upsert({
     where: {
       packId_componentId: {
-        packId: collationBasicPack.id,
-        componentId: beverageComponent.id,
+        packId: ruptureBasicPack.id,
+        componentId: soupeComponent.id,
       },
     },
     update: {},
     create: {
-      packId: collationBasicPack.id,
-      componentId: beverageComponent.id,
+      packId: ruptureBasicPack.id,
+      componentId: soupeComponent.id,
       required: false,
       orderIndex: 1,
     },
   });
-  console.log('✅ PackComponent created: Collation Basic Pack - Beverage (optional)');
+  console.log('  → Basic: Soupe (optional)');
 
   await prisma.packComponent.upsert({
     where: {
       packId_componentId: {
-        packId: collationBasicPack.id,
-        componentId: dessertComponent.id,
+        packId: ruptureBasicPack.id,
+        componentId: platPrincipalComponent.id,
       },
     },
     update: {},
     create: {
-      packId: collationBasicPack.id,
-      componentId: dessertComponent.id,
-      required: false,
-      orderIndex: 2,
-    },
-  });
-  console.log('✅ PackComponent created: Collation Basic Pack - Dessert (optional)');
-
-  // Create PackComponents for Collation Premium Pack
-  console.log('\nCreating PackComponents for Collation Premium Pack...');
-  await prisma.packComponent.upsert({
-    where: {
-      packId_componentId: {
-        packId: collationPremiumPack.id,
-        componentId: mainCourseComponent.id,
-      },
-    },
-    update: {},
-    create: {
-      packId: collationPremiumPack.id,
-      componentId: mainCourseComponent.id,
-      required: true,
-      orderIndex: 0,
-    },
-  });
-  console.log('✅ PackComponent created: Collation Premium Pack - Main Course (required)');
-
-  await prisma.packComponent.upsert({
-    where: {
-      packId_componentId: {
-        packId: collationPremiumPack.id,
-        componentId: beverageComponent.id,
-      },
-    },
-    update: {},
-    create: {
-      packId: collationPremiumPack.id,
-      componentId: beverageComponent.id,
-      required: true,
-      orderIndex: 1,
-    },
-  });
-  console.log('✅ PackComponent created: Collation Premium Pack - Beverage (required)');
-
-  await prisma.packComponent.upsert({
-    where: {
-      packId_componentId: {
-        packId: collationPremiumPack.id,
-        componentId: dessertComponent.id,
-      },
-    },
-    update: {},
-    create: {
-      packId: collationPremiumPack.id,
-      componentId: dessertComponent.id,
+      packId: ruptureBasicPack.id,
+      componentId: platPrincipalComponent.id,
       required: true,
       orderIndex: 2,
     },
   });
-  console.log('✅ PackComponent created: Collation Premium Pack - Dessert (required)');
+  console.log('  → Basic: Plat Principal (required)');
 
   await prisma.packComponent.upsert({
     where: {
       packId_componentId: {
-        packId: collationPremiumPack.id,
-        componentId: saladComponent.id,
+        packId: ruptureBasicPack.id,
+        componentId: saladeComponent.id,
       },
     },
     update: {},
     create: {
-      packId: collationPremiumPack.id,
-      componentId: saladComponent.id,
+      packId: ruptureBasicPack.id,
+      componentId: saladeComponent.id,
       required: false,
       orderIndex: 3,
     },
   });
-  console.log('✅ PackComponent created: Collation Premium Pack - Salad (optional)');
+  console.log('  → Basic: Salade (optional)');
 
-  // Create Services
-  console.log('\nCreating Services...');
-  const dejeunerService = await prisma.service.upsert({
-    where: { name: 'Dejeuner' },
+  // PackComponents for Rupture Basic+ Pack (Basic + Spécialité Tunisienne)
+  await prisma.packComponent.upsert({
+    where: {
+      packId_componentId: {
+        packId: ruptureBasicPlusPack.id,
+        componentId: boissonComponent.id,
+      },
+    },
     update: {},
     create: {
-      name: 'Dejeuner',
-      description: 'Lunch service',
-      isActive: true,
+      packId: ruptureBasicPlusPack.id,
+      componentId: boissonComponent.id,
+      required: false,
+      orderIndex: 0,
     },
   });
-  console.log('✅ Service created: Dejeuner');
-
-  const petitDejeunerService = await prisma.service.upsert({
-    where: { name: 'Petit Dejeuner' },
+  await prisma.packComponent.upsert({
+    where: {
+      packId_componentId: {
+        packId: ruptureBasicPlusPack.id,
+        componentId: soupeComponent.id,
+      },
+    },
     update: {},
     create: {
-      name: 'Petit Dejeuner',
-      description: 'Breakfast service',
-      isActive: true,
+      packId: ruptureBasicPlusPack.id,
+      componentId: soupeComponent.id,
+      required: false,
+      orderIndex: 1,
     },
   });
-  console.log('✅ Service created: Petit Dejeuner');
-
-  const dinerService = await prisma.service.upsert({
-    where: { name: 'Diner' },
+  await prisma.packComponent.upsert({
+    where: {
+      packId_componentId: {
+        packId: ruptureBasicPlusPack.id,
+        componentId: platPrincipalComponent.id,
+      },
+    },
     update: {},
     create: {
-      name: 'Diner',
-      description: 'Dinner service',
-      isActive: true,
+      packId: ruptureBasicPlusPack.id,
+      componentId: platPrincipalComponent.id,
+      required: true,
+      orderIndex: 2,
     },
   });
-  console.log('✅ Service created: Diner');
-
-  const ruptureDeJeuneService = await prisma.service.upsert({
-    where: { name: 'Rupture de Jeune' },
+  await prisma.packComponent.upsert({
+    where: {
+      packId_componentId: {
+        packId: ruptureBasicPlusPack.id,
+        componentId: saladeComponent.id,
+      },
+    },
     update: {},
     create: {
-      name: 'Rupture de Jeune',
-      description: 'Iftar service for Ramadan',
-      isActive: true,
+      packId: ruptureBasicPlusPack.id,
+      componentId: saladeComponent.id,
+      required: false,
+      orderIndex: 3,
     },
   });
-  console.log('✅ Service created: Rupture de Jeune');
+  await prisma.packComponent.upsert({
+    where: {
+      packId_componentId: {
+        packId: ruptureBasicPlusPack.id,
+        componentId: specialiteTunisienneComponent.id,
+      },
+    },
+    update: {},
+    create: {
+      packId: ruptureBasicPlusPack.id,
+      componentId: specialiteTunisienneComponent.id,
+      required: false,
+      orderIndex: 4,
+    },
+  });
+  console.log('  → Basic+: All Basic components + Spécialité Tunisienne (optional)');
+
+  // PackComponents for Rupture Premium Pack (Basic+ + Dessert)
+  await prisma.packComponent.upsert({
+    where: {
+      packId_componentId: {
+        packId: rupturePremiumPack.id,
+        componentId: boissonComponent.id,
+      },
+    },
+    update: {},
+    create: {
+      packId: rupturePremiumPack.id,
+      componentId: boissonComponent.id,
+      required: false,
+      orderIndex: 0,
+    },
+  });
+  await prisma.packComponent.upsert({
+    where: {
+      packId_componentId: {
+        packId: rupturePremiumPack.id,
+        componentId: soupeComponent.id,
+      },
+    },
+    update: {},
+    create: {
+      packId: rupturePremiumPack.id,
+      componentId: soupeComponent.id,
+      required: false,
+      orderIndex: 1,
+    },
+  });
+  await prisma.packComponent.upsert({
+    where: {
+      packId_componentId: {
+        packId: rupturePremiumPack.id,
+        componentId: platPrincipalComponent.id,
+      },
+    },
+    update: {},
+    create: {
+      packId: rupturePremiumPack.id,
+      componentId: platPrincipalComponent.id,
+      required: true,
+      orderIndex: 2,
+    },
+  });
+  await prisma.packComponent.upsert({
+    where: {
+      packId_componentId: {
+        packId: rupturePremiumPack.id,
+        componentId: saladeComponent.id,
+      },
+    },
+    update: {},
+    create: {
+      packId: rupturePremiumPack.id,
+      componentId: saladeComponent.id,
+      required: false,
+      orderIndex: 3,
+    },
+  });
+  await prisma.packComponent.upsert({
+    where: {
+      packId_componentId: {
+        packId: rupturePremiumPack.id,
+        componentId: specialiteTunisienneComponent.id,
+      },
+    },
+    update: {},
+    create: {
+      packId: rupturePremiumPack.id,
+      componentId: specialiteTunisienneComponent.id,
+      required: false,
+      orderIndex: 4,
+    },
+  });
+  await prisma.packComponent.upsert({
+    where: {
+      packId_componentId: {
+        packId: rupturePremiumPack.id,
+        componentId: dessertComponent.id,
+      },
+    },
+    update: {},
+    create: {
+      packId: rupturePremiumPack.id,
+      componentId: dessertComponent.id,
+      required: false,
+      orderIndex: 5,
+    },
+  });
+  console.log('  → Premium: All Basic+ components + Dessert (optional)');
+
+  // ============================================================================
+  // SERVICES
+  // ============================================================================
+  console.log('\n🔧 Creating Services...');
 
   const collationService = await prisma.service.upsert({
     where: { name: 'Collation' },
     update: {},
     create: {
       name: 'Collation',
-      description: 'Snack service for Ramadan',
+      description: 'Service de collation pour le Ramadan',
       isActive: true,
+      isPublished: true,
+      orderStartTime: '14:00',
+      cutoffTime: '16:00',
     },
   });
-  console.log('✅ Service created: Collation');
+  console.log('✅ Service: Collation (published, 14:00-16:00)');
 
-  // Assign packs to services
-  console.log('\nAssigning packs to services...');
-  await prisma.servicePack.upsert({
-    where: { packId: standardPack.id },
+  const ruptureJeuneService = await prisma.service.upsert({
+    where: { name: 'Rupture de Jeûne' },
     update: {},
     create: {
-      serviceId: dejeunerService.id,
-      packId: standardPack.id,
+      name: 'Rupture de Jeûne',
+      description: 'Service de rupture de jeûne pour le Ramadan',
+      isActive: true,
+      isPublished: true,
+      orderStartTime: '16:00',
+      cutoffTime: '18:00',
     },
   });
-  console.log('✅ Assigned Standard Pack to Dejeuner service');
+  console.log('✅ Service: Rupture de Jeûne (published, 16:00-18:00)');
 
-  await prisma.servicePack.upsert({
-    where: { packId: premiumPack.id },
-    update: {},
-    create: {
-      serviceId: dejeunerService.id,
-      packId: premiumPack.id,
-    },
-  });
-  console.log('✅ Assigned Premium Pack to Dejeuner service');
-
-  await prisma.servicePack.upsert({
-    where: { packId: ruptureDeJeuneBasicPack.id },
-    update: {},
-    create: {
-      serviceId: ruptureDeJeuneService.id,
-      packId: ruptureDeJeuneBasicPack.id,
-    },
-  });
-  console.log('✅ Assigned Rupture de Jeune Basic Pack to Rupture de Jeune service');
-
-  await prisma.servicePack.upsert({
-    where: { packId: ruptureDeJeunePremiumPack.id },
-    update: {},
-    create: {
-      serviceId: ruptureDeJeuneService.id,
-      packId: ruptureDeJeunePremiumPack.id,
-    },
-  });
-  console.log('✅ Assigned Rupture de Jeune Premium Pack to Rupture de Jeune service');
+  // ============================================================================
+  // SERVICE PACKS (Link packs to services)
+  // ============================================================================
+  console.log('\n🔗 Linking Packs to Services...');
 
   await prisma.servicePack.upsert({
     where: { packId: collationBasicPack.id },
@@ -934,48 +1179,62 @@ async function main() {
       packId: collationBasicPack.id,
     },
   });
-  console.log('✅ Assigned Collation Basic Pack to Collation service');
+  console.log('✅ Linked: Basic Pack → Collation');
 
   await prisma.servicePack.upsert({
-    where: { packId: collationPremiumPack.id },
+    where: { packId: ruptureBasicPack.id },
     update: {},
     create: {
-      serviceId: collationService.id,
-      packId: collationPremiumPack.id,
+      serviceId: ruptureJeuneService.id,
+      packId: ruptureBasicPack.id,
     },
   });
-  console.log('✅ Assigned Collation Premium Pack to Collation service');
+  console.log('✅ Linked: Basic → Rupture de Jeûne');
 
+  await prisma.servicePack.upsert({
+    where: { packId: ruptureBasicPlusPack.id },
+    update: {},
+    create: {
+      serviceId: ruptureJeuneService.id,
+      packId: ruptureBasicPlusPack.id,
+    },
+  });
+  console.log('✅ Linked: Basic+ → Rupture de Jeûne');
+
+  await prisma.servicePack.upsert({
+    where: { packId: rupturePremiumPack.id },
+    update: {},
+    create: {
+      serviceId: ruptureJeuneService.id,
+      packId: rupturePremiumPack.id,
+    },
+  });
+  console.log('✅ Linked: Premium → Rupture de Jeûne');
+
+  // ============================================================================
+  // SUMMARY
+  // ============================================================================
   console.log('\n📋 Summary:');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('SUPER_ADMIN:');
   console.log(`  Email: admin@cheznoura.tn`);
   console.log(`  Password: password123`);
-  console.log('\nCOMPONENTS:');
-  console.log('  - Soup');
-  console.log('  - Main Course');
-  console.log('  - Dessert');
-  console.log('  - Beverage');
-  console.log('  - Salad');
-  console.log('\nVARIANTS:');
-  console.log('  Soup: Chorba, Chorba Lentilles, Chorba Potiron');
-  console.log('  Main Course: Brik, Couscous Viande, Croquette, Ojja Merguez, Riz Légumes, Tajine');
-  console.log('  Dessert: Zlebya');
-  console.log('  Beverage: (none)');
-  console.log('  Salad: Salade Mechoueya, Salade Patates, Salade Tunisienne');
-  console.log('\nPACKS:');
-  console.log('  - Standard Pack (25.00 TND) → Dejeuner');
-  console.log('  - Premium Pack (35.00 TND) → Dejeuner');
-  console.log('  - Rupture de Jeune Basic Pack (22.00 TND) → Rupture de Jeune');
-  console.log('  - Rupture de Jeune Premium Pack (30.00 TND) → Rupture de Jeune');
-  console.log('  - Collation Basic Pack (15.00 TND) → Collation');
-  console.log('  - Collation Premium Pack (20.00 TND) → Collation');
   console.log('\nSERVICES:');
-  console.log('  - Dejeuner (Lunch service)');
-  console.log('  - Petit Dejeuner (Breakfast service)');
-  console.log('  - Diner (Dinner service)');
-  console.log('  - Rupture de Jeune (Iftar service for Ramadan)');
-  console.log('  - Collation (Snack service for Ramadan)');
+  console.log('  ✅ Collation (published, 14:00-16:00)');
+  console.log('    → Basic Pack (15.00 TND)');
+  console.log('  ✅ Rupture de Jeûne (published, 16:00-18:00)');
+  console.log('    → Basic (22.00 TND)');
+  console.log('    → Basic+ (28.00 TND)');
+  console.log('    → Premium (35.00 TND)');
+  console.log('\nCOMPONENTS:');
+  console.log('  - Fruits');
+  console.log('  - Boisson');
+  console.log('  - Douceur du Ramadan');
+  console.log('  - Soupe');
+  console.log('  - Plat Principal');
+  console.log('  - Salade');
+  console.log('  - Spécialité Tunisienne');
+  console.log('  - Dessert');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('\n✨ Seed completed successfully!');
 }
