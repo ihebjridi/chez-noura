@@ -16,10 +16,10 @@ export function StatisticsBadge({ label, value, variant = 'primary', size = 'md'
 
   const variantClasses = {
     primary: 'bg-primary-50 text-primary-700 border-primary-200',
-    secondary: 'bg-gray-50 text-gray-700 border-gray-200',
-    success: 'bg-green-50 text-green-700 border-green-200',
-    warning: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-    danger: 'bg-red-50 text-red-700 border-red-200',
+    secondary: 'bg-secondary-50 text-secondary-700 border-secondary-200',
+    success: 'bg-success-50 text-success-700 border-success-200',
+    warning: 'bg-warning-50 text-warning-700 border-warning-200',
+    danger: 'bg-destructive/10 text-destructive border-destructive/30',
   };
 
   return (

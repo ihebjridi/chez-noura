@@ -185,9 +185,6 @@ function OrderHistoryContent() {
                         <span className="font-semibold text-sm sm:text-base truncate">
                           {formatOrderDate(order.orderDate)}
                         </span>
-                        <span className="text-sm text-gray-500 font-normal whitespace-nowrap">
-                          {order.totalAmount.toFixed(2)} TND
-                        </span>
                       </div>
                       <div className={`px-2 py-1 rounded text-xs font-semibold border flex items-center gap-1 w-fit ${statusInfo.className}`}>
                         <StatusIcon className="w-3 h-3" />
@@ -201,13 +198,10 @@ function OrderHistoryContent() {
                   <div className="space-y-3 pt-2 px-4 pb-4">
                     {/* Pack Info */}
                     <div className="bg-surface-light rounded-lg p-3">
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center gap-2">
                         <Package className="w-4 h-4 text-primary-600 flex-shrink-0" />
                         <p className="font-semibold text-gray-900">{order.packName}</p>
                       </div>
-                      <p className="text-sm text-gray-600">
-                        {order.packPrice.toFixed(2)} TND
-                      </p>
                     </div>
 
                     {/* Order Items */}
@@ -247,14 +241,6 @@ function OrderHistoryContent() {
                           {statusInfo.description}
                         </p>
                       </div>
-                    </div>
-
-                    {/* Total */}
-                    <div className="flex justify-between items-center pt-2 border-t border-surface-dark">
-                      <span className="font-semibold text-gray-900">Total:</span>
-                      <span className="text-xl font-semibold text-primary-600">
-                        {order.totalAmount.toFixed(2)} TND
-                      </span>
                     </div>
                   </div>
                 </CollapsibleSection>

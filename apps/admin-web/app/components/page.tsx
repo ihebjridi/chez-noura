@@ -136,7 +136,7 @@ export default function ComponentsPage() {
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{component.name}</h3>
+                      <h3 className="text-lg font-semibold text-secondary-900 mb-2">{component.name}</h3>
                       <div className="flex flex-wrap gap-2">
                         <StatisticsBadge
                           label="Variants"

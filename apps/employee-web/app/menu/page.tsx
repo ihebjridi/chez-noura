@@ -20,7 +20,7 @@ import { Spotlight, SpotLightItem } from '../../components/ui-layouts/spotlight-
 import { CutoffCountdown } from '../../components/cutoff-countdown';
 import { EmployeeLayout } from '../../components/layouts/EmployeeLayout';
 import { CollapsibleSection } from '../../components/layouts/CollapsibleSection';
-import { CheckCircle, Clock, X, Package, AlertCircle } from 'lucide-react';
+import { CheckCircle, Clock, X, Package, AlertCircle, ChevronRight } from 'lucide-react';
 import { getTodayISO } from '../../lib/date-utils';
 
 export default function MenuPage() {
@@ -101,8 +101,6 @@ export default function MenuPage() {
   const isOrderValid = selectedPack && sortedComponents.every(
     (component) => !component.required || selections[component.id]
   );
-
-  const totalAmount = selectedPack ? selectedPack.price : 0;
 
   // Calculate ready time
   const readyTime = menu?.cutoffTime
@@ -283,10 +281,12 @@ export default function MenuPage() {
                             <p className="text-sm text-gray-600">
                               {pack.components.length} component{pack.components.length !== 1 ? 's' : ''}
                             </p>
+                            <p className="text-xs text-primary-600 mt-1 font-medium flex items-center gap-1">
+                              Tap to customize
+                              <ChevronRight className="w-3 h-3" />
+                            </p>
                           </div>
-                          <p className="text-xl font-semibold text-primary-600 ml-4 flex-shrink-0">
-                            {pack.price.toFixed(2)} TND
-                          </p>
+                          <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-4" />
                         </div>
                       </button>
                     </SpotLightItem>
@@ -314,16 +314,16 @@ export default function MenuPage() {
                     </button>
                   </div>
                   <p className="text-sm text-gray-600">
-                    {selectedPack.components.length} components • {selectedPack.price.toFixed(2)} TND
+                    {selectedPack.components.length} component{selectedPack.components.length !== 1 ? 's' : ''}
                   </p>
                 </div>
 
                 {/* Component Selection - Collapsible Sections */}
-                <div className="space-y-3">
-                  <h2 className="text-base font-semibold text-gray-900 px-1">
+                <div className="space-y-4">
+                  <h2 className="text-lg font-semibold text-gray-900 px-1">
                     Customize Your Pack
                   </h2>
-                  {sortedComponents.map((component) => {
+                  {sortedComponents.map((component, index) => {
                     const selectedVariantId = selections[component.id];
                     const selectedVariant = component.variants.find(
                       (v) => v.id === selectedVariantId
@@ -332,21 +332,37 @@ export default function MenuPage() {
                     const isValid = !component.required || hasSelection;
 
                     return (
-                      <CollapsibleSection
-                        key={component.id}
-                        title={component.name}
-                        defaultOpen={!hasSelection}
-                        headerClassName={!isValid ? 'border-l-4 border-destructive' : ''}
-                        icon={
-                          hasSelection ? (
-                            <CheckCircle className="w-4 h-4 text-success-600" />
-                          ) : component.required ? (
-                            <AlertCircle className="w-4 h-4 text-destructive" />
-                          ) : null
-                        }
-                      >
-                        <Spotlight>
-                          <div className="space-y-2 pt-2">
+                      <div key={component.id} className={index > 0 ? 'pt-2' : ''}>
+                        <CollapsibleSection
+                          title={
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-gray-900">{component.name}</span>
+                              {component.required && (
+                                <span className="px-2 py-0.5 text-xs font-medium bg-destructive/10 text-destructive rounded-full border border-destructive/20">
+                                  Required
+                                </span>
+                              )}
+                              {!component.required && (
+                                <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
+                                  Optional
+                                </span>
+                              )}
+                            </div>
+                          }
+                          defaultOpen={!hasSelection}
+                          headerClassName={`${!isValid ? 'border-l-4 border-destructive' : ''} py-3`}
+                          icon={
+                            hasSelection ? (
+                              <CheckCircle className="w-5 h-5 text-success-600" />
+                            ) : component.required ? (
+                              <AlertCircle className="w-5 h-5 text-destructive" />
+                            ) : null
+                          }
+                        >
+                          <div className="space-y-3 pt-3">
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                              Select a variant for {component.name}:
+                            </p>
                             {component.variants.map((variant) => {
                               const isOutOfStock = variant.stockQuantity <= 0;
                               const isInactive = !variant.isActive;
@@ -354,65 +370,73 @@ export default function MenuPage() {
                               const isSelected = selectedVariantId === variant.id;
 
                               return (
-                                <SpotLightItem key={variant.id} className="bg-background rounded">
-                                  <button
-                                    onClick={() =>
-                                      !isDisabled && handleVariantSelect(component.id, variant.id)
-                                    }
-                                    disabled={isDisabled}
-                                    className={`relative z-10 w-full text-left p-3 rounded transition-all min-h-[44px] ${
-                                      isSelected
-                                        ? 'border-2 border-primary-500 bg-primary-50'
-                                        : 'border-2 border-surface-dark hover:border-primary-300'
-                                    } ${
-                                      isDisabled
-                                        ? 'opacity-50 cursor-not-allowed bg-surface-light'
-                                        : 'cursor-pointer'
-                                    }`}
-                                  >
-                                    <div className="flex items-center gap-3">
-                                      {variant.imageUrl ? (
-                                        <img
-                                          src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${variant.imageUrl}`}
-                                          alt={variant.name}
-                                          className="w-12 h-12 object-cover rounded-md border border-surface-dark flex-shrink-0"
-                                        />
-                                      ) : (
-                                        <div className="w-12 h-12 bg-surface-light border border-surface-dark rounded-md flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
-                                          No image
-                                        </div>
-                                      )}
-                                      <div className="flex-1 flex justify-between items-center">
-                                        <span className={isSelected ? 'font-medium text-gray-900' : 'text-gray-700'}>
+                                <button
+                                  key={variant.id}
+                                  onClick={() =>
+                                    !isDisabled && handleVariantSelect(component.id, variant.id)
+                                  }
+                                  disabled={isDisabled}
+                                  className={`relative z-10 w-full text-left p-4 rounded-lg transition-all min-h-[60px] ${
+                                    isSelected
+                                      ? 'border-2 border-primary-500 bg-primary-50 shadow-sm'
+                                      : 'border border-surface-dark hover:border-primary-300 hover:bg-surface-light'
+                                  } ${
+                                    isDisabled
+                                      ? 'opacity-50 cursor-not-allowed bg-surface-light'
+                                      : 'cursor-pointer'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-4">
+                                    {variant.imageUrl ? (
+                                      <img
+                                        src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${variant.imageUrl}`}
+                                        alt={variant.name}
+                                        className="w-16 h-16 object-cover rounded-lg border-2 border-surface-dark flex-shrink-0"
+                                      />
+                                    ) : (
+                                      <div className="w-16 h-16 bg-surface-light border-2 border-surface-dark rounded-lg flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
+                                        No image
+                                      </div>
+                                    )}
+                                    <div className="flex-1 flex justify-between items-center min-w-0">
+                                      <div className="flex-1 min-w-0">
+                                        <span className={`block text-base ${isSelected ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
                                           {variant.name}
                                         </span>
-                                        <div className="flex items-center gap-2">
-                                          {isOutOfStock && (
-                                            <span className="text-xs text-destructive font-medium">Out of Stock</span>
-                                          )}
-                                          {!isOutOfStock && variant.stockQuantity < 10 && (
-                                            <span className="text-xs text-warning-600 font-medium">
-                                              {variant.stockQuantity} left
-                                            </span>
-                                          )}
-                                          {isSelected && (
-                                            <CheckCircle className="w-4 h-4 text-primary-600" />
-                                          )}
-                                        </div>
+                                        {isSelected && (
+                                          <span className="text-xs text-primary-600 font-medium mt-1 block">
+                                            Selected
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                                        {isOutOfStock && (
+                                          <span className="px-2 py-1 text-xs text-destructive font-medium bg-destructive/10 rounded border border-destructive/20">
+                                            Out of Stock
+                                          </span>
+                                        )}
+                                        {!isOutOfStock && variant.stockQuantity < 10 && (
+                                          <span className="px-2 py-1 text-xs text-warning-700 font-medium bg-warning-50 rounded border border-warning-200">
+                                            {variant.stockQuantity} left
+                                          </span>
+                                        )}
+                                        {isSelected && (
+                                          <CheckCircle className="w-5 h-5 text-primary-600 flex-shrink-0" />
+                                        )}
                                       </div>
                                     </div>
-                                  </button>
-                                </SpotLightItem>
+                                  </div>
+                                </button>
                               );
                             })}
                           </div>
-                        </Spotlight>
-                        {component.required && !selectedVariantId && (
-                          <p className="text-xs text-destructive mt-2 font-medium">
-                            Required - Please select an option
-                          </p>
-                        )}
-                      </CollapsibleSection>
+                          {component.required && !selectedVariantId && (
+                            <p className="text-sm text-destructive mt-3 font-medium bg-destructive/10 border border-destructive/20 rounded-lg p-2">
+                              ⚠️ Required - Please select an option for {component.name}
+                            </p>
+                          )}
+                        </CollapsibleSection>
+                      </div>
                     );
                   })}
                 </div>
@@ -470,13 +494,6 @@ export default function MenuPage() {
                       </div>
                     )}
 
-                    {/* Total */}
-                    <div className="flex justify-between items-center pt-3 border-t border-surface-dark">
-                      <span className="text-lg font-semibold text-gray-900">Total:</span>
-                      <span className="text-2xl font-semibold text-primary-600">
-                        {totalAmount.toFixed(2)} TND
-                      </span>
-                    </div>
 
                     {/* Action Buttons */}
                     <div className="flex gap-3 pt-2">
@@ -501,12 +518,6 @@ export default function MenuPage() {
                 {!showConfirm && (
                   <div className="sticky bottom-0 bg-surface border-t-2 border-primary-500 shadow-lg rounded-t-lg">
                     <div className="px-4 py-3">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm text-gray-600">Total:</span>
-                        <span className="text-xl font-semibold text-primary-600">
-                          {totalAmount.toFixed(2)} TND
-                        </span>
-                      </div>
                       <button
                         onClick={handleConfirmClick}
                         disabled={!isOrderValid || submitting}

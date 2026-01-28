@@ -179,13 +179,10 @@ export default function TodayPage() {
 
           {/* Pack Summary */}
           <div className="bg-surface border border-surface-dark rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-4">
               <Package className="w-5 h-5 text-primary-600" />
               <h3 className="font-semibold text-gray-900 text-lg">{todayOrder.packName}</h3>
             </div>
-            <p className="text-sm text-gray-600 mb-4">
-              {todayOrder.packPrice.toFixed(2)} TND
-            </p>
 
             {/* Order Items */}
             <div className="space-y-2 mb-4">
@@ -218,7 +215,7 @@ export default function TodayPage() {
 
             {/* Ready Time */}
             {readyTime && (
-              <div className="bg-primary-50 border border-primary-200 rounded-lg p-3 mb-4">
+              <div className="bg-primary-50 border border-primary-200 rounded-lg p-3">
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-primary-600" />
                   <div>
@@ -239,14 +236,6 @@ export default function TodayPage() {
                 </div>
               </div>
             )}
-
-            {/* Total */}
-            <div className="flex justify-between items-center pt-3 border-t border-surface-dark">
-              <span className="font-semibold text-gray-900">Total:</span>
-              <span className="text-xl font-semibold text-primary-600">
-                {todayOrder.totalAmount.toFixed(2)} TND
-              </span>
-            </div>
           </div>
 
           {/* View All Orders */}

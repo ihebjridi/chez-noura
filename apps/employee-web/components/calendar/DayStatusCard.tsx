@@ -53,7 +53,7 @@ export function DayStatusCard({ order, onCustomize }: DayStatusCardProps) {
               <p className="text-sm font-medium">{order.packName}</p>
             </div>
             <p className="text-xs text-gray-600">
-              {order.items.length} item{order.items.length !== 1 ? 's' : ''} • {order.totalAmount.toFixed(2)} TND
+              {order.items.length} item{order.items.length !== 1 ? 's' : ''}
             </p>
           </div>
 

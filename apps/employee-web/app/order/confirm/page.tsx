@@ -35,8 +35,6 @@ function OrderConfirmContent() {
     ? JSON.parse(decodeURIComponent(itemsParam))
     : [];
 
-  const totalAmount = pack ? pack.price : 0;
-
   useEffect(() => {
     if (!dailyMenuId || !packId || items.length === 0) {
       router.push('/menu');
@@ -236,16 +234,6 @@ function OrderConfirmContent() {
                 <Error message={error} />
               </div>
             )}
-
-            {/* Total */}
-            <div className="bg-surface border border-surface-dark rounded-lg p-4">
-              <div className="flex justify-between items-center">
-                <span className="text-lg font-semibold text-gray-900">Total:</span>
-                <span className="text-2xl font-semibold text-primary-600">
-                  {totalAmount.toFixed(2)} TND
-                </span>
-              </div>
-            </div>
 
             {/* Action Buttons */}
             <div className="space-y-3">
