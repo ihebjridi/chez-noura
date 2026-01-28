@@ -17,57 +17,76 @@ module.exports = {
           light: '#FAFAFA', // Very light grey for subtle surfaces
           dark: '#E0E0E0', // Light grey for borders/dividers
         },
-        // Primary actions - Deep emerald green
+        // Primary actions - Vibrant green (Glovo-inspired)
         primary: {
-          50: '#e8f5e9',
-          100: '#c8e6c9',
-          200: '#a5d6a7',
-          300: '#81c784',
-          400: '#66bb6a',
-          500: '#4caf50',
-          600: '#2E7D32', // Deep emerald green - main primary
-          700: '#1b5e20',
-          800: '#2e7d32',
-          900: '#1b5e20',
+          50: '#f0fdf4',
+          100: '#dcfce7',
+          200: '#bbf7d0',
+          300: '#86efac',
+          400: '#4ade80',
+          500: '#22c55e',
+          600: '#16a34a', // Main primary green
+          700: '#15803d',
+          800: '#166534',
+          900: '#14532d',
         },
-        // Success/positive indicators - Brighter green
+        // Success/positive indicators - Bright green
         success: {
-          50: '#e8f5e9',
-          100: '#c8e6c9',
-          200: '#a5d6a7',
-          300: '#81c784',
-          400: '#66bb6a',
-          500: '#4CAF50', // Brighter green for positive indicators
-          600: '#43a047',
-          700: '#388e3c',
-          800: '#2e7d32',
-          900: '#1b5e20',
+          50: '#f0fdf4',
+          100: '#dcfce7',
+          200: '#bbf7d0',
+          300: '#86efac',
+          400: '#4ade80',
+          500: '#22c55e',
+          600: '#16a34a',
+          700: '#15803d',
+          800: '#166534',
+          900: '#14532d',
         },
-        // Secondary accents - Neutral grey tones
+        // Accent - Vibrant yellow (Glovo-inspired)
+        accent: {
+          50: '#fefce8',
+          100: '#fef9c3',
+          200: '#fef08a',
+          300: '#fde047',
+          400: '#facc15',
+          500: '#eab308', // Main yellow
+          600: '#ca8a04',
+          700: '#a16207',
+          800: '#854d0e',
+          900: '#713f12',
+        },
+        // Secondary accents - Black and dark tones
         secondary: {
-          50: '#fafafa',
-          100: '#f5f5f5',
-          200: '#eeeeee',
-          300: '#e0e0e0',
-          400: '#bdbdbd',
-          500: '#9e9e9e',
-          600: '#757575', // Medium grey for secondary text
-          700: '#616161',
-          800: '#424242',
-          900: '#212121', // Dark grey for primary text
+          50: '#f9fafb',
+          100: '#f3f4f6',
+          200: '#e5e7eb',
+          300: '#d1d5db',
+          400: '#9ca3af',
+          500: '#6b7280',
+          600: '#4b5563',
+          700: '#374151',
+          800: '#1f2937',
+          900: '#111827', // Near black
         },
-        // Attention/warnings - Amber (kept for consistency)
+        // Black for strong contrast
+        black: {
+          DEFAULT: '#000000',
+          light: '#1a1a1a',
+          dark: '#0a0a0a',
+        },
+        // Attention/warnings - Yellow (matching accent)
         warning: {
-          50: '#fff8e1',
-          100: '#ffecb3',
-          200: '#ffe082',
-          300: '#ffd54f',
-          400: '#ffca28',
-          500: '#ffc107',
-          600: '#ffb300',
-          700: '#ffa000',
-          800: '#ff8f00',
-          900: '#ff6f00',
+          50: '#fefce8',
+          100: '#fef9c3',
+          200: '#fef08a',
+          300: '#fde047',
+          400: '#facc15',
+          500: '#eab308',
+          600: '#ca8a04',
+          700: '#a16207',
+          800: '#854d0e',
+          900: '#713f12',
         },
         // Status colors (reserved strictly for status)
         status: {

@@ -165,13 +165,13 @@ export default function DashboardPage() {
   const uniqueEmployees = new Set(dailyOrders.map(order => order.employeeId)).size;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8">
       {/* Date Selector Tabs */}
       <div className="mb-6">
-        <div className="bg-surface border border-surface-dark rounded-lg p-4">
+        <div className="bg-white border-2 border-gray-200 rounded-2xl p-5 shadow-md">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-semibold text-gray-900">{t('dashboard.todaysOrders')}</h1>
-            <div className="text-lg font-semibold text-gray-700">
+            <h1 className="text-3xl font-bold text-black">{t('dashboard.todaysOrders')}</h1>
+            <div className="text-lg font-bold text-gray-800">
               {formatFullDate(selectedDate)}
             </div>
           </div>
@@ -179,16 +179,16 @@ export default function DashboardPage() {
             <button
               onClick={() => loadOrders(true)}
               disabled={refreshing || loading}
-              className="px-4 py-2 rounded-lg font-medium bg-primary-600 text-white hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-primary-600 to-primary-700 text-white hover:from-primary-700 hover:to-primary-800 transition-all duration-200 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed flex items-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
               title={t('dashboard.refreshData')}
             >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
               {t('common.buttons.refresh')}
             </button>
             <div className="relative">
               <button
                 onClick={() => setShowDatePicker(!showDatePicker)}
-                className="px-4 py-2 rounded-lg font-medium bg-surface-light text-gray-700 hover:bg-surface-dark transition-colors border-2 border-transparent"
+                className="px-5 py-2.5 rounded-xl font-semibold bg-white text-gray-700 hover:bg-gray-50 transition-all duration-200 border-2 border-gray-200 hover:border-primary-300 shadow-sm hover:shadow-md"
               >
                 {t('common.buttons.otherDate')}
               </button>
@@ -220,23 +220,23 @@ export default function DashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-surface border border-surface-dark rounded-lg p-6">
+        <Card className="p-6 hover:scale-105 transition-transform duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">{t('dashboard.totalOrders')}</p>
-              <p className="text-3xl font-semibold text-gray-900 mt-2">{totalOrdersToday}</p>
+              <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">{t('dashboard.totalOrders')}</p>
+              <p className="text-4xl font-bold text-black">{totalOrdersToday}</p>
             </div>
-            <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-              <ShoppingCart className="w-6 h-6 text-primary-600" />
+            <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <ShoppingCart className="w-7 h-7 text-white" />
             </div>
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-surface border border-surface-dark rounded-lg p-6">
+        <Card className="p-6 hover:scale-105 transition-transform duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">{t('dashboard.totalCost')}</p>
-              <p className="text-3xl font-semibold text-gray-900 mt-2">
+              <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">{t('dashboard.totalCost')}</p>
+              <p className="text-4xl font-bold text-black">
                 {totalCostToday.toLocaleString(i18n.language || 'fr', {
                   style: 'currency',
                   currency: 'TND',
@@ -244,23 +244,23 @@ export default function DashboardPage() {
                 })}
               </p>
             </div>
-            <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-primary-600" />
+            <div className="w-14 h-14 bg-gradient-to-br from-accent-500 to-accent-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <DollarSign className="w-7 h-7 text-white" />
             </div>
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-surface border border-surface-dark rounded-lg p-6">
+        <Card className="p-6 hover:scale-105 transition-transform duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">{t('dashboard.activeEmployees')}</p>
-              <p className="text-3xl font-semibold text-gray-900 mt-2">{uniqueEmployees}</p>
+              <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">{t('dashboard.activeEmployees')}</p>
+              <p className="text-4xl font-bold text-black">{uniqueEmployees}</p>
             </div>
-            <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-              <Users className="w-6 h-6 text-primary-600" />
+            <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <Users className="w-7 h-7 text-white" />
             </div>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Daily Summary Section */}
@@ -280,8 +280,8 @@ export default function DashboardPage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('dashboard.packSummary')}</h2>
           <div className="space-y-4">
             {packSummary.map((pack) => (
-              <Card key={pack.packName} className="bg-surface border border-surface-dark rounded-lg hover:shadow-md transition-shadow">
-                <div className="p-4">
+              <Card key={pack.packName} className="hover:scale-[1.02] transition-transform duration-200">
+                <div className="p-5">
                   <div className="flex justify-between items-center mb-2">
                     <div>
                       <h3 className="font-semibold text-gray-900">{pack.packName}</h3>
@@ -343,41 +343,41 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Link 
             href="/employees" 
-            className="bg-surface border border-surface-dark rounded-lg hover:border-primary-300 hover:shadow-md transition-all cursor-pointer block p-6 group"
+            className="bg-white border-2 border-gray-200 rounded-2xl hover:border-primary-400 hover:shadow-xl transition-all duration-200 cursor-pointer block p-6 group transform hover:scale-105"
           >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
-                <Users className="w-6 h-6 text-primary-600" />
+            <div className="flex items-center gap-4 mb-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                <Users className="w-6 h-6 text-white" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">{t('navigation.employees')}</h2>
+              <h2 className="text-xl font-bold text-black group-hover:text-primary-600 transition-colors">{t('navigation.employees')}</h2>
             </div>
-            <p className="text-gray-600">{t('dashboard.manageEmployeeAccounts')}</p>
+            <p className="text-gray-600 font-medium">{t('dashboard.manageEmployeeAccounts')}</p>
           </Link>
 
           <Link 
             href="/orders" 
-            className="bg-surface border border-surface-dark rounded-lg hover:border-primary-300 hover:shadow-md transition-all cursor-pointer block p-6 group"
+            className="bg-white border-2 border-gray-200 rounded-2xl hover:border-primary-400 hover:shadow-xl transition-all duration-200 cursor-pointer block p-6 group transform hover:scale-105"
           >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
-                <ShoppingCart className="w-6 h-6 text-primary-600" />
+            <div className="flex items-center gap-4 mb-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                <ShoppingCart className="w-6 h-6 text-white" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">{t('navigation.orders')}</h2>
+              <h2 className="text-xl font-bold text-black group-hover:text-primary-600 transition-colors">{t('navigation.orders')}</h2>
             </div>
-            <p className="text-gray-600">{t('dashboard.viewAllEmployeeOrders')}</p>
+            <p className="text-gray-600 font-medium">{t('dashboard.viewAllEmployeeOrders')}</p>
           </Link>
 
           <Link 
             href="/invoices" 
-            className="bg-surface border border-surface-dark rounded-lg hover:border-primary-300 hover:shadow-md transition-all cursor-pointer block p-6 group"
+            className="bg-white border-2 border-gray-200 rounded-2xl hover:border-accent-400 hover:shadow-xl transition-all duration-200 cursor-pointer block p-6 group transform hover:scale-105"
           >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
-                <TrendingUp className="w-6 h-6 text-primary-600" />
+            <div className="flex items-center gap-4 mb-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-accent-500 to-accent-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                <TrendingUp className="w-6 h-6 text-white" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">{t('navigation.invoices')}</h2>
+              <h2 className="text-xl font-bold text-black group-hover:text-accent-600 transition-colors">{t('navigation.invoices')}</h2>
             </div>
-            <p className="text-gray-600">{t('dashboard.viewAndManageInvoices')}</p>
+            <p className="text-gray-600 font-medium">{t('dashboard.viewAndManageInvoices')}</p>
           </Link>
         </div>
       </div>

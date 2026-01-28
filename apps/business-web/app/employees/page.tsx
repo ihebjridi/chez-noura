@@ -8,7 +8,10 @@ import { useAuth } from '../../contexts/auth-context';
 import { Loading } from '../../components/ui/loading';
 import { Error } from '../../components/ui/error';
 import { Empty } from '../../components/ui/empty';
-import { UserPlus, CheckCircle2, XCircle, ChevronDown, ChevronUp, ShoppingCart } from 'lucide-react';
+import React from 'react';
+import { CheckCircle2, XCircle, ChevronDown, ChevronUp, ShoppingCart, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+
+const ITEMS_PER_PAGE = 10;
 
 export default function EmployeesPage() {
   const { t } = useTranslation();
@@ -21,6 +24,8 @@ export default function EmployeesPage() {
   const [success, setSuccess] = useState('');
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [expandedEmployeeId, setExpandedEmployeeId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [formData, setFormData] = useState<CreateEmployeeDto>({
     email: '',
     firstName: '',
@@ -72,6 +77,37 @@ export default function EmployeesPage() {
     });
     return grouped;
   }, [orders]);
+
+  // Filter employees based on search query
+  const filteredEmployees = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return employees;
+    }
+    const query = searchQuery.toLowerCase().trim();
+    return employees.filter((employee) => {
+      const fullName = `${employee.firstName} ${employee.lastName}`.toLowerCase();
+      const email = employee.email.toLowerCase();
+      return fullName.includes(query) || email.includes(query);
+    });
+  }, [employees, searchQuery]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredEmployees.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedEmployees = useMemo(() => {
+    return filteredEmployees.slice(startIndex, endIndex);
+  }, [filteredEmployees, startIndex, endIndex]);
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -232,134 +268,264 @@ export default function EmployeesPage() {
         </div>
       )}
 
-      {/* Employee List */}
+      {/* Search and Employee List */}
       {!loading && employees.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {employees.map((employee) => {
-            const employeeOrders = ordersByEmployee[employee.id] || [];
-            const totalOrders = employeeOrders.length;
-            const totalSpent = employeeOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+        <div className="bg-surface border border-surface-dark rounded-lg">
+          {/* Search Bar */}
+          <div className="p-4 border-b border-surface-dark">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t('employees.searchPlaceholder')}
+                className="w-full pl-10 pr-4 py-2 border border-surface-dark rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-background text-gray-900"
+              />
+            </div>
+            {searchQuery && (
+              <p className="mt-2 text-sm text-gray-600">
+                {t('employees.searchResults', { count: filteredEmployees.length, total: employees.length })}
+              </p>
+            )}
+          </div>
 
-            return (
-              <div
-                key={employee.id}
-                className="bg-surface border border-surface-dark rounded-lg p-6 hover:shadow-sm transition-shadow"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {employee.firstName} {employee.lastName}
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-1">{employee.email}</p>
-                  </div>
-                  {employee.status === EntityStatus.ACTIVE ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                  ) : (
-                    <XCircle className="w-5 h-5 text-destructive flex-shrink-0" />
-                  )}
-                </div>
-                <div className="mb-4">
-                  <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      employee.status === EntityStatus.ACTIVE
-                        ? 'bg-success-50 text-success-700 border border-success-300'
-                        : 'bg-destructive/10 text-destructive border border-destructive/30'
-                    }`}
-                  >
-                    {employee.status}
-                  </span>
-                </div>
+          {/* Employee List Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-surface-light border-b border-surface-dark">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    {t('employees.employee')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    {t('common.labels.status')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    {t('common.labels.orders')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    {t('common.labels.totalSpent')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    {t('common.labels.actions')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-dark">
+                {paginatedEmployees.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center">
+                      <p className="text-gray-600">{t('employees.noSearchResults')}</p>
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedEmployees.map((employee) => {
+                    const employeeOrders = ordersByEmployee[employee.id] || [];
+                    const totalOrders = employeeOrders.length;
+                    const totalSpent = employeeOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+                    const isExpanded = expandedEmployeeId === employee.id;
 
-                {/* Order Summary */}
-                <div className="mb-4 p-3 bg-surface-light rounded-lg">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <ShoppingCart className="w-4 h-4 text-gray-600" />
-                      <span className="text-gray-600">{t('common.labels.orders')}:</span>
-                    </div>
-                    <span className="font-semibold text-gray-900">{totalOrders}</span>
-                  </div>
-                  {totalOrders > 0 && (
-                    <div className="flex items-center justify-between text-sm mt-1">
-                      <span className="text-gray-600">{t('common.labels.totalSpent')}:</span>
-                      <span className="font-semibold text-gray-900">
-                        {totalSpent.toFixed(2)} TND
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* View Orders Button */}
-                {totalOrders > 0 && (
-                  <button
-                    onClick={() =>
-                      setExpandedEmployeeId(expandedEmployeeId === employee.id ? null : employee.id)
-                    }
-                    className="w-full mb-4 px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors flex items-center justify-center gap-2 font-semibold"
-                  >
-                    {expandedEmployeeId === employee.id ? (
-                      <>
-                        <ChevronUp className="w-4 h-4" />
-                        {t('common.buttons.hideOrders')}
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="w-4 h-4" />
-                        {t('employees.viewOrdersCount', { count: totalOrders })}
-                      </>
-                    )}
-                  </button>
-                )}
-
-                {/* Expanded Orders List */}
-                {expandedEmployeeId === employee.id && employeeOrders.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-surface-dark">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3">{t('common.labels.recentOrders')}</h4>
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {employeeOrders
-                        .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
-                        .map((order) => (
-                          <div
-                            key={order.id}
-                            className="p-3 bg-surface-light rounded-lg border border-surface-dark"
-                          >
-                            <div className="flex justify-between items-start mb-1">
-                              <div>
-                                <p className="text-xs font-medium text-gray-900">
-                                  {new Date(order.orderDate).toLocaleDateString()}
-                                </p>
-                                <p className="text-xs text-gray-600">{order.packName}</p>
+                    return (
+                      <React.Fragment key={employee.id}>
+                        <tr className="hover:bg-surface-light transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 mr-3">
+                                {employee.status === EntityStatus.ACTIVE ? (
+                                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                                ) : (
+                                  <XCircle className="w-5 h-5 text-destructive" />
+                                )}
                               </div>
-                              <p className="text-xs font-semibold text-gray-900">
-                                {order.totalAmount.toFixed(2)} TND
-                              </p>
+                              <div>
+                                <div className="text-sm font-semibold text-gray-900">
+                                  {employee.firstName} {employee.lastName}
+                                </div>
+                                <div className="text-sm text-gray-600">{employee.email}</div>
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                employee.status === EntityStatus.ACTIVE
+                                  ? 'bg-success-50 text-success-700 border border-success-300'
+                                  : 'bg-destructive/10 text-destructive border border-destructive/30'
+                              }`}
+                            >
+                              {employee.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <ShoppingCart className="w-4 h-4 text-gray-600" />
+                              <span className="text-sm text-gray-900 font-medium">{totalOrders}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="text-sm text-gray-900 font-medium">
+                              {totalSpent.toFixed(2)} TND
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <div className="flex items-center gap-2">
+                              {totalOrders > 0 && (
+                                <button
+                                  onClick={() =>
+                                    setExpandedEmployeeId(isExpanded ? null : employee.id)
+                                  }
+                                  className="px-3 py-1.5 text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-md transition-colors flex items-center gap-1 font-medium"
+                                >
+                                  {isExpanded ? (
+                                    <>
+                                      <ChevronUp className="w-4 h-4" />
+                                      {t('common.buttons.hideOrders')}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <ChevronDown className="w-4 h-4" />
+                                      {t('employees.viewOrdersCount', { count: totalOrders })}
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                              {employee.status === EntityStatus.ACTIVE ? (
+                                <button
+                                  onClick={() => handleDisable(employee.id)}
+                                  className="px-3 py-1.5 bg-destructive text-white text-sm font-medium rounded-md hover:bg-destructive-hover transition-colors"
+                                >
+                                  {t('common.buttons.disable')}
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleEnable(employee.id)}
+                                  className="px-3 py-1.5 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 transition-colors"
+                                >
+                                  {t('common.buttons.enable')}
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                        {/* Expanded Orders Row */}
+                        {isExpanded && employeeOrders.length > 0 && (
+                          <tr>
+                            <td colSpan={5} className="px-6 py-4 bg-surface-light">
+                              <div className="max-w-4xl">
+                                <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                                  {t('common.labels.recentOrders')}
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto">
+                                  {employeeOrders
+                                    .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
+                                    .map((order) => (
+                                      <div
+                                        key={order.id}
+                                        className="p-3 bg-background rounded-lg border border-surface-dark"
+                                      >
+                                        <div className="flex justify-between items-start">
+                                          <div>
+                                            <p className="text-xs font-medium text-gray-900">
+                                              {new Date(order.orderDate).toLocaleDateString()}
+                                            </p>
+                                            <p className="text-xs text-gray-600">{order.packName}</p>
+                                          </div>
+                                          <p className="text-xs font-semibold text-gray-900">
+                                            {order.totalAmount.toFixed(2)} TND
+                                          </p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })
                 )}
+              </tbody>
+            </table>
+          </div>
 
-                <div className="flex gap-2 mt-4">
-                  {employee.status === EntityStatus.ACTIVE ? (
-                    <button
-                      onClick={() => handleDisable(employee.id)}
-                      className="flex-1 px-4 py-2 bg-destructive text-white text-sm font-medium rounded-lg hover:bg-destructive-hover transition-colors"
-                    >
-                      {t('common.buttons.disable')}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handleEnable(employee.id)}
-                      className="flex-1 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
-                    >
-                      {t('common.buttons.enable')}
-                    </button>
-                  )}
-                </div>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-surface-dark">
+              <div className="text-sm text-gray-600">
+                {t('employees.showingResults', {
+                  start: startIndex + 1,
+                  end: Math.min(endIndex, filteredEmployees.length),
+                  total: filteredEmployees.length,
+                })}
               </div>
-            );
-          })}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-md border border-surface-dark hover:bg-surface-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  aria-label={t('employees.previousPage')}
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                    // Show first page, last page, current page, and pages around current
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          className={`px-3 py-2 rounded-md text-sm font-medium min-h-[44px] min-w-[44px] transition-colors ${
+                            currentPage === page
+                              ? 'bg-primary-600 text-white'
+                              : 'bg-surface border border-surface-dark text-gray-700 hover:bg-surface-light'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    } else if (
+                      page === currentPage - 2 ||
+                      page === currentPage + 2
+                    ) {
+                      return (
+                        <span key={page} className="px-2 text-gray-500">
+                          ...
+                        </span>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-md border border-surface-dark hover:bg-surface-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  aria-label={t('employees.nextPage')}
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Empty State for Search */}
+      {!loading && employees.length > 0 && filteredEmployees.length === 0 && (
+        <div className="bg-surface border border-surface-dark rounded-lg p-12">
+          <Empty
+            message={t('employees.noSearchResults')}
+            description={t('employees.noSearchResultsDescription')}
+          />
         </div>
       )}
     </div>

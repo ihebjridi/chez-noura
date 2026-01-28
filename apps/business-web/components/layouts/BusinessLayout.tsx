@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Logo } from '../logo';
 import { LanguageSwitcher } from '../language-switcher';
 import { useAuth } from '../../contexts/auth-context';
+import { BottomNavigation } from './BottomNavigation';
 import {
   LayoutDashboard,
   Users,
@@ -132,12 +133,12 @@ export function BusinessLayout({ children }: BusinessLayoutProps) {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pb-16 lg:pb-0">
           <div className="h-full">{children}</div>
         </main>
 
-        {/* Footer */}
-        <footer className="bg-surface border-t border-surface-dark py-4 px-4 sm:px-6 lg:px-8">
+        {/* Footer - Desktop Only */}
+        <footer className="hidden lg:block bg-surface border-t border-surface-dark py-4 px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-600">
               {t('footer.copyright', { year: new Date().getFullYear() })}
@@ -146,6 +147,9 @@ export function BusinessLayout({ children }: BusinessLayoutProps) {
           </div>
         </footer>
       </div>
+      
+      {/* Bottom Navigation - Mobile Only */}
+      <BottomNavigation />
     </div>
   );
 }

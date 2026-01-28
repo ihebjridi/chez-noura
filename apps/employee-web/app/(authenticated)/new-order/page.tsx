@@ -225,12 +225,12 @@ function NewOrderContent() {
   }
 
   return (
-    <div className="p-4 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{t('newOrder.title')}</h1>
-        <div className="flex items-center gap-2 mt-2">
-          <Calendar className="w-4 h-4 text-gray-600" />
-          <p className="text-sm text-gray-600">{formatDate(selectedDate)}</p>
+        <h1 className="text-3xl font-bold text-black mb-2">{t('newOrder.title')}</h1>
+        <div className="flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-primary-600" />
+          <p className="text-base font-medium text-gray-700">{formatDate(selectedDate)}</p>
         </div>
       </div>
 
@@ -289,30 +289,32 @@ function NewOrderContent() {
                   />
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {packs.map((pack) => (
-                    <Card key={pack.id} className="bg-surface border border-surface-dark rounded-lg hover:shadow-md transition-shadow">
+                    <Card key={pack.id} className="overflow-hidden hover:scale-[1.02] transition-transform duration-200">
                       <button
                         onClick={() => handlePackSelect(pack)}
-                        className="relative z-10 w-full p-4 text-left hover:bg-surface-light transition-colors cursor-pointer min-h-[44px]"
+                        className="relative z-10 w-full p-5 sm:p-6 text-left hover:bg-gray-50 transition-colors cursor-pointer"
                       >
-                        <div className="flex justify-between items-start">
+                        <div className="flex justify-between items-start gap-4">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Package className="w-4 h-4 text-primary-600 flex-shrink-0" />
-                              <h3 className="text-lg font-semibold text-gray-900 truncate">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <Package className="w-5 h-5 text-primary-600" />
+                              </div>
+                              <h3 className="text-xl font-bold text-black truncate">
                                 {pack.name}
                               </h3>
                             </div>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-base text-gray-600 mb-2">
                               {pack.components.length} {pack.components.length !== 1 ? t('common.labels.items') : t('common.labels.item')}
                             </p>
-                            <p className="text-xs text-primary-600 mt-1 font-medium flex items-center gap-1">
+                            <p className="text-sm text-primary-600 font-semibold flex items-center gap-1">
                               {t('common.buttons.customize')}
-                              <ChevronRight className="w-3 h-3" />
+                              <ChevronRight className="w-4 h-4" />
                             </p>
                           </div>
-                          <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-4" />
+                          <ChevronRight className="w-6 h-6 text-gray-400 flex-shrink-0" />
                         </div>
                       </button>
                     </Card>
@@ -402,25 +404,25 @@ function NewOrderContent() {
                                   !isDisabled && handleVariantSelect(component.id, variant.id)
                                 }
                                 disabled={isDisabled}
-                                className={`relative z-10 w-full text-left p-4 rounded-lg transition-all min-h-[60px] ${
+                                className={`relative z-10 w-full text-left p-5 rounded-2xl transition-all duration-200 min-h-[80px] ${
                                   isSelected
-                                    ? 'border-2 border-primary-500 bg-primary-50 shadow-sm'
-                                    : 'border border-surface-dark hover:border-primary-300 hover:bg-surface-light'
+                                    ? 'border-[3px] border-primary-600 bg-primary-50 shadow-lg scale-[1.02]'
+                                    : 'border-2 border-gray-200 hover:border-primary-400 hover:bg-gray-50 hover:shadow-md'
                                 } ${
                                   isDisabled
-                                    ? 'opacity-50 cursor-not-allowed bg-surface-light'
+                                    ? 'opacity-50 cursor-not-allowed bg-gray-50'
                                     : 'cursor-pointer'
                                 }`}
                               >
                                 <div className="flex items-center gap-4">
-                                  {variant.imageUrl ? (
+                                    {variant.imageUrl ? (
                                     <img
                                       src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${variant.imageUrl}`}
                                       alt={variant.name}
-                                      className="w-16 h-16 object-cover rounded-lg border-2 border-surface-dark flex-shrink-0"
+                                      className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-2xl border-2 border-gray-200 flex-shrink-0 shadow-sm"
                                     />
                                     ) : (
-                                      <div className="w-16 h-16 bg-surface-light border-2 border-surface-dark rounded-lg flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
+                                      <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-100 border-2 border-gray-200 rounded-2xl flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
                                         {t('common.labels.noImage')}
                                       </div>
                                     )}
@@ -468,16 +470,18 @@ function NewOrderContent() {
               </div>
 
               {/* Sticky Bottom Bar */}
-              <div className="sticky bottom-0 bg-surface border-t-2 border-primary-500 shadow-lg rounded-t-lg mt-6">
-                <div className="px-4 py-3">
+              <div className="sticky bottom-0 bg-white border-t-2 border-primary-600 shadow-2xl rounded-t-3xl mt-8 mb-16 lg:mb-0">
+                <div className="px-5 py-4">
                   {/* Ready Time Display */}
                   {readyTime && (
-                    <div className="bg-primary-50 border border-primary-200 rounded-lg p-3 mb-3">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-primary-600" />
+                    <div className="bg-gradient-to-r from-primary-50 to-accent-50 border-2 border-primary-200 rounded-2xl p-4 mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <Clock className="w-5 h-5 text-white" />
+                        </div>
                         <div>
-                          <p className="text-xs text-gray-600 font-normal">{t('common.labels.readyAt')}:</p>
-                          <p className="text-sm font-semibold text-primary-700">
+                          <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">{t('common.labels.readyAt')}</p>
+                          <p className="text-lg font-bold text-black">
                             {readyTime.isToday
                               ? `${t('common.labels.today')} ${readyTime.timeStr}`
                               : readyTime.date.toLocaleDateString(i18n.language || 'fr', {
@@ -497,7 +501,7 @@ function NewOrderContent() {
                   <button
                     onClick={handlePlaceOrder}
                     disabled={!isOrderValid || submitting}
-                    className="w-full py-2.5 px-4 bg-primary-600 text-white font-semibold rounded-md hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed min-h-[44px]"
+                    className="w-full py-4 px-6 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-bold text-lg rounded-2xl hover:from-primary-700 hover:to-primary-800 transition-all duration-200 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] min-h-[56px]"
                   >
                     {submitting
                       ? t('newOrder.placingOrder')

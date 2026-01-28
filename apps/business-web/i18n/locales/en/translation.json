@@ -151,7 +151,15 @@
     "emailPlaceholder": "employee@company.com",
     "firstNamePlaceholder": "John",
     "lastNamePlaceholder": "Doe",
-    "viewOrdersCount": "View Orders ({{count}})"
+    "viewOrdersCount": "View Orders ({{count}})",
+    "searchPlaceholder": "Search by name or email...",
+    "searchResults": "{{count}} of {{total}} employees",
+    "employee": "Employee",
+    "noSearchResults": "No employees found",
+    "noSearchResultsDescription": "Try adjusting your search query.",
+    "showingResults": "Showing {{start}} to {{end}} of {{total}} employees",
+    "previousPage": "Previous page",
+    "nextPage": "Next page"
   },
   "orders": {
     "title": "Orders",

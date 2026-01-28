@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Logo } from '../logo';
 import { LanguageSwitcher } from '../language-switcher';
 import { useAuth } from '../../contexts/auth-context';
+import { BottomNavigation } from './BottomNavigation';
 import {
   Calendar,
   Plus,
@@ -139,10 +140,13 @@ function NavigationContent({ children }: ClientSidebarLayoutProps) {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pb-16 lg:pb-0">
           {children}
         </main>
       </div>
+      
+      {/* Bottom Navigation - Mobile Only */}
+      <BottomNavigation />
     </div>
   );
 }
