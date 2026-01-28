@@ -195,8 +195,19 @@ export default function TodayPage() {
               {todayOrder.items.map((item) => (
                 <div
                   key={item.id}
-                  className="py-2 border-b border-surface-dark last:border-0"
+                  className="flex items-center gap-3 py-2 border-b border-surface-dark last:border-0"
                 >
+                  {item.variantImageUrl ? (
+                    <img
+                      src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${item.variantImageUrl}`}
+                      alt={item.variantName}
+                      className="w-12 h-12 object-cover rounded-md border border-surface-dark flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-surface-light border border-surface-dark rounded-md flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
+                      No image
+                    </div>
+                  )}
                   <p className="text-sm text-gray-700">
                     <span className="font-medium text-gray-900">{item.componentName}:</span>{' '}
                     {item.variantName}
@@ -240,7 +251,7 @@ export default function TodayPage() {
 
           {/* View All Orders */}
           <button
-            onClick={() => router.push('/orders')}
+            onClick={() => router.push('/calendar')}
             className="w-full px-4 py-3 bg-surface border border-surface-dark rounded-lg hover:bg-surface-light transition-colors font-medium text-gray-700 flex items-center justify-center gap-2 min-h-[44px]"
           >
             View Order History

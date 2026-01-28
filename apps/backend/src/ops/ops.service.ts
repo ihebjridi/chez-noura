@@ -477,7 +477,7 @@ export class OpsService {
   /**
    * Get detailed kitchen summary for a date
    * Includes both variant aggregation and individual order details
-   * Only includes LOCKED orders
+   * Includes both CREATED and LOCKED orders (kitchen needs to see orders throughout the day)
    */
   async getDetailedSummary(date: string): Promise<KitchenDetailedSummaryDto> {
     // Parse date string (YYYY-MM-DD) as local date, not UTC
@@ -498,14 +498,17 @@ export class OpsService {
       where: { lockDate: startOfDay },
     });
 
-    // Get all LOCKED orders for the date with full details
+    // Get all CREATED and LOCKED orders for the date with full details
+    // Kitchen needs to see orders throughout the day, not just after locking
     const orders = await this.prisma.order.findMany({
       where: {
         orderDate: {
           gte: startOfDay,
           lte: endOfDay,
         },
-        status: 'LOCKED',
+        status: {
+          in: ['CREATED', 'LOCKED'],
+        },
       },
       include: {
         employee: {

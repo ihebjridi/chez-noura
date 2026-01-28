@@ -46,8 +46,10 @@ export default function MenusPage() {
 
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showCutoffEditor, setShowCutoffEditor] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['packs']));
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [createMenuCutoffHour, setCreateMenuCutoffHour] = useState('14:00');
 
   const today = getTodayISO();
   const tomorrow = getTomorrowISO();
@@ -62,10 +64,15 @@ export default function MenusPage() {
   const handleCreateDailyMenu = async () => {
     try {
       setError('');
-      const newMenu = await apiClient.createDailyMenu({ date: state.selectedDate });
+      const newMenu = await apiClient.createDailyMenu({ 
+        date: state.selectedDate,
+        cutoffHour: createMenuCutoffHour || '14:00',
+      });
       setSelectedMenuId(newMenu.id);
       // Reload menus for the current selected date to include the newly created menu
       await loadDailyMenus(state.selectedDate);
+      // Reset cutoff hour to default
+      setCreateMenuCutoffHour('14:00');
     } catch (err: any) {
       setError(err.message || 'Failed to create daily menu');
     }
@@ -328,6 +335,33 @@ export default function MenusPage() {
     }
   };
 
+  // Unlock handler
+  const handleUnlock = async () => {
+    if (!dailyMenu) return;
+
+    try {
+      setError('');
+      await apiClient.unlockDailyMenu(dailyMenu.id);
+      await loadDailyMenuDetails(dailyMenu.id);
+    } catch (err: any) {
+      setError(err.message || 'Failed to unlock daily menu');
+    }
+  };
+
+  // Cutoff hour update handler
+  const handleCutoffHourUpdate = async (cutoffHour: string) => {
+    if (!dailyMenu) return;
+
+    try {
+      setError('');
+      await apiClient.updateDailyMenuCutoffHour(dailyMenu.id, cutoffHour);
+      await loadDailyMenuDetails(dailyMenu.id);
+    } catch (err: any) {
+      setError(err.message || 'Failed to update cutoff hour');
+      throw err;
+    }
+  };
+
   // Delete handler
   const handleDelete = async () => {
     if (!dailyMenu) return;
@@ -373,13 +407,18 @@ export default function MenusPage() {
             isReadOnly={isReadOnly}
             onPublish={() => setShowPublishConfirm(true)}
             onLock={handleLock}
+            onUnlock={handleUnlock}
+            onChangeCutoff={handleCutoffHourUpdate}
             onDelete={() => setShowDeleteConfirm(true)}
             showPublishConfirm={showPublishConfirm}
             showDeleteConfirm={showDeleteConfirm}
+            showCutoffEditor={showCutoffEditor}
             onPublishConfirm={handlePublish}
             onPublishCancel={() => setShowPublishConfirm(false)}
             onDeleteConfirm={handleDelete}
             onDeleteCancel={() => setShowDeleteConfirm(false)}
+            onCutoffEditorOpen={() => setShowCutoffEditor(true)}
+            onCutoffEditorClose={() => setShowCutoffEditor(false)}
           />
         )}
       </StickyHeader>
@@ -433,12 +472,29 @@ export default function MenusPage() {
                     }
                   />
                   {state.selectedDate >= today && (
-                    <button
-                      onClick={handleCreateDailyMenu}
-                      className="mt-4 px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
-                    >
-                      Create Menu
-                    </button>
+                    <div className="mt-4 space-y-4">
+                      <div>
+                        <label htmlFor="create-cutoff-hour" className="block text-sm font-medium text-gray-700 mb-2">
+                          Cutoff Hour (24-hour format)
+                        </label>
+                        <input
+                          id="create-cutoff-hour"
+                          type="time"
+                          value={createMenuCutoffHour}
+                          onChange={(e) => setCreateMenuCutoffHour(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        />
+                        <p className="mt-1 text-sm text-gray-500">
+                          Default: 14:00 (2:00 PM). Orders cannot be placed after this time.
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleCreateDailyMenu}
+                        className="w-full px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+                      >
+                        Create Menu
+                      </button>
+                    </div>
                   )}
                 </div>
               )}

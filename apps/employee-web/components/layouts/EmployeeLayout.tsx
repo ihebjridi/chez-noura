@@ -21,7 +21,7 @@ export function EmployeeLayout({
   const { logout, user } = useAuth();
 
   const isMenuPage = pathname === '/menu';
-  const isOrdersPage = pathname === '/orders';
+  const isOrdersPage = pathname === '/orders' || pathname === '/calendar';
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -71,14 +71,14 @@ export function EmployeeLayout({
             <div className="flex items-center gap-2 flex-shrink-0">
               {isMenuPage && (
                 <button
-                  onClick={() => router.push('/orders')}
+                  onClick={() => router.push('/calendar')}
                   className="p-2 hover:bg-surface-light rounded-md transition-colors relative"
                   aria-label="View orders"
                 >
                   <History className="w-5 h-5 text-gray-700" />
                 </button>
               )}
-              {isOrdersPage && (
+              {(isOrdersPage || pathname === '/calendar') && (
                 <button
                   onClick={() => router.push('/menu')}
                   className="px-3 py-1.5 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors text-sm font-semibold min-h-[44px] flex items-center gap-2"

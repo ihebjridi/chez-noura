@@ -398,6 +398,19 @@ class ApiClient {
     });
   }
 
+  async unlockDailyMenu(id: string): Promise<DailyMenuDto> {
+    return this.request<DailyMenuDto>(`/daily-menus/${id}/unlock`, {
+      method: 'POST',
+    });
+  }
+
+  async updateDailyMenuCutoffHour(id: string, cutoffHour: string): Promise<DailyMenuDto> {
+    return this.request<DailyMenuDto>(`/daily-menus/${id}/cutoff-hour`, {
+      method: 'PATCH',
+      body: JSON.stringify({ cutoffHour }),
+    });
+  }
+
   async deleteDailyMenu(id: string): Promise<void> {
     try {
       await this.request<void>(`/daily-menus/${id}`, {

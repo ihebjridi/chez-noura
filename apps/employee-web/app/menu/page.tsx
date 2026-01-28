@@ -154,7 +154,7 @@ export default function MenuPage() {
         selectedVariants,
       });
 
-      router.push('/orders?success=true');
+      router.push('/calendar?success=true');
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to place order';
       if (
@@ -222,7 +222,7 @@ export default function MenuPage() {
                   </div>
                   <p className="text-sm mb-3">{statusInfo.message}</p>
                   <button
-                    onClick={() => router.push('/orders')}
+                    onClick={() => router.push('/calendar')}
                     className="px-3 py-1.5 text-sm bg-white/50 hover:bg-white/70 rounded border font-medium transition-colors"
                   >
                     View Details

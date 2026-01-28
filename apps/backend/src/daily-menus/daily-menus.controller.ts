@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Delete,
+  Patch,
   Param,
   Query,
   Body,
@@ -34,6 +35,7 @@ import {
 import { CreateDailyMenuValidationDto } from './dto/create-daily-menu.dto';
 import { AddPackToDailyMenuValidationDto } from './dto/add-pack-to-daily-menu.dto';
 import { AddVariantToDailyMenuValidationDto } from './dto/add-variant-to-daily-menu.dto';
+import { UpdateCutoffHourValidationDto } from './dto/update-cutoff-hour.dto';
 
 @ApiTags('daily-menus')
 @ApiBearerAuth('JWT-auth')
@@ -163,6 +165,35 @@ export class DailyMenusController {
   @ApiResponse({ status: 404, description: 'Daily menu not found' })
   async lock(@Param('id') id: string): Promise<DailyMenuDto> {
     return this.dailyMenusService.lock(id);
+  }
+
+  @Post(':id/unlock')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Unlock a daily menu (LOCKED -> PUBLISHED)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Daily menu unlocked successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - Only LOCKED menus can be unlocked' })
+  @ApiResponse({ status: 404, description: 'Daily menu not found' })
+  async unlock(@Param('id') id: string): Promise<DailyMenuDto> {
+    return this.dailyMenusService.unlock(id);
+  }
+
+  @Patch(':id/cutoff-hour')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Update cutoff hour for a daily menu' })
+  @ApiResponse({
+    status: 200,
+    description: 'Cutoff hour updated successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - Invalid format or menu is LOCKED' })
+  @ApiResponse({ status: 404, description: 'Daily menu not found' })
+  async updateCutoffHour(
+    @Param('id') id: string,
+    @Body() updateDto: UpdateCutoffHourValidationDto,
+  ): Promise<DailyMenuDto> {
+    return this.dailyMenusService.updateCutoffHour(id, updateDto.cutoffHour);
   }
 
   @Delete(':id')

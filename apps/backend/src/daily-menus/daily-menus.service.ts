@@ -30,10 +30,14 @@ export class DailyMenusService {
       throw new BadRequestException(`Daily menu already exists for date ${createDto.date}`);
     }
 
+    // Default cutoff hour to "14:00" if not provided
+    const cutoffHour = createDto.cutoffHour || '14:00';
+
     const menu = await this.prisma.dailyMenu.create({
         data: {
           date,
           status: 'DRAFT' as any,
+          cutoffHour,
         },
     });
 
@@ -411,6 +415,63 @@ export class DailyMenusService {
     return this.mapToDto(updated);
   }
 
+  async unlock(id: string): Promise<DailyMenuDto> {
+    const menu = await this.prisma.dailyMenu.findUnique({
+      where: { id },
+    });
+
+    if (!menu) {
+      throw new NotFoundException(`Daily menu with ID ${id} not found`);
+    }
+
+    if (menu.status !== 'LOCKED') {
+      throw new BadRequestException(
+        `Cannot unlock menu with status ${menu.status}. Only LOCKED menus can be unlocked.`,
+      );
+    }
+
+    const updated = await this.prisma.dailyMenu.update({
+      where: { id },
+      data: {
+        status: 'PUBLISHED' as any,
+      },
+    });
+
+    return this.mapToDto(updated);
+  }
+
+  async updateCutoffHour(id: string, cutoffHour: string): Promise<DailyMenuDto> {
+    const menu = await this.prisma.dailyMenu.findUnique({
+      where: { id },
+    });
+
+    if (!menu) {
+      throw new NotFoundException(`Daily menu with ID ${id} not found`);
+    }
+
+    // Only allow updates for DRAFT and PUBLISHED menus (not LOCKED)
+    if (menu.status === 'LOCKED') {
+      throw new BadRequestException(
+        `Cannot update cutoff hour for menu with status ${menu.status}. Only DRAFT and PUBLISHED menus can have their cutoff hour updated.`,
+      );
+    }
+
+    // Validate format (should already be validated by DTO, but double-check)
+    const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(cutoffHour)) {
+      throw new BadRequestException('cutoffHour must be in HH:MM format (24-hour)');
+    }
+
+    const updated = await this.prisma.dailyMenu.update({
+      where: { id },
+      data: {
+        cutoffHour,
+      },
+    });
+
+    return this.mapToDto(updated);
+  }
+
   async delete(id: string): Promise<void> {
     const menu = await this.prisma.dailyMenu.findUnique({
       where: { id },
@@ -445,6 +506,7 @@ export class DailyMenusService {
       id: menu.id,
       date: dateString,
       status: menu.status as any,
+      cutoffHour: menu.cutoffHour || undefined,
       publishedAt: menu.publishedAt ? menu.publishedAt.toISOString() : undefined,
       createdAt: menu.createdAt.toISOString(),
       updatedAt: menu.updatedAt.toISOString(),

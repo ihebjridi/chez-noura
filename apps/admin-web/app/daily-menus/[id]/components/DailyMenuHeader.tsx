@@ -31,7 +31,10 @@ export function DailyMenuHeader({
     });
   };
 
-  const cutoffTime = new Date(dailyMenu.date + 'T14:00:00').toLocaleString('en-US', {
+  // Use cutoffHour from menu, default to "14:00" if not set
+  const cutoffHour = dailyMenu.cutoffHour || '14:00';
+  const [cutoffHourPart, cutoffMinutePart] = cutoffHour.split(':');
+  const cutoffTime = new Date(dailyMenu.date + `T${cutoffHourPart}:${cutoffMinutePart}:00`).toLocaleString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
   });

@@ -12,6 +12,7 @@ export interface DailyMenuDto {
   id: string;
   date: string; // ISO date string (YYYY-MM-DD)
   status: DailyMenuStatus;
+  cutoffHour?: string; // Cutoff hour in HH:MM format (e.g., "14:00")
   publishedAt?: string; // ISO datetime string
   createdAt: string;
   updatedAt: string;
@@ -46,6 +47,7 @@ export interface DailyMenuWithDetailsDto extends DailyMenuDto {
 
 export interface CreateDailyMenuDto {
   date: string; // ISO date string (YYYY-MM-DD)
+  cutoffHour?: string; // Cutoff hour in HH:MM format (e.g., "14:00"), defaults to "14:00" if not provided
 }
 
 export interface AddPackToDailyMenuDto {

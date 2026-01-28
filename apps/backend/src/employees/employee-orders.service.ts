@@ -281,6 +281,7 @@ export class EmployeeOrdersService {
                 variant: {
                   select: {
                     name: true,
+                    imageUrl: true,
                   },
                 },
               },
@@ -375,6 +376,7 @@ export class EmployeeOrdersService {
             variant: {
               select: {
                 name: true,
+                imageUrl: true,
               },
             },
           },
@@ -405,6 +407,7 @@ export class EmployeeOrdersService {
         componentName: item.component?.name || '',
         variantId: item.variantId,
         variantName: item.variant?.name || '',
+        variantImageUrl: item.variant?.imageUrl || undefined,
       })),
       totalAmount: Number(order.totalAmount),
       createdAt: order.createdAt.toISOString(),

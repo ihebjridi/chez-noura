@@ -185,6 +185,7 @@ model DailyMenu {
   id          String          @id @default(uuid())
   date        DateTime        @unique // Date (YYYY-MM-DD)
   status      DailyMenuStatus @default(DRAFT)
+  cutoffHour  String?         // Cutoff hour in HH:MM format (e.g., "14:00")
   publishedAt DateTime?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt

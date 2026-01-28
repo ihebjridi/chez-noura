@@ -122,10 +122,19 @@ export class EmployeeMenuService {
         };
       });
 
-    // Get cutoff time for this date
-    const cutoffTime = await this.orderingCutoffService.getCutoffTimeForDate(
-      dailyMenu.date.toISOString().split('T')[0],
-    );
+    // Calculate cutoff time from DailyMenu's cutoffHour
+    let cutoffTime: Date | null = null;
+    if (dailyMenu.cutoffHour) {
+      // Parse cutoffHour (HH:MM format, e.g., "14:00")
+      const [hours, minutes] = dailyMenu.cutoffHour.split(':').map(Number);
+      cutoffTime = new Date(dailyMenu.date);
+      cutoffTime.setHours(hours, minutes, 0, 0);
+    } else {
+      // Fallback to meal-based cutoff if no cutoffHour is set
+      cutoffTime = await this.orderingCutoffService.getCutoffTimeForDate(
+        dailyMenu.date.toISOString().split('T')[0],
+      );
+    }
 
     return {
       id: dailyMenu.id,

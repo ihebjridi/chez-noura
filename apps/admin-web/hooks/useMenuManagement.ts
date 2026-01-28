@@ -62,6 +62,28 @@ export function useMenuManagement() {
     }
   }, [loadMenus]);
 
+  const unlockMenu = useCallback(async (menuId: string) => {
+    try {
+      setError('');
+      await apiClient.unlockDailyMenu(menuId);
+      await loadMenus();
+    } catch (err: any) {
+      setError(err.message || 'Failed to unlock menu');
+      throw err;
+    }
+  }, [loadMenus]);
+
+  const updateCutoffHour = useCallback(async (menuId: string, cutoffHour: string) => {
+    try {
+      setError('');
+      await apiClient.updateDailyMenuCutoffHour(menuId, cutoffHour);
+      await loadMenus();
+    } catch (err: any) {
+      setError(err.message || 'Failed to update cutoff hour');
+      throw err;
+    }
+  }, [loadMenus]);
+
   const deleteMenu = useCallback(async (menuId: string) => {
     try {
       setError('');
@@ -82,6 +104,8 @@ export function useMenuManagement() {
     createMenu,
     publishMenu,
     lockMenu,
+    unlockMenu,
+    updateCutoffHour,
     deleteMenu,
     setError,
     setPublishWarnings,

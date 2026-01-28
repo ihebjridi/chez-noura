@@ -86,7 +86,7 @@ function OrderConfirmContent() {
         packId,
         selectedVariants,
       });
-      router.push('/orders?success=true');
+      router.push('/calendar?success=true');
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to place order';
       if (
@@ -182,9 +182,22 @@ function OrderConfirmContent() {
                     );
                     return (
                       selectedVariant && (
-                        <div key={component.id} className="text-sm">
-                          <span className="font-medium text-gray-900">{component.name}:</span>{' '}
-                          <span className="text-gray-700">{selectedVariant.name}</span>
+                        <div key={component.id} className="flex items-center gap-3 py-2">
+                          {selectedVariant.imageUrl ? (
+                            <img
+                              src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${selectedVariant.imageUrl}`}
+                              alt={selectedVariant.name}
+                              className="w-12 h-12 object-cover rounded-md border border-surface-dark flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-surface-light border border-surface-dark rounded-md flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
+                              No image
+                            </div>
+                          )}
+                          <div className="text-sm">
+                            <span className="font-medium text-gray-900">{component.name}:</span>{' '}
+                            <span className="text-gray-700">{selectedVariant.name}</span>
+                          </div>
                         </div>
                       )
                     );

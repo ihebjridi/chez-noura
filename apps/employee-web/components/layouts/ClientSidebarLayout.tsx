@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, ReactNode } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useState, ReactNode, Suspense } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Logo } from '../logo';
 import { useAuth } from '../../contexts/auth-context';
@@ -23,20 +23,20 @@ interface ClientSidebarLayoutProps {
 const navigation = [
   { name: 'Today', href: '/today', icon: Calendar },
   { name: 'New Order', href: '/new-order', icon: Plus },
-  { name: 'My Calendar', href: '/calendar', icon: CalendarDays },
-  { name: 'Order History', href: '/orders', icon: History },
+  { name: 'Order History', href: '/calendar', icon: History },
   { name: 'My Company', href: '/company', icon: Building2 },
 ];
 
-export function ClientSidebarLayout({ children }: ClientSidebarLayoutProps) {
+function NavigationContent({ children }: ClientSidebarLayoutProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { logout, user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navigationWithCurrent = navigation.map((item) => ({
     ...item,
-    current: pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href)),
+    current: pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href.split('?')[0])),
   }));
 
   return (
@@ -133,5 +133,13 @@ export function ClientSidebarLayout({ children }: ClientSidebarLayoutProps) {
         </main>
       </div>
     </div>
+  );
+}
+
+export function ClientSidebarLayout({ children }: ClientSidebarLayoutProps) {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <NavigationContent>{children}</NavigationContent>
+    </Suspense>
   );
 }

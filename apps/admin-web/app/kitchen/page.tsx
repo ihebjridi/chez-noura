@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { apiClient } from '../../lib/api-client';
 import {
   KitchenSummaryDto,
@@ -10,9 +11,10 @@ import {
 import { Loading } from '../../components/ui/loading';
 import { Error } from '../../components/ui/error';
 import { Empty } from '../../components/ui/empty';
-import { getTodayISO } from '../../lib/date-utils';
+import { getTodayISO, normalizeDateString } from '../../lib/date-utils';
 
 export default function KitchenPage() {
+  const searchParams = useSearchParams();
   const [date, setDate] = useState(getTodayISO());
   const [summary, setSummary] = useState<KitchenSummaryDto | null>(null);
   const [businessSummary, setBusinessSummary] = useState<KitchenBusinessSummaryDto | null>(null);
@@ -21,11 +23,21 @@ export default function KitchenPage() {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'chef' | 'summary' | 'business'>('chef');
 
+  // Read date from URL search params on mount
+  useEffect(() => {
+    const dateParam = searchParams.get('date');
+    if (dateParam) {
+      const normalizedDate = normalizeDateString(dateParam);
+      setDate(normalizedDate);
+    }
+  }, [searchParams]);
+
   const loadSummary = async () => {
     try {
       setLoading(true);
       setError('');
-      const data = await apiClient.getKitchenSummary(date);
+      const normalizedDate = normalizeDateString(date);
+      const data = await apiClient.getKitchenSummary(normalizedDate);
       setSummary(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load kitchen summary');
@@ -38,7 +50,8 @@ export default function KitchenPage() {
     try {
       setLoading(true);
       setError('');
-      const data = await apiClient.getKitchenBusinessSummary(date);
+      const normalizedDate = normalizeDateString(date);
+      const data = await apiClient.getKitchenBusinessSummary(normalizedDate);
       setBusinessSummary(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load business summary');
@@ -51,7 +64,8 @@ export default function KitchenPage() {
     try {
       setLoading(true);
       setError('');
-      const data = await apiClient.getKitchenDetailedSummary(date);
+      const normalizedDate = normalizeDateString(date);
+      const data = await apiClient.getKitchenDetailedSummary(normalizedDate);
       setDetailedSummary(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load detailed summary');
@@ -61,15 +75,16 @@ export default function KitchenPage() {
   };
 
   const handleLockDay = async () => {
-    if (!confirm(`Close all orders for ${date}? This action cannot be undone.`)) {
+    const normalizedDate = normalizeDateString(date);
+    if (!confirm(`Close all orders for ${normalizedDate}? This action cannot be undone.`)) {
       return;
     }
 
     try {
       setLoading(true);
       setError('');
-      await apiClient.lockDay(date);
-      setError(`Orders for ${date} closed successfully`);
+      await apiClient.lockDay(normalizedDate);
+      setError(`Orders for ${normalizedDate} closed successfully`);
       if (activeTab === 'chef') {
         await loadDetailedSummary();
       } else if (activeTab === 'summary') {
@@ -127,7 +142,8 @@ export default function KitchenPage() {
               type="date"
               value={date}
               onChange={(e) => {
-                setDate(e.target.value);
+                const normalizedDate = normalizeDateString(e.target.value);
+                setDate(normalizedDate);
                 setSummary(null);
                 setBusinessSummary(null);
                 setDetailedSummary(null);
