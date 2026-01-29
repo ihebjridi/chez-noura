@@ -1,15 +1,235 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBusinessServices } from '../../hooks/useBusinessServices';
 import { useAuth } from '../../contexts/auth-context';
-import { ServiceDto, BusinessServiceDto, ActivateServiceDto, ServiceWithPacksDto, PackWithComponentsDto } from '@contracts/core';
+import {
+  ServiceDto,
+  BusinessServiceDto,
+  ServiceWithPacksDto,
+  PackWithComponentsDto,
+} from '@contracts/core';
+import type { VariantDto } from '@contracts/core';
 import { apiClient } from '../../lib/api-client';
 import { Loading } from '../../components/ui/loading';
 import { Error } from '../../components/ui/error';
 import { Empty } from '../../components/ui/empty';
-import { CheckCircle2, XCircle, ChevronDown, ChevronUp, Package, Plus, Info } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '../../components/ui/dialog';
+import { CheckCircle2, Package, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+
+// --- Types ---
+
+type PackComponent = PackWithComponentsDto['components'][number];
+
+// --- Service card header (static, no collapse) ---
+
+function ServiceCardHeader({
+  service,
+  businessService,
+}: {
+  service: ServiceDto;
+  businessService: BusinessServiceDto;
+}) {
+  const { t } = useTranslation();
+  const activePacksCount = businessService.packs.filter((p) => p.isActive).length;
+
+  return (
+    <CardHeader className="pb-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg flex-shrink-0">
+            <Package className="w-5 h-5 text-white" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <CardTitle className="text-lg font-semibold text-gray-900">
+              {service.name}
+            </CardTitle>
+            {service.description && (
+              <p className="text-sm text-gray-600 mt-1">{service.description}</p>
+            )}
+          </div>
+        </div>
+        <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+      </div>
+
+      {(service.orderStartTime || service.cutoffTime) && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-xs text-gray-500">
+          {service.orderStartTime && (
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {t('services.orderStarts')}: {service.orderStartTime}
+            </span>
+          )}
+          {service.cutoffTime && (
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {t('services.cutoffTime')}: {service.cutoffTime}
+            </span>
+          )}
+        </div>
+      )}
+
+      <div className="mt-3 pt-3 border-t border-gray-200">
+        <p className="text-sm text-gray-600">
+          {activePacksCount === 1
+            ? t('services.packsActivated', { count: 1 })
+            : t('services.packsActivated_plural', { count: activePacksCount })}
+        </p>
+      </div>
+    </CardHeader>
+  );
+}
+
+// --- Collapsible pack block (name, price, components list, variants per component) ---
+
+function PackBlock({
+  packId,
+  packName,
+  packPrice,
+  nextPackName,
+  effectiveDate,
+  components,
+  isExpanded,
+  onToggle,
+  variantsByComponentId,
+  variantsLoading,
+  action,
+  appearance = 'active',
+  hasScheduledChange,
+  onCancelScheduledChange,
+  t,
+}: {
+  packId: string;
+  packName: string;
+  packPrice: number;
+  nextPackName?: string;
+  effectiveDate?: string;
+  components: PackComponent[];
+  isExpanded: boolean;
+  onToggle: () => void;
+  variantsByComponentId: Map<string, VariantDto[]>;
+  variantsLoading: boolean;
+  action?: ReactNode;
+  appearance?: 'active' | 'alternate';
+  hasScheduledChange?: boolean;
+  onCancelScheduledChange?: () => void;
+  t: (key: string) => string;
+}) {
+  const sortedComponents = [...components].sort((a, b) => a.orderIndex - b.orderIndex);
+  const isActive = appearance !== 'alternate';
+  const bg = isActive ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200';
+  const hoverBg = isActive ? 'hover:bg-green-100/50' : 'hover:bg-gray-100/50';
+
+  return (
+    <div className={`${bg} rounded-lg border overflow-hidden`}>
+      <div
+        className={`p-4 flex items-center gap-3 rounded-lg ${hoverBg} transition-colors`}
+      >
+        <button
+          type="button"
+          onClick={onToggle}
+          className={`flex-1 min-w-0 text-left flex items-center justify-between gap-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-inset rounded-lg`}
+          aria-expanded={isExpanded}
+        >
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <span className="font-semibold text-lg text-gray-900">{packName}</span>
+            <span className="text-sm font-medium text-gray-700">{packPrice.toFixed(2)} TND</span>
+          </div>
+          <span className="text-gray-500 flex-shrink-0" aria-hidden>
+            {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+          </span>
+        </button>
+        {action && <div className="flex-shrink-0">{action}</div>}
+      </div>
+
+      {nextPackName && effectiveDate && (
+        <div className="px-4 pb-2 flex flex-col gap-2">
+          <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700 font-medium">
+            {t('services.packChangeScheduled')}: {nextPackName} {t('services.effectiveFrom')}{' '}
+            {effectiveDate}
+          </div>
+          {isActive && hasScheduledChange && onCancelScheduledChange && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCancelScheduledChange();
+              }}
+              className="self-start px-3 py-1.5 text-xs font-medium text-blue-700 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              {t('services.cancelScheduledChange')}
+            </button>
+          )}
+        </div>
+      )}
+
+      {isExpanded && (
+        <div className={`px-4 pb-4 pt-0 border-t ${isActive ? 'border-green-200' : 'border-gray-200'}`}>
+          {sortedComponents.length === 0 ? (
+            <p className="text-sm text-gray-500 pt-3">{t('services.noComponentsAvailable')}</p>
+          ) : (
+            <>
+              <h5 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 pt-3">
+                {t('services.packIncludes')}
+              </h5>
+              <ul className="space-y-3">
+                {sortedComponents.map((component) => {
+                  const variants = variantsByComponentId.get(component.componentId) ?? [];
+                  const activeVariants = variants.filter((v) => v.isActive);
+                  return (
+                    <li key={component.id} className="text-sm">
+                      <div className="flex items-center gap-2 py-1">
+                        <span
+                          className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                            component.required ? 'bg-green-600' : 'bg-gray-400'
+                          }`}
+                        />
+                        <span className="font-medium text-gray-900">{component.componentName}</span>
+                        {component.required && (
+                          <span className="text-xs text-gray-500">({t('services.required')})</span>
+                        )}
+                      </div>
+                      {variantsLoading ? (
+                        <p className="text-xs text-gray-500 pl-4 mt-0.5">
+                          {t('services.loading')}
+                        </p>
+                      ) : activeVariants.length > 0 ? (
+                        <div className="pl-4 mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
+                          <span className="text-xs text-gray-600">
+                            {t('services.variants')}:
+                          </span>
+                          {activeVariants.map((v) => (
+                            <span
+                              key={v.id}
+                              className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded"
+                            >
+                              {v.name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- Main page ---
 
 export default function ServicesPage() {
   const { t } = useTranslation();
@@ -20,442 +240,410 @@ export default function ServicesPage() {
     loading,
     error,
     loadBusinessServices,
-    activateService,
     updateService,
-    deactivateService,
     setError,
   } = useBusinessServices();
-  const [expandedServiceId, setExpandedServiceId] = useState<string | null>(null);
+
+  // Cached API data for all subscribed services (loaded on mount)
   const [serviceDetails, setServiceDetails] = useState<Map<string, ServiceWithPacksDto>>(new Map());
-  const [loadingDetails, setLoadingDetails] = useState<string | null>(null);
-  const [selectedPacks, setSelectedPacks] = useState<Map<string, Set<string>>>(new Map());
-  const [activatingServiceId, setActivatingServiceId] = useState<string | null>(null);
   const [packDetails, setPackDetails] = useState<Map<string, PackWithComponentsDto>>(new Map());
-  const [loadingPackDetails, setLoadingPackDetails] = useState<Set<string>>(new Set());
-  const [expandedPackId, setExpandedPackId] = useState<string | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(true);
 
-  useEffect(() => {
-    if (user?.businessId) {
-      loadBusinessServices();
-    }
-  }, [user, loadBusinessServices]);
+  // Collapsible packs: which pack IDs are expanded
+  const [expandedPackIds, setExpandedPackIds] = useState<Set<string>>(new Set());
+  // Variants per component (componentId -> VariantDto[]), loaded when a pack is expanded
+  const [componentVariants, setComponentVariants] = useState<Map<string, VariantDto[]>>(new Map());
+  const [variantsLoadingForPacks, setVariantsLoadingForPacks] = useState<Set<string>>(new Set());
 
-  const loadServiceDetails = async (serviceId: string) => {
-    if (serviceDetails.has(serviceId)) {
-      return;
-    }
+  const togglePack = useCallback((packId: string) => {
+    setExpandedPackIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(packId)) next.delete(packId);
+      else next.add(packId);
+      return next;
+    });
+  }, []);
+
+  // When a pack is expanded, load variants for its components
+  const loadVariantsForPack = useCallback(async (packId: string) => {
+    const packDetail = packDetails.get(packId);
+    if (!packDetail?.components?.length) return;
+    setVariantsLoadingForPacks((prev) => new Set(prev).add(packId));
     try {
-      setLoadingDetails(serviceId);
-      const details = await apiClient.getServiceById(serviceId);
-      setServiceDetails((prev) => new Map(prev).set(serviceId, details));
-      
-      // Preload pack details for all packs in this service
-      const packIds = details.packs.map((p) => p.packId);
-      await Promise.all(
-        packIds.map((packId) => {
-          if (!packDetails.has(packId)) {
-            return loadPackDetails(packId);
-          }
-        })
+      const results = await Promise.all(
+        packDetail.components.map((c) => apiClient.getComponentVariants(c.componentId))
       );
-    } catch (err: any) {
-      setError(err.message || t('services.failedToLoadServiceDetails'));
+      setComponentVariants((prev) => {
+        const next = new Map(prev);
+        packDetail.components.forEach((c, i) => next.set(c.componentId, results[i] ?? []));
+        return next;
+      });
+    } catch (e) {
+      console.error('Failed to load variants for pack:', e);
     } finally {
-      setLoadingDetails(null);
-    }
-  };
-
-  const loadPackDetails = async (packId: string) => {
-    if (packDetails.has(packId)) {
-      return;
-    }
-    try {
-      setLoadingPackDetails((prev) => new Set(prev).add(packId));
-      const details = await apiClient.getPackById(packId);
-      setPackDetails((prev) => new Map(prev).set(packId, details));
-    } catch (err: any) {
-      // Silently fail - pack details are optional
-      console.error('Failed to load pack details:', err);
-    } finally {
-      setLoadingPackDetails((prev) => {
+      setVariantsLoadingForPacks((prev) => {
         const next = new Set(prev);
         next.delete(packId);
         return next;
       });
     }
-  };
+  }, [packDetails]);
 
-  const handleTogglePackDetails = (packId: string) => {
-    if (expandedPackId === packId) {
-      setExpandedPackId(null);
-    } else {
-      setExpandedPackId(packId);
-      loadPackDetails(packId);
-    }
-  };
-
-  const handleToggleExpand = (serviceId: string) => {
-    if (expandedServiceId === serviceId) {
-      setExpandedServiceId(null);
-    } else {
-      setExpandedServiceId(serviceId);
-      loadServiceDetails(serviceId);
-    }
-  };
-
-  const handleSelectPack = (serviceId: string, packId: string) => {
-    setSelectedPacks((prev) => {
-      const newMap = new Map(prev);
-      // Only one pack can be selected per service
-      newMap.set(serviceId, new Set([packId]));
-      return newMap;
+  // Load variants when a pack is expanded (skip if we already have variants for its components)
+  useEffect(() => {
+    expandedPackIds.forEach((packId) => {
+      const packDetail = packDetails.get(packId);
+      if (!packDetail?.components?.length) return;
+      const hasAll = packDetail.components.every((c) =>
+        componentVariants.has(c.componentId)
+      );
+      if (!hasAll) loadVariantsForPack(packId);
     });
-  };
+  }, [expandedPackIds, packDetails, componentVariants, loadVariantsForPack]);
 
-  const handleActivateService = async (serviceId: string) => {
-    const packIds = Array.from(selectedPacks.get(serviceId) || []);
-    if (packIds.length === 0) {
-      setError(t('services.selectPack'));
+  useEffect(() => {
+    if (user?.businessId) loadBusinessServices();
+  }, [user?.businessId, loadBusinessServices]);
+
+  // Load details for all subscribed services when business services are available
+  const serviceIdsKey = businessServices
+    .map((bs) => bs.serviceId)
+    .sort()
+    .join(',');
+
+  useEffect(() => {
+    if (!serviceIdsKey) {
+      setDetailsLoading(false);
       return;
     }
+    let cancelled = false;
+    setDetailsLoading(true);
+    (async () => {
+      try {
+        for (const bs of businessServices) {
+          if (cancelled) return;
+          const details = await apiClient.getServiceById(bs.serviceId);
+          if (cancelled) return;
+          setServiceDetails((prev) => new Map(prev).set(bs.serviceId, details));
+          for (const p of details.packs) {
+            if (cancelled) return;
+            const packDetail = await apiClient.getPackById(p.packId);
+            if (cancelled) return;
+            setPackDetails((prev) => new Map(prev).set(p.packId, packDetail));
+          }
+        }
+      } catch (err: any) {
+        if (!cancelled) setError(err?.message || t('services.failedToLoadServiceDetails'));
+      } finally {
+        if (!cancelled) setDetailsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- serviceIdsKey encodes businessServices identity; we intentionally don't depend on serviceDetails/packDetails
+  }, [serviceIdsKey, setError, t]);
 
+  // Pack change confirmation: show dialog before applying
+  const [pendingPackChange, setPendingPackChange] = useState<{
+    serviceId: string;
+    packId: string;
+    packName: string;
+  } | null>(null);
+  const [switchingPack, setSwitchingPack] = useState(false);
+
+  // Cancel scheduled pack change: show dialog before cancelling
+  const [pendingCancelPackChange, setPendingCancelPackChange] = useState<{
+    serviceId: string;
+    packId: string;
+    packName: string;
+  } | null>(null);
+  const [cancellingPackChange, setCancellingPackChange] = useState(false);
+
+  const handleSwitchPack = useCallback(
+    async (serviceId: string, packId: string) => {
+      try {
+        setError('');
+        setSwitchingPack(true);
+        await updateService(serviceId, { packIds: [packId] });
+        setServiceDetails(new Map());
+        setPendingPackChange(null);
+        await loadBusinessServices();
+      } catch {
+        // setError from hook
+      } finally {
+        setSwitchingPack(false);
+      }
+    },
+    [updateService, loadBusinessServices, setError]
+  );
+
+  const openChangePackDialog = useCallback(
+    (serviceId: string, packId: string, packName: string) => {
+      setPendingPackChange({ serviceId, packId, packName });
+    },
+    []
+  );
+
+  const confirmChangePack = useCallback(() => {
+    if (!pendingPackChange) return;
+    handleSwitchPack(pendingPackChange.serviceId, pendingPackChange.packId);
+  }, [pendingPackChange, handleSwitchPack]);
+
+  const openCancelPackChangeDialog = useCallback(
+    (serviceId: string, packId: string, packName: string) => {
+      setPendingCancelPackChange({ serviceId, packId, packName });
+    },
+    []
+  );
+
+  const confirmCancelPackChange = useCallback(async () => {
+    if (!pendingCancelPackChange) return;
     try {
-      setActivatingServiceId(serviceId);
       setError('');
-      await activateService({ serviceId, packIds });
-      setSelectedPacks((prev) => {
-        const newMap = new Map(prev);
-        newMap.delete(serviceId);
-        return newMap;
+      setCancellingPackChange(true);
+      await updateService(pendingCancelPackChange.serviceId, {
+        packIds: [pendingCancelPackChange.packId],
       });
-    } catch (err: any) {
-      // Error is already set by the hook
-    } finally {
-      setActivatingServiceId(null);
-    }
-  };
-
-  const handleUpdateServicePacks = async (serviceId: string, packIds: string[]) => {
-    try {
-      setError('');
-      await updateService(serviceId, { packIds });
-      setServiceDetails(new Map()); // Clear cache to reload
+      setServiceDetails(new Map());
+      setPendingCancelPackChange(null);
       await loadBusinessServices();
-    } catch (err: any) {
-      // Error is already set by the hook
+    } catch {
+      // setError from hook
+    } finally {
+      setCancellingPackChange(false);
     }
-  };
+  }, [pendingCancelPackChange, updateService, loadBusinessServices, setError]);
 
-  const handleDeactivateService = async (serviceId: string) => {
-    if (!confirm(t('services.confirmDeactivate'))) {
-      return;
-    }
-
-    try {
-      setError('');
-      await deactivateService(serviceId);
-    } catch (err: any) {
-      // Error is already set by the hook
-    }
-  };
-
-  const getActivatedService = (serviceId: string): BusinessServiceDto | undefined => {
-    return businessServices.find((bs) => bs.serviceId === serviceId && bs.isActive);
-  };
-
-  const getAvailableServices = (): ServiceDto[] => {
-    const activatedServiceIds = new Set(businessServices.map((bs) => bs.serviceId));
-    // Backend already filters by isPublished and isActive for BUSINESS_ADMIN, so we just need to filter out already activated services
-    return allServices.filter((s) => !activatedServiceIds.has(s.id));
-  };
-
-  if (loading) {
-    return <Loading />;
-  }
+  if (loading) return <Loading />;
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t('services.title')}</h1>
-        <p className="text-sm text-gray-600 mt-1">
-          {t('services.subtitleReadonly')}
-        </p>
+        <h1 className="text-3xl font-bold text-gray-900">{t('services.title')}</h1>
+        <p className="text-sm text-gray-600 mt-1">{t('services.subtitleReadonly')}</p>
       </div>
 
       {error && <Error message={error} onRetry={() => setError('')} />}
 
-      {/* Activated Services */}
-      {businessServices.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold mb-4">{t('services.activatedServices')}</h2>
-          <div className="space-y-4">
+      {/* Pack change confirmation dialog */}
+      <Dialog open={!!pendingPackChange} onOpenChange={(open) => !open && setPendingPackChange(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('services.changePackConfirmTitle')}</DialogTitle>
+            <DialogDescription className="pt-1">
+              {t('services.changePackConditions')}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <button
+              type="button"
+              onClick={() => setPendingPackChange(null)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            >
+              {t('services.cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={confirmChangePack}
+              disabled={switchingPack || !pendingPackChange}
+              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none"
+            >
+              {switchingPack ? t('services.loading') : t('services.confirmChangePack')}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel scheduled pack change confirmation */}
+      <Dialog
+        open={!!pendingCancelPackChange}
+        onOpenChange={(open) => !open && setPendingCancelPackChange(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('services.cancelScheduledChangeTitle')}</DialogTitle>
+            <DialogDescription className="pt-1">
+              {t('services.cancelScheduledChangeDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <button
+              type="button"
+              onClick={() => setPendingCancelPackChange(null)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            >
+              {t('services.cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={confirmCancelPackChange}
+              disabled={cancellingPackChange || !pendingCancelPackChange}
+              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none"
+            >
+              {cancellingPackChange ? t('services.loading') : t('services.confirmCancelChange')}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {businessServices.length === 0 ? (
+        <Empty message={t('services.noServicesActivated')} />
+      ) : (
+        <>
+          <h2 className="text-xl font-semibold text-gray-900">{t('services.activatedServices')}</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {businessServices.map((businessService) => {
               const service = allServices.find((s) => s.id === businessService.serviceId);
               if (!service) return null;
 
               const details = serviceDetails.get(service.id);
-              const isExpanded = expandedServiceId === service.id;
 
               return (
-                <div key={businessService.id} className="bg-white rounded-lg shadow p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <Package className="h-5 w-5 text-gray-400" />
-                        <h3 className="text-lg font-semibold">{service.name}</h3>
-                        <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      </div>
-                      {service.description && (
-                        <p className="text-sm text-gray-600 mt-1">{service.description}</p>
-                      )}
-                      {(service.orderStartTime || service.cutoffTime) && (
-                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                          {service.orderStartTime && (
-                            <span>{t('services.orderStarts')}: {service.orderStartTime}</span>
-                          )}
-                          {service.cutoffTime && (
-                            <span>{t('services.cutoffTime')}: {service.cutoffTime}</span>
-                          )}
-                        </div>
-                      )}
-                      <p className="text-sm text-gray-500 mt-1">
-                        {businessService.packs.filter((p) => p.isActive).length === 1
-                          ? t('services.packsActivated', { count: 1 })
-                          : t('services.packsActivated_plural', { count: businessService.packs.filter((p) => p.isActive).length })}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleToggleExpand(service.id)}
-                        className="p-2 text-gray-400 hover:text-gray-600"
-                      >
-                        {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                      </button>
-                    </div>
-                  </div>
+                <Card key={businessService.id}>
+                  <ServiceCardHeader
+                    service={service}
+                    businessService={businessService}
+                  />
 
-                  {isExpanded && (
-                    <div className="mt-4 pt-4 border-t">
-                      {loadingDetails === service.id ? (
-                        <div className="text-center py-4">{t('services.loading')}</div>
-                      ) : details ? (
-                        <div className="space-y-4">
-                          <div>
-                            <h4 className="font-medium mb-2">{t('services.activatedPacks')}</h4>
-                            {businessService.packs.filter((p) => p.isActive).length === 0 ? (
-                              <p className="text-sm text-gray-500">{t('services.noPacksActivated')}</p>
-                            ) : (
-                              <div className="space-y-3">
-                                {businessService.packs.filter((pack) => pack.isActive).map((pack) => {
+                  <CardContent className="pt-0">
+                    {detailsLoading ? (
+                      <div className="py-8 flex justify-center">
+                        <Loading />
+                      </div>
+                    ) : !details ? (
+                      <p className="text-center text-gray-500 py-4 text-sm">
+                        {t('services.failedToLoadServiceDetails')}
+                      </p>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* Activated packs */}
+                        <section>
+                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                            <Package className="w-4 h-4" />
+                            {t('services.activatedPacks')}
+                          </h4>
+                          {businessService.packs.filter((p) => p.isActive).length === 0 ? (
+                            <p className="text-sm text-gray-500">{t('services.noPacksActivated')}</p>
+                          ) : (
+                            <div className="space-y-4">
+                              {businessService.packs
+                                .filter((p) => p.isActive)
+                                .map((pack) => {
                                   const packDetail = packDetails.get(pack.packId);
-                                  const isPackExpanded = expandedPackId === pack.packId;
-                                  const isLoadingPack = loadingPackDetails.has(pack.packId);
-                                  
                                   return (
-                                    <div
-                                      key={pack.id}
-                                      className="bg-green-50 rounded-lg border border-green-200 overflow-hidden"
-                                    >
-                                      <div className="flex items-center justify-between p-3">
-                                        <div className="flex-1">
-                                          <div className="flex items-center gap-2">
-                                            <span className="font-semibold text-gray-900">{pack.packName}</span>
-                                            <span className="text-sm font-medium text-gray-700">
-                                              {pack.packPrice.toFixed(2)} TND
-                                            </span>
-                                          </div>
-                                          {pack.nextPackId && pack.effectiveDate && (
-                                            <div className="mt-1 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
-                                              <span className="text-blue-700 font-medium">
-                                                {t('services.packChangeScheduled')}: {pack.nextPackName} {t('services.effectiveFrom')} {pack.effectiveDate}
-                                              </span>
-                                            </div>
-                                          )}
-                                          {packDetail && packDetail.components.length > 0 && (
-                                            <p className="text-xs text-gray-600 mt-1">
-                                              {packDetail.components.length} {packDetail.components.length === 1 ? t('services.component') : t('services.components')}
-                                            </p>
-                                          )}
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                          {packDetail && packDetail.components.length > 0 && (
-                                            <button
-                                              onClick={() => handleTogglePackDetails(pack.packId)}
-                                              className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-green-100 rounded transition-colors"
-                                              title={t('services.viewPackDetails')}
-                                            >
-                                              {isPackExpanded ? (
-                                                <ChevronUp className="h-4 w-4" />
-                                              ) : (
-                                                <ChevronDown className="h-4 w-4" />
-                                              )}
-                                            </button>
-                                          )}
-                                        </div>
-                                      </div>
-                                      
-                                      {isPackExpanded && (
-                                        <div className="px-3 pb-3 border-t border-green-200 pt-3">
-                                          {isLoadingPack ? (
-                                            <div className="text-center py-2 text-sm text-gray-500">
-                                              {t('services.loading')}
-                                            </div>
-                                          ) : packDetail && packDetail.components.length > 0 ? (
-                                            <div className="space-y-2">
-                                              <h5 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
-                                                {t('services.packIncludes')}
-                                              </h5>
-                                              <div className="space-y-1.5">
-                                                {packDetail.components
-                                                  .sort((a, b) => a.orderIndex - b.orderIndex)
-                                                  .map((component) => (
-                                                    <div
-                                                      key={component.id}
-                                                      className="flex items-center gap-2 text-sm"
-                                                    >
-                                                      <div className={`w-1.5 h-1.5 rounded-full ${component.required ? 'bg-green-600' : 'bg-gray-400'}`} />
-                                                      <span className="text-gray-700">{component.componentName}</span>
-                                                      {component.required && (
-                                                        <span className="text-xs text-gray-500">({t('services.required')})</span>
-                                                      )}
-                                                    </div>
-                                                  ))}
-                                              </div>
-                                            </div>
-                                          ) : (
-                                            <p className="text-sm text-gray-500">{t('services.noComponentsAvailable')}</p>
-                                          )}
+                                    <div key={pack.id}>
+                                      {packDetail ? (
+                                        <PackBlock
+                                          packId={pack.packId}
+                                          packName={pack.packName}
+                                          packPrice={pack.packPrice}
+                                          nextPackName={pack.nextPackName}
+                                          effectiveDate={pack.effectiveDate}
+                                          components={packDetail.components}
+                                          isExpanded={expandedPackIds.has(pack.packId)}
+                                          onToggle={() => togglePack(pack.packId)}
+                                          variantsByComponentId={componentVariants}
+                                          variantsLoading={variantsLoadingForPacks.has(pack.packId)}
+                                          hasScheduledChange={
+                                            !!(pack.nextPackName && pack.effectiveDate)
+                                          }
+                                          onCancelScheduledChange={() =>
+                                            openCancelPackChangeDialog(
+                                              service.id,
+                                              pack.packId,
+                                              pack.packName
+                                            )
+                                          }
+                                          t={t}
+                                        />
+                                      ) : (
+                                        <div className="bg-green-50 rounded-lg border border-green-200 p-4">
+                                          <p className="text-sm text-gray-500">
+                                            {pack.packName} — {t('services.noComponentsAvailable')}
+                                          </p>
                                         </div>
                                       )}
                                     </div>
                                   );
                                 })}
-                              </div>
-                            )}
-                          </div>
-
-                          {details.packs.length > businessService.packs.filter((p) => p.isActive).length && (
-                            <div>
-                              <h4 className="font-medium mb-2">{t('services.changePack')}</h4>
-                              <div className="space-y-2">
-                                {details.packs
-                                  .filter(
-                                    (sp) => !businessService.packs.filter((p) => p.isActive).some((bp) => bp.packId === sp.packId),
-                                  )
-                                  .map((servicePack) => (
-                                    <div
-                                      key={servicePack.id}
-                                      className="bg-gray-50 rounded-lg border-2 border-transparent hover:border-primary-300 transition-colors overflow-hidden"
-                                    >
-                                      <div className="flex items-center justify-between p-3">
-                                        <div className="flex-1">
-                                          <div className="flex items-center gap-2">
-                                            <span className="font-semibold text-gray-900">{servicePack.packName}</span>
-                                            <span className="text-sm font-medium text-gray-700">
-                                              {servicePack.packPrice.toFixed(2)} TND
-                                            </span>
-                                          </div>
-                                          {(() => {
-                                            const packDetail = packDetails.get(servicePack.packId);
-                                            return packDetail && packDetail.components.length > 0 ? (
-                                              <p className="text-xs text-gray-600 mt-1">
-                                                {packDetail.components.length} {packDetail.components.length === 1 ? t('services.component') : t('services.components')}
-                                              </p>
-                                            ) : null;
-                                          })()}
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                          {(() => {
-                                            const packDetail = packDetails.get(servicePack.packId);
-                                            const isPackExpanded = expandedPackId === servicePack.packId;
-                                            const isLoadingPack = loadingPackDetails.has(servicePack.packId);
-                                            
-                                            return packDetail && packDetail.components.length > 0 ? (
-                                              <button
-                                                onClick={() => handleTogglePackDetails(servicePack.packId)}
-                                                className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                                                title={t('services.viewPackDetails')}
-                                              >
-                                                {isPackExpanded ? (
-                                                  <ChevronUp className="h-4 w-4" />
-                                                ) : (
-                                                  <ChevronDown className="h-4 w-4" />
-                                                )}
-                                              </button>
-                                            ) : null;
-                                          })()}
-                                          <button
-                                            onClick={() =>
-                                              handleUpdateServicePacks(service.id, [servicePack.packId])
-                                            }
-                                            className="px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
-                                          >
-                                            {t('services.switchToThisPack')}
-                                          </button>
-                                          <p className="text-xs text-gray-500 mt-1">
-                                            {t('services.packChangeEffectiveNextDay')}
-                                          </p>
-                                        </div>
-                                      </div>
-                                      
-                                      {expandedPackId === servicePack.packId && (() => {
-                                        const packDetail = packDetails.get(servicePack.packId);
-                                        const isLoadingPack = loadingPackDetails.has(servicePack.packId);
-                                        
-                                        return (
-                                          <div className="px-3 pb-3 border-t border-gray-200 pt-3">
-                                            {isLoadingPack ? (
-                                              <div className="text-center py-2 text-sm text-gray-500">
-                                                {t('services.loading')}
-                                              </div>
-                                            ) : packDetail && packDetail.components.length > 0 ? (
-                                              <div className="space-y-2">
-                                                <h5 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
-                                                  {t('services.packIncludes')}
-                                                </h5>
-                                                <div className="space-y-1.5">
-                                                  {packDetail.components
-                                                    .sort((a, b) => a.orderIndex - b.orderIndex)
-                                                    .map((component) => (
-                                                      <div
-                                                        key={component.id}
-                                                        className="flex items-center gap-2 text-sm"
-                                                      >
-                                                        <div className={`w-1.5 h-1.5 rounded-full ${component.required ? 'bg-primary-600' : 'bg-gray-400'}`} />
-                                                        <span className="text-gray-700">{component.componentName}</span>
-                                                        {component.required && (
-                                                          <span className="text-xs text-gray-500">({t('services.required')})</span>
-                                                        )}
-                                                      </div>
-                                                    ))}
-                                                </div>
-                                              </div>
-                                            ) : (
-                                              <p className="text-sm text-gray-500">{t('services.noComponentsAvailable')}</p>
-                                            )}
-                                          </div>
-                                        );
-                                      })()}
-                                    </div>
-                                  ))}
-                              </div>
                             </div>
                           )}
-                        </div>
-                      ) : (
-                        <div className="text-center py-4 text-gray-500">{t('services.clickToLoadDetails')}</div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                        </section>
+
+                        {/* Change pack (other packs in service) */}
+                        {details.packs.filter(
+                          (sp) =>
+                            !businessService.packs
+                              .filter((p) => p.isActive)
+                              .some((bp) => bp.packId === sp.packId)
+                        ).length > 0 && (
+                          <section>
+                            <h4 className="font-semibold text-gray-900 mb-3">
+                              {t('services.changePack')}
+                            </h4>
+                            <div className="space-y-3">
+                              {details.packs
+                                .filter(
+                                  (sp) =>
+                                    !businessService.packs
+                                      .filter((p) => p.isActive)
+                                      .some((bp) => bp.packId === sp.packId)
+                                )
+                                .map((servicePack) => {
+                                  const packDetail = packDetails.get(servicePack.packId);
+                                  return (
+                                    <div key={servicePack.id}>
+                                      {packDetail && packDetail.components.length > 0 ? (
+                                        <PackBlock
+                                          packId={servicePack.packId}
+                                          packName={servicePack.packName}
+                                          packPrice={servicePack.packPrice}
+                                          components={packDetail.components}
+                                          isExpanded={expandedPackIds.has(servicePack.packId)}
+                                          onToggle={() => togglePack(servicePack.packId)}
+                                          variantsByComponentId={componentVariants}
+                                          variantsLoading={variantsLoadingForPacks.has(servicePack.packId)}
+                                          action={
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                openChangePackDialog(
+                                                  service.id,
+                                                  servicePack.packId,
+                                                  servicePack.packName
+                                                );
+                                              }}
+                                              className="px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                                            >
+                                              {t('services.switchToThisPack')}
+                                            </button>
+                                          }
+                                          appearance="alternate"
+                                          t={t}
+                                        />
+                                      ) : (
+                                        <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+                                          <p className="text-sm text-gray-500">
+                                            {t('services.noComponentsAvailable')}
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          </section>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
-        </div>
-      )}
-
-      {businessServices.length === 0 && (
-        <Empty message={t('services.noServicesActivated')} />
+        </>
       )}
     </div>
   );

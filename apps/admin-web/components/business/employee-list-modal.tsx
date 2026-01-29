@@ -7,6 +7,14 @@ import { Error } from '../ui/error';
 import { Empty } from '../ui/empty';
 import { StatusBadge } from '../ui/status-badge';
 import { Button } from '../ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../ui/table';
 import { formatDateTime } from '../../lib/date-utils';
 import { X } from 'lucide-react';
 
@@ -55,7 +63,7 @@ export function EmployeeListModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-surface-dark">
@@ -85,46 +93,38 @@ export function EmployeeListModal({
             />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-surface-light">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Created
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-surface divide-y divide-surface-dark">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {employees.map((employee) => (
-                    <tr key={employee.id} className="hover:bg-surface-light">
-                      <td className="px-4 py-3 whitespace-nowrap">
+                    <TableRow key={employee.id}>
+                      <TableCell className="whitespace-nowrap">
                         <span className="text-sm font-medium text-gray-900">
                           {employee.firstName} {employee.lastName}
                         </span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
                         <span className="text-sm text-gray-600">{employee.email}</span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
                         <StatusBadge status={employee.status} />
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
                         <span className="text-sm text-gray-600">
                           {formatDateTime(employee.createdAt)}
                         </span>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>

@@ -18,3 +18,4 @@ export * from './employee-order.dto';
 export * from './activity-log.dto';
 export * from './service.dto';
 export * from './business-service.dto';
+export * from './business-dashboard.dto';

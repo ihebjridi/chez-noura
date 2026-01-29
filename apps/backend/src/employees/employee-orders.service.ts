@@ -89,6 +89,28 @@ export class EmployeeOrdersService {
             },
           },
         },
+        services: {
+          include: {
+            service: {
+              include: {
+                servicePacks: {
+                  include: {
+                    pack: true,
+                  },
+                },
+              },
+            },
+            variants: {
+              include: {
+                variant: {
+                  include: {
+                    component: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -153,7 +175,18 @@ export class EmployeeOrdersService {
       throw new BadRequestException('Duplicate component selections are not allowed');
     }
 
+    // Build pack-to-service mapping to check if variants are available via service
+    const packToServiceMap = new Map<string, string>();
+    for (const dailyMenuService of dailyMenu.services) {
+      for (const servicePack of dailyMenuService.service.servicePacks) {
+        packToServiceMap.set(servicePack.packId, dailyMenuService.serviceId);
+      }
+    }
+
     // Validate variants belong to DailyMenu and have stock
+    // Variants can be available either:
+    // 1. As pack-level variants (DailyMenuVariant)
+    // 2. As service-level variants (DailyMenuServiceVariant) for the pack's service
     const dailyMenuVariantMap = new Map(
       dailyMenu.variants.map((dmv) => [dmv.variantId, dmv]),
     );
@@ -161,8 +194,41 @@ export class EmployeeOrdersService {
       dailyMenu.variants.map((dmv) => [dmv.variantId, dmv.variant]),
     );
 
+    // Build service-level variant map
+    const serviceVariantMap = new Map<string, any>();
+    for (const dailyMenuService of dailyMenu.services) {
+      for (const serviceVariant of dailyMenuService.variants) {
+        const key = `${dailyMenuService.serviceId}:${serviceVariant.variantId}`;
+        serviceVariantMap.set(key, serviceVariant);
+        // Also add variant to variantMap if not already present
+        if (!variantMap.has(serviceVariant.variantId)) {
+          variantMap.set(serviceVariant.variantId, serviceVariant.variant);
+        }
+      }
+    }
+
     for (const selectedVariant of createOrderDto.selectedVariants) {
-      const dailyMenuVariant = dailyMenuVariantMap.get(selectedVariant.variantId);
+      // Check if variant is available as pack-level variant
+      let dailyMenuVariant = dailyMenuVariantMap.get(selectedVariant.variantId);
+
+      // If not found as pack-level, check if it's available as service-level variant
+      if (!dailyMenuVariant) {
+        const serviceId = packToServiceMap.get(createOrderDto.packId);
+        if (serviceId) {
+          const serviceVariantKey = `${serviceId}:${selectedVariant.variantId}`;
+          const serviceVariant = serviceVariantMap.get(serviceVariantKey);
+          if (serviceVariant) {
+            // Create a compatible structure with variant included
+            dailyMenuVariant = {
+              id: serviceVariant.id,
+              variantId: serviceVariant.variantId,
+              initialStock: serviceVariant.initialStock,
+              variant: serviceVariant.variant,
+            } as any;
+          }
+        }
+      }
+
       if (!dailyMenuVariant) {
         throw new BadRequestException(
           `Variant ${selectedVariant.variantId} is not available in this daily menu`,
@@ -216,21 +282,72 @@ export class EmployeeOrdersService {
     try {
       const order = await this.prisma.$transaction(async (tx) => {
         // Re-check stock within transaction to prevent race conditions
+        // Check both pack-level and service-level variants
+        const variantIds = createOrderDto.selectedVariants.map((v) => v.variantId);
+        
         const dailyMenuVariantsInTx = await tx.dailyMenuVariant.findMany({
           where: {
             dailyMenuId: dailyMenu.id,
-            variantId: { in: createOrderDto.selectedVariants.map((v) => v.variantId) },
+            variantId: { in: variantIds },
           },
           include: {
             variant: true,
           },
         });
 
-        // Verify stock is still available
-        for (const dailyMenuVariant of dailyMenuVariantsInTx) {
-          if (dailyMenuVariant.initialStock <= 0) {
+        // Get service ID for the pack
+        const serviceId = packToServiceMap.get(createOrderDto.packId);
+        let dailyMenuServiceVariantsInTx: any[] = [];
+        
+        if (serviceId) {
+          // Find the DailyMenuService for this service
+          const dailyMenuService = await tx.dailyMenuService.findFirst({
+            where: {
+              dailyMenuId: dailyMenu.id,
+              serviceId: serviceId,
+            },
+          });
+
+          if (dailyMenuService) {
+            dailyMenuServiceVariantsInTx = await tx.dailyMenuServiceVariant.findMany({
+              where: {
+                dailyMenuServiceId: dailyMenuService.id,
+                variantId: { in: variantIds },
+              },
+              include: {
+                variant: true,
+              },
+            });
+          }
+        }
+
+        // Build a map of variantId -> stock source (pack-level or service-level)
+        // Pack-level variants take precedence if both exist
+        const variantStockMap = new Map<string, { type: 'pack' | 'service'; stock: any }>();
+        
+        // First add pack-level variants
+        for (const dmv of dailyMenuVariantsInTx) {
+          variantStockMap.set(dmv.variantId, { type: 'pack', stock: dmv });
+        }
+        
+        // Then add service-level variants only if pack-level doesn't exist
+        for (const smv of dailyMenuServiceVariantsInTx) {
+          if (!variantStockMap.has(smv.variantId)) {
+            variantStockMap.set(smv.variantId, { type: 'service', stock: smv });
+          }
+        }
+
+        // Verify stock is still available for all selected variants
+        for (const selectedVariant of createOrderDto.selectedVariants) {
+          const stockInfo = variantStockMap.get(selectedVariant.variantId);
+          if (!stockInfo) {
             throw new BadRequestException(
-              `Variant "${dailyMenuVariant.variant.name}" is out of stock`,
+              `Variant ${selectedVariant.variantId} is not available in this daily menu`,
+            );
+          }
+          if (stockInfo.stock.initialStock <= 0) {
+            throw new BadRequestException(
+              `Variant "${stockInfo.stock.variant.name}" is out of stock`,
             );
           }
         }
@@ -289,18 +406,36 @@ export class EmployeeOrdersService {
           },
         });
 
-        // Decrement stock from DailyMenuVariant atomically
+        // Decrement stock from the appropriate source (pack-level or service-level) atomically
         await Promise.all(
-          dailyMenuVariantsInTx.map((dailyMenuVariant) =>
-            tx.dailyMenuVariant.update({
-              where: { id: dailyMenuVariant.id },
-              data: {
-                initialStock: {
-                  decrement: 1,
+          createOrderDto.selectedVariants.map((selectedVariant) => {
+            const stockInfo = variantStockMap.get(selectedVariant.variantId);
+            if (!stockInfo) {
+              throw new BadRequestException(
+                `Variant ${selectedVariant.variantId} is not available in this daily menu`,
+              );
+            }
+
+            if (stockInfo.type === 'pack') {
+              return tx.dailyMenuVariant.update({
+                where: { id: stockInfo.stock.id },
+                data: {
+                  initialStock: {
+                    decrement: 1,
+                  },
                 },
-              },
-            }),
-          ),
+              });
+            } else {
+              return tx.dailyMenuServiceVariant.update({
+                where: { id: stockInfo.stock.id },
+                data: {
+                  initialStock: {
+                    decrement: 1,
+                  },
+                },
+              });
+            }
+          }),
         );
 
         return newOrder;

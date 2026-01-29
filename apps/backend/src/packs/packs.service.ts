@@ -19,6 +19,7 @@ import {
   AvailableVariantDto,
   PackStatisticsDto,
   RecentOrderDto,
+  ComponentPackUsageDto,
 } from '@contracts/core';
 import { Prisma } from '@prisma/client';
 
@@ -314,6 +315,29 @@ export class PacksService {
     });
 
     return packComponents.map((pc) => this.mapPackComponentToDto(pc));
+  }
+
+  /**
+   * Get packs that include a given component (for component-centric "Used in packs" view)
+   */
+  async getPacksByComponentId(componentId: string): Promise<ComponentPackUsageDto[]> {
+    const component = await this.prisma.component.findUnique({
+      where: { id: componentId },
+    });
+    if (!component) {
+      throw new NotFoundException(`Component with ID ${componentId} not found`);
+    }
+    const packComponents = await this.prisma.packComponent.findMany({
+      where: { componentId },
+      include: { pack: true },
+      orderBy: { orderIndex: 'asc' },
+    });
+    return packComponents.map((pc) => ({
+      packId: pc.packId,
+      packName: pc.pack.name,
+      required: pc.required,
+      orderIndex: pc.orderIndex,
+    }));
   }
 
   /**

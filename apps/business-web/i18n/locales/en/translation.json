@@ -64,7 +64,9 @@
       "paidAt": "Paid At",
       "businessEmail": "Business Email",
       "items": "Items",
-      "orderDate": "Order Date"
+      "orderDate": "Order Date",
+      "inStock": "in stock",
+      "outOfStock": "out of stock"
     },
     "status": {
       "active": "ACTIVE",
@@ -129,6 +131,9 @@
     "noSubscribedServices": "No subscribed services",
     "noSubscribedServicesDescription": "Activate services to make them available to your employees.",
     "manageServices": "Manage and activate services",
+    "allTimeStats": "All Time Stats",
+    "totalOrdersAllTime": "Total Orders (All Time)",
+    "totalCostAllTime": "Total Cost (All Time)",
     "statistics": {
       "totalOrders": "Total Orders",
       "totalEmployees": "Total Employees",
@@ -165,7 +170,26 @@
     "noSearchResultsDescription": "Try adjusting your search query.",
     "showingResults": "Showing {{start}} to {{end}} of {{total}} employees",
     "previousPage": "Previous page",
-    "nextPage": "Next page"
+    "nextPage": "Next page",
+    "bulkImport": "Bulk import",
+    "bulkImportDescription": "Download a CSV template, fill in your employees (email, first name, last name), then upload it here.",
+    "downloadTemplate": "Download template",
+    "uploadCsv": "Upload CSV",
+    "csvUploading": "Uploading...",
+    "csvInvalidFormat": "Invalid CSV: first row must have headers email, firstName, lastName.",
+    "csvEmailRequired": "Email is required",
+    "csvInvalidEmail": "Invalid email format",
+    "csvFirstNameRequired": "First name is required",
+    "csvLastNameRequired": "Last name is required",
+    "csvValidationErrors": "{{count}} row(s) have validation errors. Fix them and try again.",
+    "csvNoRows": "CSV has no data rows (only headers).",
+    "csvUploadSuccess": "{{count}} employee(s) created successfully.",
+    "csvUploadPartial": "{{created}} created, {{failed}} failed.",
+    "csvUploadFailed": "No employees were created. See errors below.",
+    "csvCreatedCount": "{{count}} employee(s) created.",
+    "csvFailedCount": "{{count}} row(s) failed:",
+    "csvRowError": "Row {{row}} ({{email}}): {{reason}}",
+    "csvMoreErrors": "... and {{count}} more."
   },
   "orders": {
     "title": "Orders",
@@ -237,6 +261,16 @@
     "packChangeEffectiveNextDay": "This change will take effect tomorrow",
     "packChangeScheduled": "Pack change scheduled",
     "effectiveFrom": "effective from",
-    "noServicesActivated": "No services are currently activated for your business. Contact your administrator to activate services."
+    "noServicesActivated": "No services are currently activated for your business. Contact your administrator to activate services.",
+    "noVariantsAvailable": "No variants available",
+    "variants": "Variants",
+    "changePackConfirmTitle": "Change pack?",
+    "changePackConditions": "This change will take effect at the start of the next service day. Until then, the current pack remains active. Your employees will see the new pack from that date.",
+    "cancel": "Cancel",
+    "confirmChangePack": "Confirm change",
+    "cancelScheduledChange": "Cancel scheduled change",
+    "cancelScheduledChangeTitle": "Cancel scheduled pack change?",
+    "cancelScheduledChangeDescription": "The scheduled change will be cancelled. The current pack will remain active.",
+    "confirmCancelChange": "Yes, cancel change"
   }
 }

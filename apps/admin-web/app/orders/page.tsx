@@ -7,6 +7,14 @@ import { Loading } from '../../components/ui/loading';
 import { Empty } from '../../components/ui/empty';
 import { Error } from '../../components/ui/error';
 import { PageHeader } from '../../components/ui/page-header';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../components/ui/table';
 import { StatusBadge } from '../../components/ui/status-badge';
 import { formatDate, formatDateTime } from '../../lib/date-utils';
 import { ChevronDown, ChevronRight, Building2 } from 'lucide-react';
@@ -143,84 +151,70 @@ export default function OrdersPage() {
                 {/* Orders Table */}
                 {isBusinessExpanded && (
                   <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-surface-light">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-8"></th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Date
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Employee
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Pack
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                          </th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Total
-                          </th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Items
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Created At
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-surface divide-y divide-surface-dark">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-8"></TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Employee</TableHead>
+                          <TableHead>Pack</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Total</TableHead>
+                          <TableHead className="text-center">Items</TableHead>
+                          <TableHead>Created At</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
                         {businessOrders.map((order) => {
                           const isOrderExpanded = expandedOrders.has(order.id);
                           return (
                             <React.Fragment key={order.id}>
-                              <tr
-                                className="hover:bg-surface-light cursor-pointer"
+                              <TableRow
+                                className="cursor-pointer"
                                 onClick={() => toggleOrder(order.id)}
                               >
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <TableCell className="whitespace-nowrap">
                                   {isOrderExpanded ? (
                                     <ChevronDown className="w-4 h-4 text-gray-500" />
                                   ) : (
                                     <ChevronRight className="w-4 h-4 text-gray-500" />
                                   )}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap text-sm text-gray-900 font-medium">
                                   {formatDate(order.orderDate)}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap">
                                   <div className="text-sm font-medium text-gray-900">
                                     {order.employeeName}
                                   </div>
                                   <div className="text-sm text-gray-600 font-normal">
                                     {order.employeeEmail}
                                   </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap">
                                   <div className="text-sm text-gray-900 font-medium">
                                     {order.packName}
                                   </div>
                                   <div className="text-sm text-gray-600 font-normal">
                                     {order.packPrice.toFixed(2)} TND
                                   </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap">
                                   <StatusBadge status={order.status} />
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap text-sm text-gray-900 text-right font-medium">
                                   {order.totalAmount.toFixed(2)} TND
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-center font-normal">
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap text-sm text-gray-600 text-center font-normal">
                                   {order.items.length}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-normal">
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap text-sm text-gray-600 font-normal">
                                   {formatDateTime(order.createdAt)}
-                                </td>
-                              </tr>
+                                </TableCell>
+                              </TableRow>
                               {isOrderExpanded && (
-                                <tr>
-                                  <td
+                                <TableRow>
+                                  <TableCell
                                     colSpan={8}
                                     className="px-6 py-4 bg-surface-light"
                                   >
@@ -314,14 +308,14 @@ export default function OrdersPage() {
                                         </div>
                                       </div>
                                     </div>
-                                  </td>
-                                </tr>
+                                  </TableCell>
+                                </TableRow>
                               )}
                             </React.Fragment>
                           );
                         })}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
                 )}
               </div>

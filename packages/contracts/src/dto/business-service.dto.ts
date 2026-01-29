@@ -8,6 +8,10 @@ export interface BusinessServiceDto {
   serviceId: string;
   serviceName: string;
   serviceDescription?: string;
+  /** Time in HH:MM when orders start being accepted each day */
+  orderStartTime?: string;
+  /** Time in HH:MM when orders stop being accepted each day */
+  cutoffTime?: string;
   isActive: boolean;
   packs: BusinessServicePackDto[];
   createdAt: string;

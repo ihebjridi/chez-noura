@@ -13,6 +13,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 COMPOSE_FILE="docker-compose.prod.yml"
+ENV_FILE=".env.prod"
 
 # Functions
 log_info() {
@@ -33,16 +34,24 @@ if [ ! -f "$COMPOSE_FILE" ]; then
     exit 1
 fi
 
+# Compose invocation: use env file if present
+COMPOSE_CMD="docker compose -f $COMPOSE_FILE"
+if [ -f "$ENV_FILE" ]; then
+    COMPOSE_CMD="$COMPOSE_CMD --env-file $ENV_FILE"
+else
+    log_warn "Env file not found: $ENV_FILE (using default env)"
+fi
+
 # Check if backend service is running
-if ! docker compose -f "$COMPOSE_FILE" ps backend | grep -q "Up"; then
-    log_error "Backend service is not running. Please start it first with: docker compose -f $COMPOSE_FILE up -d"
+if ! $COMPOSE_CMD ps backend | grep -q "Up"; then
+    log_error "Backend service is not running. Please start it first with: $COMPOSE_CMD up -d"
     exit 1
 fi
 
 log_info "Running database seed script..."
 
 # Run seed script
-docker compose -f "$COMPOSE_FILE" exec backend pnpm --filter backend prisma:seed || {
+$COMPOSE_CMD exec backend sh -lc 'cd /app/apps/backend && pnpm dlx tsx prisma/seed.ts' || {
     log_error "Seed failed!"
     exit 1
 }

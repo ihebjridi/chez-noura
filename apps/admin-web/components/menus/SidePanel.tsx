@@ -107,6 +107,9 @@ export function SidePanel({
                               {service.description && (
                                 <div className="text-xs text-gray-600 mt-1">{service.description}</div>
                               )}
+                              <div className="text-xs text-gray-500 mt-1">
+                                Order start: {service.orderStartTime || '—'} · Cutoff: {service.cutoffTime || '—'}
+                              </div>
                             </div>
                           </div>
                           <button

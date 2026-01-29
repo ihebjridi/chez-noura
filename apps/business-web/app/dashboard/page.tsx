@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { apiClient } from '../../lib/api-client';
-import { OrderDto, BusinessServiceDto } from '@contracts/core';
+import { OrderDto, OrderItemDto, BusinessServiceDto, BusinessDashboardSummaryDto } from '@contracts/core';
 import { Loading } from '../../components/ui/loading';
 import { Empty } from '../../components/ui/empty';
 import { Error } from '../../components/ui/error';
@@ -17,7 +17,7 @@ import { useAuth } from '../../contexts/auth-context';
 export default function DashboardPage() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const [orders, setOrders] = useState<OrderDto[]>([]);
+  const [summary, setSummary] = useState<BusinessDashboardSummaryDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedDate, setSelectedDate] = useState(getTodayISO());
@@ -29,23 +29,13 @@ export default function DashboardPage() {
   const today = getTodayISO();
 
   const formatFullDate = (dateString: string) => {
-    const date = new Date(dateString);
-    // Get locale from cookie or default to French
-    let locale = 'fr';
-    if (typeof document !== 'undefined') {
-      try {
-        const cookies = document.cookie.split(';');
-        const localeCookie = cookies.find(c => c.trim().startsWith('NEXT_LOCALE='));
-        if (localeCookie) {
-          const loc = localeCookie.split('=')[1].trim();
-          if (loc === 'fr' || loc === 'en') {
-            locale = loc;
-          }
-        }
-      } catch (e) {
-        // Fallback to default
-      }
-    }
+    // Parse YYYY-MM-DD as local calendar date to avoid timezone shifting the day
+    const parts = dateString.split('-').map(Number);
+    const date =
+      parts.length === 3 && parts.every((n) => !Number.isNaN(n))
+        ? new Date(parts[0], parts[1] - 1, parts[2])
+        : new Date(dateString);
+    const locale = i18n.language === 'en' ? 'en' : 'fr';
     return date.toLocaleDateString(locale, {
       weekday: 'long',
       year: 'numeric',
@@ -54,44 +44,7 @@ export default function DashboardPage() {
     });
   };
 
-  useEffect(() => {
-    loadOrders();
-    if (user?.businessId) {
-      loadBusinessServices();
-    }
-  }, [user, loadBusinessServices]);
-
-  // Auto-refresh every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      loadOrders(false); // Silent refresh
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Refresh when page becomes visible (user switches back to tab)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        loadOrders(false); // Silent refresh
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, []);
-
-  // Refresh when selected date changes (but not on initial mount)
-  useEffect(() => {
-    if (orders.length > 0 && !loading) {
-      // Only refresh if we already have orders loaded (not on initial mount)
-      loadOrders(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate]);
-
-  const loadOrders = async (showLoading: boolean = true) => {
+  const loadDashboardSummary = async (showLoading: boolean = true) => {
     try {
       if (showLoading) {
         setLoading(true);
@@ -99,8 +52,8 @@ export default function DashboardPage() {
         setRefreshing(true);
       }
       setError('');
-      const data = await apiClient.getBusinessOrders();
-      setOrders(data);
+      const data = await apiClient.getDashboardSummary(selectedDate);
+      setSummary(data);
     } catch (err: any) {
       setError(err.message || t('common.messages.failedToLoad'));
     } finally {
@@ -109,16 +62,46 @@ export default function DashboardPage() {
     }
   };
 
-  const dailyOrders = useMemo(() => {
-    // Backend returns orderDate as YYYY-MM-DD (local timezone)
-    // Extract just the date part if it includes time, otherwise use as-is
-    return orders.filter((order) => {
-      const orderDateOnly = order.orderDate.includes('T') 
-        ? order.orderDate.split('T')[0] 
-        : order.orderDate;
-      return orderDateOnly === selectedDate;
-    });
-  }, [orders, selectedDate]);
+  useEffect(() => {
+    loadDashboardSummary(true);
+    if (user?.businessId) {
+      loadBusinessServices();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, loadBusinessServices]);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadDashboardSummary(false);
+    }, 30000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Refresh when page becomes visible (user switches back to tab)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadDashboardSummary(false);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Refresh when selected date changes (after initial load)
+  useEffect(() => {
+    if (summary !== null && !loading) {
+      loadDashboardSummary(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate]);
+
+  const dailyOrders = useMemo(() => summary?.orders ?? [], [summary]);
 
   const packSummary = useMemo(() => {
     const summary: Record<
@@ -132,7 +115,7 @@ export default function DashboardPage() {
       }
     > = {};
 
-    dailyOrders.forEach((order) => {
+    dailyOrders.forEach((order: OrderDto) => {
       if (!summary[order.packId]) {
         const packPrice = typeof order.packPrice === 'string' ? parseFloat(order.packPrice) : (order.packPrice || 0);
         summary[order.packId] = {
@@ -146,7 +129,7 @@ export default function DashboardPage() {
       summary[order.packId].count++;
       summary[order.packId].orders.push(order);
 
-      order.items.forEach((item) => {
+      order.items.forEach((item: OrderItemDto) => {
         if (!summary[order.packId].variantBreakdown[item.componentName]) {
           summary[order.packId].variantBreakdown[item.componentName] = {};
         }
@@ -163,13 +146,12 @@ export default function DashboardPage() {
     return Object.values(summary);
   }, [dailyOrders]);
 
-  // Calculate stats
-  const totalOrdersToday = dailyOrders.length;
-  const totalCostToday = dailyOrders.reduce((sum, order) => {
-    const amount = typeof order.totalAmount === 'string' ? parseFloat(order.totalAmount) : (order.totalAmount || 0);
-    return sum + (isNaN(amount) ? 0 : amount);
-  }, 0);
-  const uniqueEmployees = new Set(dailyOrders.map(order => order.employeeId)).size;
+  // Stats from dashboard summary (active employees = status ACTIVE, not from orders)
+  const totalOrdersToday = summary?.totalOrders ?? 0;
+  const totalCostToday = summary?.totalCost ?? 0;
+  const activeEmployeesCount = summary?.activeEmployeesCount ?? 0;
+  const totalOrdersAllTime = summary?.totalOrdersAllTime ?? 0;
+  const totalCostAllTime = summary?.totalCostAllTime ?? 0;
 
   // Get active subscribed services
   const activeServices = useMemo(() => {
@@ -178,6 +160,54 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8">
+      {/* All Time Stats Section */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('dashboard.allTimeStats')}</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="p-6 hover:scale-105 transition-transform duration-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">{t('dashboard.totalOrdersAllTime')}</p>
+                <p className="text-4xl font-bold text-black">{totalOrdersAllTime}</p>
+              </div>
+              <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <ShoppingCart className="w-7 h-7 text-white" />
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 hover:scale-105 transition-transform duration-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">{t('dashboard.totalCostAllTime')}</p>
+                <p className="text-4xl font-bold text-black">
+                  {totalCostAllTime.toLocaleString(i18n.language || 'fr', {
+                    style: 'currency',
+                    currency: 'TND',
+                    minimumFractionDigits: 0,
+                  })}
+                </p>
+              </div>
+              <div className="w-14 h-14 bg-gradient-to-br from-accent-500 to-accent-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <DollarSign className="w-7 h-7 text-white" />
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 hover:scale-105 transition-transform duration-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">{t('dashboard.activeEmployees')}</p>
+                <p className="text-4xl font-bold text-black">{activeEmployeesCount}</p>
+              </div>
+              <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <Users className="w-7 h-7 text-white" />
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+
       {/* Date Selector Tabs */}
       <div className="mb-6">
         <div className="bg-white border-2 border-gray-200 rounded-2xl p-5 shadow-md">
@@ -189,7 +219,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => loadOrders(true)}
+              onClick={() => loadDashboardSummary(true)}
               disabled={refreshing || loading}
               className="px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-primary-600 to-primary-700 text-white hover:from-primary-700 hover:to-primary-800 transition-all duration-200 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed flex items-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
               title={t('dashboard.refreshData')}
@@ -213,7 +243,7 @@ export default function DashboardPage() {
                       setSelectedDate(e.target.value);
                       setShowDatePicker(false);
                     }}
-                    min={today}
+                    max={today}
                     className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
@@ -226,12 +256,12 @@ export default function DashboardPage() {
       {/* Error Display */}
       {error && (
         <div className="mb-6">
-          <Error message={error} onRetry={loadOrders} />
+          <Error message={error} onRetry={() => loadDashboardSummary(true)} />
         </div>
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <Card className="p-6 hover:scale-105 transition-transform duration-200">
           <div className="flex items-center justify-between">
             <div>
@@ -258,18 +288,6 @@ export default function DashboardPage() {
             </div>
             <div className="w-14 h-14 bg-gradient-to-br from-accent-500 to-accent-600 rounded-2xl flex items-center justify-center shadow-lg">
               <DollarSign className="w-7 h-7 text-white" />
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6 hover:scale-105 transition-transform duration-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">{t('dashboard.activeEmployees')}</p>
-              <p className="text-4xl font-bold text-black">{uniqueEmployees}</p>
-            </div>
-            <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <Users className="w-7 h-7 text-white" />
             </div>
           </div>
         </Card>

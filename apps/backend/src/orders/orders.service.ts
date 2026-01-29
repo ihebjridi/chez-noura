@@ -537,6 +537,79 @@ export class OrdersService {
   }
 
   /**
+   * Get orders for a business for a specific date (YYYY-MM-DD).
+   * Used by business dashboard summary.
+   */
+  async getBusinessOrdersByDate(user: TokenPayload, date: string): Promise<OrderDto[]> {
+    if (user.role !== UserRole.BUSINESS_ADMIN && user.role !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Only business admins and super admins can access business orders');
+    }
+
+    const where: Prisma.OrderWhereInput = {};
+
+    if (user.role === UserRole.BUSINESS_ADMIN) {
+      if (!user.businessId) {
+        throw new BadRequestException('Business ID not found');
+      }
+      where.businessId = user.businessId;
+    }
+
+    // Interpret date (YYYY-MM-DD) as local calendar date so it matches order creation
+    // (orders use setHours(0,0,0,0) = local midnight for the menu date)
+    const [y, m, d] = date.split('-').map(Number);
+    const dateStart = new Date(y, m - 1, d, 0, 0, 0, 0);
+    const dateEnd = new Date(y, m - 1, d + 1, 0, 0, 0, 0);
+    where.orderDate = {
+      gte: dateStart,
+      lt: dateEnd,
+    };
+
+    const orders = await this.prisma.order.findMany({
+      where,
+      include: {
+        employee: {
+          select: {
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        business: {
+          select: {
+            name: true,
+          },
+        },
+        pack: {
+          select: {
+            name: true,
+            price: true,
+          },
+        },
+        items: {
+          include: {
+            component: {
+              select: {
+                name: true,
+              },
+            },
+            variant: {
+              select: {
+                name: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        orderDate: 'desc',
+      },
+    });
+
+    return orders.map((order) => this.mapOrderToDto(order));
+  }
+
+  /**
    * Get all orders (admin view)
    * Only SUPER_ADMIN can access this endpoint
    */

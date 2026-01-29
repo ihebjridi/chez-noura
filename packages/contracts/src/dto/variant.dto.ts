@@ -23,6 +23,7 @@ export interface CreateVariantDto {
 }
 
 export interface UpdateVariantDto {
+  componentId?: string;
   name?: string;
   stockQuantity?: number;
   imageUrl?: string;

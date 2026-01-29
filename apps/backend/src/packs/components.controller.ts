@@ -22,6 +22,7 @@ import {
   ApiConsumes,
 } from '@nestjs/swagger';
 import { ComponentsService } from './components.service';
+import { PacksService } from './packs.service';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards';
 import { Roles, CurrentUser } from '../auth/decorators';
 import {
@@ -30,8 +31,10 @@ import {
   TokenPayload,
   UserRole,
   ComponentStatisticsDto,
+  ComponentPackUsageDto,
 } from '@contracts/core';
 import { CreateComponentDtoClass } from './dto/create-component.dto';
+import { UpdateComponentDtoClass } from './dto/update-component.dto';
 import { CreateVariantDtoClass } from './dto/create-variant.dto';
 import { UpdateVariantDtoClass } from './dto/update-variant.dto';
 
@@ -40,7 +43,10 @@ import { UpdateVariantDtoClass } from './dto/update-variant.dto';
 @Controller('components')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ComponentsController {
-  constructor(private readonly componentsService: ComponentsService) {}
+  constructor(
+    private readonly componentsService: ComponentsService,
+    private readonly packsService: PacksService,
+  ) {}
 
   @Post()
   @Roles(UserRole.SUPER_ADMIN)
@@ -67,6 +73,25 @@ export class ComponentsController {
   })
   async findAllComponents(): Promise<ComponentDto[]> {
     return this.componentsService.findAllComponents();
+  }
+
+  @Patch(':id')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Update a component' })
+  @ApiParam({ name: 'id', description: 'Component ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Component updated successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 404, description: 'Component not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - SUPER_ADMIN only' })
+  async updateComponent(
+    @Param('id') componentId: string,
+    @Body() updateComponentDto: UpdateComponentDtoClass,
+    @CurrentUser() user: TokenPayload,
+  ): Promise<ComponentDto> {
+    return this.componentsService.updateComponent(componentId, updateComponentDto, user);
   }
 
   @Delete(':id')
@@ -123,6 +148,21 @@ export class ComponentsController {
     @Param('id') componentId: string,
   ): Promise<VariantDto[]> {
     return this.componentsService.getComponentVariants(componentId);
+  }
+
+  @Get(':id/packs')
+  @Roles(UserRole.EMPLOYEE, UserRole.BUSINESS_ADMIN, UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Get packs that include this component' })
+  @ApiParam({ name: 'id', description: 'Component ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of packs using this component with required and orderIndex',
+  })
+  @ApiResponse({ status: 404, description: 'Component not found' })
+  async getComponentPacks(
+    @Param('id') componentId: string,
+  ): Promise<ComponentPackUsageDto[]> {
+    return this.packsService.getPacksByComponentId(componentId);
   }
 
   @Get(':id/statistics')

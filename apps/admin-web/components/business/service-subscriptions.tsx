@@ -278,6 +278,9 @@ export function ServiceSubscriptions({
                         {businessService.serviceDescription}
                       </p>
                     )}
+                    <div className="text-xs text-gray-500 mb-2">
+                      Order start: {businessService.orderStartTime || '—'} · Cutoff: {businessService.cutoffTime || '—'}
+                    </div>
                     {activePack && (
                       <div className="text-xs text-gray-600">
                         <strong>Active Pack:</strong> {activePack.packName} (

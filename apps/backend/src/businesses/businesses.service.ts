@@ -18,10 +18,12 @@ import {
   UpdateBusinessDto,
   EntityStatus,
   EmployeeDto,
+  BusinessDashboardSummaryDto,
 } from '@contracts/core';
 import * as bcrypt from 'bcryptjs';
 import { Prisma } from '@prisma/client';
 import { ActivityLogsService } from '../activity-logs/activity-logs.service';
+import { OrdersService } from '../orders/orders.service';
 import { Express } from 'express';
 
 @Injectable()
@@ -32,6 +34,7 @@ export class BusinessesService {
     private activityLogsService: ActivityLogsService,
     private fileStorageService: FileStorageService,
     private mailingService: MailingService,
+    private ordersService: OrdersService,
   ) {}
 
   /**
@@ -428,6 +431,48 @@ export class BusinessesService {
       totalAmount: Number(order.totalAmount),
       itemCount: order.items.length,
     }));
+  }
+
+  /**
+   * Get dashboard summary for business portal (one date).
+   * Returns active employee count (status ACTIVE), orders for the date, totalOrders, totalCost.
+   * Also includes all-time statistics (totalOrdersAllTime, totalCostAllTime).
+   */
+  async getDashboardSummary(user: TokenPayload, date: string): Promise<BusinessDashboardSummaryDto> {
+    if (user.role !== UserRole.BUSINESS_ADMIN && user.role !== UserRole.SUPER_ADMIN) {
+      throw new BadRequestException('Only business admins and super admins can access dashboard summary');
+    }
+    const businessId = user.businessId;
+    if (!businessId) {
+      throw new BadRequestException('Business ID not found');
+    }
+
+    const [activeEmployeesCount, orders, allOrders] = await Promise.all([
+      this.prisma.employee.count({
+        where: {
+          businessId,
+          status: EntityStatus.ACTIVE,
+        },
+      }),
+      this.ordersService.getBusinessOrdersByDate(user, date),
+      this.ordersService.getBusinessOrders(user),
+    ]);
+
+    const totalOrders = orders.length;
+    const totalCost = orders.reduce((sum, o) => sum + (typeof o.totalAmount === 'number' ? o.totalAmount : Number(o.totalAmount)), 0);
+
+    const totalOrdersAllTime = allOrders.length;
+    const totalCostAllTime = allOrders.reduce((sum, o) => sum + (typeof o.totalAmount === 'number' ? o.totalAmount : Number(o.totalAmount)), 0);
+
+    return {
+      date,
+      activeEmployeesCount,
+      totalOrders,
+      totalCost,
+      orders,
+      totalOrdersAllTime,
+      totalCostAllTime,
+    };
   }
 
   /**

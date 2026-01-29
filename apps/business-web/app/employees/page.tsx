@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { apiClient } from '../../lib/api-client';
 import { EmployeeDto, CreateEmployeeDto, EntityStatus, OrderDto } from '@contracts/core';
@@ -9,9 +9,51 @@ import { Loading } from '../../components/ui/loading';
 import { Error } from '../../components/ui/error';
 import { Empty } from '../../components/ui/empty';
 import React from 'react';
-import { CheckCircle2, XCircle, ChevronDown, ChevronUp, ShoppingCart, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CheckCircle2, XCircle, ChevronDown, ChevronUp, ShoppingCart, Search, ChevronLeft, ChevronRight, Download, Upload } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 10;
+
+const EMPLOYEE_CSV_HEADERS = ['email', 'firstName', 'lastName'];
+
+/** Parse a single CSV line handling quoted fields (e.g. "Doe, Jr.") */
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let i = 0;
+  while (i < line.length) {
+    if (line[i] === '"') {
+      let end = i + 1;
+      while (end < line.length && line[end] !== '"') {
+        if (line[end] === '\\') end += 2;
+        else end += 1;
+      }
+      result.push(line.slice(i + 1, end).replace(/\\"/g, '"').trim());
+      i = end + 1;
+      if (line[i] === ',') i += 1;
+    } else {
+      const comma = line.indexOf(',', i);
+      if (comma === -1) {
+        result.push(line.slice(i).trim());
+        break;
+      }
+      result.push(line.slice(i, comma).trim());
+      i = comma + 1;
+    }
+  }
+  return result;
+}
+
+function parseCSV(content: string): { header: string[]; rows: string[][] } {
+  const normalized = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const rawLines = normalized.split('\n').map((l) => l.trim()).filter(Boolean);
+  if (rawLines.length === 0) return { header: [], rows: [] };
+  const header = parseCSVLine(rawLines[0]).map((h) => h.toLowerCase().replace(/\s+/g, ''));
+  const rows = rawLines.slice(1).map((line) => parseCSVLine(line));
+  return { header, rows };
+}
+
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
 
 export default function EmployeesPage() {
   const { t } = useTranslation();
@@ -32,6 +74,9 @@ export default function EmployeesPage() {
     lastName: '',
     businessId: user?.businessId || '',
   });
+  const [csvUploading, setCsvUploading] = useState(false);
+  const [csvUploadResult, setCsvUploadResult] = useState<{ created: number; failed: { row: number; email: string; reason: string }[] } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user?.businessId) {
@@ -155,6 +200,126 @@ export default function EmployeesPage() {
     }
   };
 
+  const downloadTemplate = () => {
+    const header = EMPLOYEE_CSV_HEADERS.join(',');
+    const examples = [
+      'john.doe@company.com,John,Doe',
+      'jane.smith@company.com,Jane,Smith',
+      'ahmed.benali@company.com,Ahmed,Benali',
+      'marie.dupont@company.com,Marie,Dupont',
+      'omar.khalil@company.com,Omar,Khalil',
+      'sophie.martin@company.com,Sophie,Martin',
+      'youssef.hassan@company.com,Youssef,Hassan',
+      'lea.bernard@company.com,Lea,Bernard',
+    ];
+    const csv = `${header}\n${examples.join('\n')}\n`;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'employees-template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCsvFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.businessId) return;
+    const businessId = user.businessId;
+    e.target.value = '';
+
+    setError('');
+    setSuccess('');
+    setCsvUploadResult(null);
+    setCsvUploading(true);
+
+    try {
+      const text = await file.text();
+      const bom = '\uFEFF';
+      const content = text.startsWith(bom) ? text.slice(bom.length) : text;
+      const { header, rows } = parseCSV(content);
+
+      const emailIdx = header.indexOf('email');
+      const firstNameIdx = header.indexOf('firstname');
+      const lastNameIdx = header.indexOf('lastname');
+      if (emailIdx === -1 || firstNameIdx === -1 || lastNameIdx === -1) {
+        setError(t('employees.csvInvalidFormat'));
+        setCsvUploading(false);
+        return;
+      }
+
+      const toCreate: CreateEmployeeDto[] = [];
+      const validationErrors: { row: number; email: string; reason: string }[] = [];
+      rows.forEach((cells, i) => {
+        const rowNum = i + 2;
+        const email = (cells[emailIdx] ?? '').trim();
+        const firstName = (cells[firstNameIdx] ?? '').trim();
+        const lastName = (cells[lastNameIdx] ?? '').trim();
+        if (!email) {
+          validationErrors.push({ row: rowNum, email: email || '(empty)', reason: t('employees.csvEmailRequired') });
+          return;
+        }
+        if (!isValidEmail(email)) {
+          validationErrors.push({ row: rowNum, email, reason: t('employees.csvInvalidEmail') });
+          return;
+        }
+        if (!firstName) {
+          validationErrors.push({ row: rowNum, email, reason: t('employees.csvFirstNameRequired') });
+          return;
+        }
+        if (!lastName) {
+          validationErrors.push({ row: rowNum, email, reason: t('employees.csvLastNameRequired') });
+          return;
+        }
+        toCreate.push({ email, firstName, lastName, businessId });
+      });
+
+      if (validationErrors.length > 0) {
+        setError(t('employees.csvValidationErrors', { count: validationErrors.length }));
+        setCsvUploadResult({ created: 0, failed: validationErrors });
+        setCsvUploading(false);
+        return;
+      }
+
+      if (toCreate.length === 0) {
+        setError(t('employees.csvNoRows'));
+        setCsvUploading(false);
+        return;
+      }
+
+      const failed: { row: number; email: string; reason: string }[] = [];
+      let created = 0;
+      for (let i = 0; i < toCreate.length; i++) {
+        try {
+          await apiClient.createEmployee(toCreate[i]);
+          created += 1;
+        } catch (err: any) {
+          failed.push({
+            row: i + 2,
+            email: toCreate[i].email,
+            reason: err.message || t('common.messages.failedToCreateEmployee'),
+          });
+        }
+      }
+
+      setCsvUploadResult({ created, failed });
+      if (created > 0) {
+        setSuccess(
+          failed.length > 0
+            ? t('employees.csvUploadPartial', { created, failed: failed.length })
+            : t('employees.csvUploadSuccess', { count: created }),
+        );
+        await loadEmployees();
+        setTimeout(() => setSuccess(''), 5000);
+      }
+      if (failed.length > 0 && created === 0) setError(t('employees.csvUploadFailed'));
+    } catch (err: any) {
+      setError(err.message || t('common.messages.failedToLoad'));
+    } finally {
+      setCsvUploading(false);
+    }
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8">
       {/* Header */}
@@ -176,6 +341,71 @@ export default function EmployeesPage() {
           <p className="text-sm font-normal">{success}</p>
         </div>
       )}
+
+      {/* Bulk import: template + CSV upload */}
+      <div className="mb-6 bg-white border-2 border-gray-200 rounded-2xl shadow-md">
+        <div className="px-6 py-4 border-b border-surface-dark">
+          <h2 className="font-bold text-lg text-black">{t('employees.bulkImport')}</h2>
+          <p className="text-sm text-gray-600 mt-1">{t('employees.bulkImportDescription')}</p>
+        </div>
+        <div className="p-6 flex flex-col sm:flex-row gap-4">
+          <button
+            type="button"
+            onClick={downloadTemplate}
+            disabled={csvUploading}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200 hover:border-primary-300 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+          >
+            <Download className="w-5 h-5" />
+            {t('employees.downloadTemplate')}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={handleCsvFileSelect}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={csvUploading}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-primary-600 to-primary-700 text-white hover:from-primary-700 hover:to-primary-800 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+          >
+            <Upload className="w-5 h-5" />
+            {csvUploading ? t('employees.csvUploading') : t('employees.uploadCsv')}
+          </button>
+        </div>
+        {csvUploadResult && (csvUploadResult.created > 0 || csvUploadResult.failed.length > 0) && (
+          <div className="px-6 pb-6">
+            <div className="rounded-xl border-2 border-gray-200 bg-gray-50 p-4 text-sm">
+              {csvUploadResult.created > 0 && (
+                <p className="text-success-700 font-medium">
+                  {t('employees.csvCreatedCount', { count: csvUploadResult.created })}
+                </p>
+              )}
+              {csvUploadResult.failed.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-destructive font-medium">
+                    {t('employees.csvFailedCount', { count: csvUploadResult.failed.length })}
+                  </p>
+                  <ul className="mt-2 list-disc list-inside space-y-1 text-gray-700 max-h-40 overflow-y-auto">
+                    {csvUploadResult.failed.slice(0, 10).map((f, i) => (
+                      <li key={i}>
+                        {t('employees.csvRowError', { row: f.row, email: f.email, reason: f.reason })}
+                      </li>
+                    ))}
+                    {csvUploadResult.failed.length > 10 && (
+                      <li className="text-gray-500">
+                        {t('employees.csvMoreErrors', { count: csvUploadResult.failed.length - 10 })}
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Inline Invite Form */}
       <div className="mb-6 bg-white border-2 border-gray-200 rounded-2xl shadow-md">

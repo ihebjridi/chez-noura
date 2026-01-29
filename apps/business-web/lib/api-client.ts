@@ -14,6 +14,8 @@ import {
   ActivateServiceDto,
   UpdateBusinessServiceDto,
   PackWithComponentsDto,
+  BusinessDashboardSummaryDto,
+  VariantDto,
 } from '@contracts/core';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -111,6 +113,11 @@ class ApiClient {
     return this.request<OrderDto[]>('/orders/business');
   }
 
+  // Dashboard summary (orders for date, active employee count)
+  async getDashboardSummary(date: string): Promise<BusinessDashboardSummaryDto> {
+    return this.request<BusinessDashboardSummaryDto>(`/business/dashboard/summary?date=${encodeURIComponent(date)}`);
+  }
+
   // Invoice endpoints
   async getBusinessInvoices(): Promise<InvoiceSummaryDto[]> {
     return this.request<InvoiceSummaryDto[]>('/invoices/business');
@@ -132,6 +139,11 @@ class ApiClient {
   // Pack endpoints
   async getPackById(id: string): Promise<PackWithComponentsDto> {
     return this.request<PackWithComponentsDto>(`/packs/${id}`);
+  }
+
+  // Component endpoints
+  async getComponentVariants(componentId: string): Promise<VariantDto[]> {
+    return this.request<VariantDto[]>(`/components/${componentId}/variants`);
   }
 
   // Business service endpoints

@@ -4,9 +4,10 @@ import { BusinessesController, BusinessController } from './businesses.controlle
 import { PrismaModule } from '../prisma/prisma.module';
 import { ActivityLogsModule } from '../activity-logs/activity-logs.module';
 import { CommonModule } from '../common/common.module';
+import { OrdersModule } from '../orders/orders.module';
 
 @Module({
-  imports: [PrismaModule, forwardRef(() => ActivityLogsModule), CommonModule],
+  imports: [PrismaModule, forwardRef(() => ActivityLogsModule), CommonModule, OrdersModule],
   controllers: [BusinessesController, BusinessController],
   providers: [BusinessesService],
   exports: [BusinessesService],

@@ -24,6 +24,8 @@ import {
   CreatePackComponentDto,
   ComponentDto,
   CreateComponentDto,
+  UpdateComponentDto,
+  ComponentPackUsageDto,
   VariantDto,
   CreateVariantDto,
   UpdateVariantDto,
@@ -392,10 +394,21 @@ class ApiClient {
     });
   }
 
+  async updateComponent(id: string, data: UpdateComponentDto): Promise<ComponentDto> {
+    return this.request<ComponentDto>(`/components/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
   async deleteComponent(componentId: string): Promise<void> {
     return this.request<void>(`/components/${componentId}`, {
       method: 'DELETE',
     });
+  }
+
+  async getComponentPacks(componentId: string): Promise<ComponentPackUsageDto[]> {
+    return this.request<ComponentPackUsageDto[]>(`/components/${componentId}/packs`);
   }
 
   // Variant endpoints

@@ -11,6 +11,14 @@ import {
 import { Loading } from '../../components/ui/loading';
 import { Error } from '../../components/ui/error';
 import { Empty } from '../../components/ui/empty';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../components/ui/table';
 import { getTodayISO, normalizeDateString } from '../../lib/date-utils';
 
 export default function KitchenPage() {
@@ -240,28 +248,24 @@ export default function KitchenPage() {
                     {componentName}
                   </h3>
                   <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-surface-dark">
-                        <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Variant
-                          </th>
-                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Quantity
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-surface divide-y divide-surface-dark">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Variant</TableHead>
+                          <TableHead className="text-right">Quantity</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
                         {variants.map((variant) => (
-                          <tr key={variant.variantId} className="hover:bg-surface-light">
-                            <td className="px-4 py-3 text-sm text-gray-900">{variant.variantName}</td>
-                            <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right text-lg">
+                          <TableRow key={variant.variantId}>
+                            <TableCell className="text-sm text-gray-900">{variant.variantName}</TableCell>
+                            <TableCell className="text-sm font-bold text-gray-900 text-right text-lg">
                               {variant.totalQuantity}
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
               ))}
@@ -275,36 +279,26 @@ export default function KitchenPage() {
               {detailedSummary.totalOrders} order{detailedSummary.totalOrders !== 1 ? 's' : ''} to assemble
             </p>
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-surface-dark">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Business
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Employee
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Service
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Pack
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Variants
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-surface divide-y divide-surface-dark">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Business</TableHead>
+                    <TableHead>Employee</TableHead>
+                    <TableHead>Service</TableHead>
+                    <TableHead>Pack</TableHead>
+                    <TableHead>Variants</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {detailedSummary.orders.map((order) => (
-                    <tr key={order.orderId} className="hover:bg-surface-light">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                    <TableRow key={order.orderId}>
+                      <TableCell className="text-sm font-medium text-gray-900">
                         {order.businessName}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{order.employeeName}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{order.serviceName || <span className="text-gray-400 italic">No service</span>}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{order.packName}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-900">{order.employeeName}</TableCell>
+                      <TableCell className="text-sm text-gray-900">{order.serviceName || <span className="text-gray-400 italic">No service</span>}</TableCell>
+                      <TableCell className="text-sm text-gray-900">{order.packName}</TableCell>
+                      <TableCell className="text-sm text-gray-900">
                         <div className="space-y-1">
                           {order.variants.map((v, idx) => (
                             <div key={idx} className="text-xs">
@@ -312,11 +306,11 @@ export default function KitchenPage() {
                             </div>
                           ))}
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </div>
         </div>
@@ -334,28 +328,28 @@ export default function KitchenPage() {
             <strong>Total Variants:</strong> {summary.totalVariants}
           </p>
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-surface-dark">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pack</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Component</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variant</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                </tr>
-              </thead>
-              <tbody className="bg-surface divide-y divide-surface-dark">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Service</TableHead>
+                  <TableHead>Pack</TableHead>
+                  <TableHead>Component</TableHead>
+                  <TableHead>Variant</TableHead>
+                  <TableHead className="text-right">Quantity</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {summary.variants.map((variant) => (
-                  <tr key={variant.variantId} className="hover:bg-surface-light">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{variant.serviceName || <span className="text-gray-400 italic">No service</span>}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{variant.packName}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{variant.componentName}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{variant.variantName}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 text-right">{variant.totalQuantity}</td>
-                  </tr>
+                  <TableRow key={variant.variantId}>
+                    <TableCell className="whitespace-nowrap text-sm text-gray-900">{variant.serviceName || <span className="text-gray-400 italic">No service</span>}</TableCell>
+                    <TableCell className="whitespace-nowrap text-sm text-gray-900">{variant.packName}</TableCell>
+                    <TableCell className="whitespace-nowrap text-sm text-gray-900">{variant.componentName}</TableCell>
+                    <TableCell className="whitespace-nowrap text-sm text-gray-900">{variant.variantName}</TableCell>
+                    <TableCell className="whitespace-nowrap text-sm font-semibold text-gray-900 text-right">{variant.totalQuantity}</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </div>
       )}

@@ -170,8 +170,6 @@ export class OpsService {
               select: {
                 id: true,
                 name: true,
-              },
-              include: {
                 servicePack: {
                   select: {
                     serviceId: true,
@@ -348,8 +346,6 @@ export class OpsService {
               select: {
                 id: true,
                 name: true,
-              },
-              include: {
                 servicePack: {
                   select: {
                     serviceId: true,
@@ -574,8 +570,6 @@ export class OpsService {
           select: {
             id: true,
             name: true,
-          },
-          include: {
             servicePack: {
               select: {
                 serviceId: true,

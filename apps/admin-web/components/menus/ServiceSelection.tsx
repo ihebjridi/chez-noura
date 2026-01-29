@@ -94,6 +94,9 @@ export function ServiceSelection({
                         {service.description && (
                           <div className="text-sm text-gray-600 mt-1">{service.description}</div>
                         )}
+                        <div className="text-sm text-gray-500 mt-1">
+                          Order start: {service.orderStartTime || '—'} · Cutoff: {service.cutoffTime || '—'}
+                        </div>
                         {menuService && (
                           <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
                             <Package className="h-4 w-4" />

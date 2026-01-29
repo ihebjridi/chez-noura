@@ -1,8 +1,15 @@
-import { IsString, IsNumber, IsBoolean, IsOptional, Min } from 'class-validator';
+import { IsString, IsNumber, IsBoolean, IsOptional, Min, IsUUID } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { UpdateVariantDto } from '@contracts/core';
 
 export class UpdateVariantDtoClass implements UpdateVariantDto {
+  @ApiPropertyOptional({
+    description: 'Component ID to move variant to',
+  })
+  @IsOptional()
+  @IsUUID()
+  componentId?: string;
+
   @ApiPropertyOptional({
     description: 'Variant name',
     example: 'Lentil Soup',

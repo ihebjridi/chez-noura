@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { Logo } from '../logo';
 import { LanguageSwitcher } from '../language-switcher';
+import { Breadcrumbs } from '../ui/breadcrumbs';
 import { useAuth } from '../../contexts/auth-context';
 import { BottomNavigation } from './BottomNavigation';
 import {
@@ -133,6 +134,8 @@ export function BusinessLayout({ children }: BusinessLayoutProps) {
             </div>
           </div>
         </header>
+
+        <Breadcrumbs />
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto pb-16 lg:pb-0">

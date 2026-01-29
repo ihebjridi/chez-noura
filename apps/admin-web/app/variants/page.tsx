@@ -2,19 +2,26 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { apiClient } from '../../lib/api-client';
-import { VariantDto, ComponentDto, UpdateVariantDto } from '@contracts/core';
+import { VariantDto, ComponentDto } from '@contracts/core';
 import { Loading } from '../../components/ui/loading';
 import { Error } from '../../components/ui/error';
 import { Empty } from '../../components/ui/empty';
 import { PageHeader } from '../../components/ui/page-header';
 import { Button } from '../../components/ui/button';
-import { OrderStatisticsCard } from '../../components/statistics/OrderStatisticsCard';
-import { useVariantStatistics } from '../../hooks/useVariantStatistics';
 import { StatisticsBadge } from '../../components/statistics/StatisticsBadge';
 import { StatusBadge } from '../../components/ui/status-badge';
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { VariantModal } from '../../components/variants/VariantModal';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogHeader,
+  DialogFooter,
+} from '../../components/ui/dialog';
+import { ArrowLeft, Trash2, Plus } from 'lucide-react';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -26,7 +33,14 @@ export default function VariantsPage() {
   const [components, setComponents] = useState<ComponentDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [expandedVariantId, setExpandedVariantId] = useState<string | null>(null);
+  const [modalVariantId, setModalVariantId] = useState<string | null | 'create'>(
+    null,
+  );
+  const [modalInitialVariant, setModalInitialVariant] =
+    useState<VariantDto | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingVariantId, setDeletingVariantId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [updatingStock, setUpdatingStock] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -52,12 +66,12 @@ export default function VariantsPage() {
 
   const loadAllVariants = async (): Promise<VariantDto[]> => {
     const allVariants: VariantDto[] = [];
-    const components = await apiClient.getComponents();
-    for (const component of components) {
+    const comps = await apiClient.getComponents();
+    for (const comp of comps) {
       try {
-        const variants = await apiClient.getComponentVariants(component.id);
-        allVariants.push(...variants);
-      } catch (err) {
+        const vs = await apiClient.getComponentVariants(comp.id);
+        allVariants.push(...vs);
+      } catch {
         // Ignore errors for individual components
       }
     }
@@ -81,30 +95,46 @@ export default function VariantsPage() {
     }
   };
 
-  // Group variants by component
-  const variantsByComponent = useMemo(() => {
-    const grouped = new Map<string, { component: ComponentDto; variants: VariantDto[] }>();
-    for (const component of components) {
-      const componentVariants = variants.filter((v) => v.componentId === component.id);
-      if (componentVariants.length > 0) {
-        grouped.set(component.id, { component, variants: componentVariants });
-      }
-    }
-    return grouped;
-  }, [variants, components]);
+  const openViewEdit = (variant: VariantDto) => {
+    setModalInitialVariant(variant);
+    setModalVariantId(variant.id);
+  };
 
-  // Filter by componentId if provided
-  const filteredVariantsByComponent = useMemo(() => {
-    if (!componentIdFilter) return variantsByComponent;
-    const filtered = new Map<string, { component: ComponentDto; variants: VariantDto[] }>();
-    const entry = variantsByComponent.get(componentIdFilter);
-    if (entry) {
-      filtered.set(componentIdFilter, entry);
-    }
-    return filtered;
-  }, [variantsByComponent, componentIdFilter]);
+  const openCreate = () => {
+    setModalInitialVariant(null);
+    setModalVariantId('create');
+  };
 
-  const { statistics, loading: statsLoading } = useVariantStatistics(expandedVariantId);
+  const closeModal = () => {
+    setModalVariantId(null);
+    setModalInitialVariant(null);
+  };
+
+  const handleDeleteClick = (variantId: string) => {
+    setDeletingVariantId(variantId);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingVariantId) return;
+    try {
+      setDeleting(true);
+      setError('');
+      await apiClient.deleteVariant(deletingVariantId);
+      setShowDeleteModal(false);
+      setDeletingVariantId(null);
+      await loadData();
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete variant');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const displayVariants = useMemo(() => {
+    if (!componentIdFilter) return variants;
+    return variants.filter((v) => v.componentId === componentIdFilter);
+  }, [variants, componentIdFilter]);
 
   if (loading) {
     return (
@@ -125,12 +155,12 @@ export default function VariantsPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       {componentIdFilter && (
-        <div className="mb-4">
+        <div>
           <Link
             href="/variants"
-            className="text-primary-600 hover:text-primary-700 mb-2 inline-flex items-center gap-2"
+            className="text-primary-600 hover:text-primary-700 inline-flex items-center gap-2 text-sm"
           >
             <ArrowLeft className="w-4 h-4" />
             All Variants
@@ -138,10 +168,22 @@ export default function VariantsPage() {
         </div>
       )}
 
-      <PageHeader
-        title={componentIdFilter ? `Variants: ${components.find((c) => c.id === componentIdFilter)?.name || ''}` : 'Variants'}
-        description="Manage all variants across all components"
-      />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <PageHeader
+          title={
+            componentIdFilter
+              ? `Variants: ${components.find((c) => c.id === componentIdFilter)?.name || ''}`
+              : 'Variants'
+          }
+          description="Manage variants across all components. Click a row to edit."
+        />
+        {components.length > 0 && (
+          <Button onClick={openCreate} className="flex items-center gap-2 shrink-0">
+            <Plus className="h-4 w-4" />
+            New Variant
+          </Button>
+        )}
+      </div>
 
       {error && (
         <div className="mb-4">
@@ -149,137 +191,202 @@ export default function VariantsPage() {
         </div>
       )}
 
-      {filteredVariantsByComponent.size === 0 ? (
+      {displayVariants.length === 0 ? (
         <div className="bg-surface border border-surface-dark rounded-lg p-12">
           <Empty
             message="No variants found"
-            description={componentIdFilter ? 'This component has no variants yet.' : 'Create components and variants to get started.'}
+            description={
+              componentIdFilter
+                ? 'This component has no variants yet.'
+                : 'Create components and variants to get started.'
+            }
           />
         </div>
       ) : (
-        <div className="space-y-6">
-          {Array.from(filteredVariantsByComponent.values()).map(({ component, variants: componentVariants }) => (
-            <div key={component.id} className="bg-surface border border-surface-dark rounded-lg overflow-hidden">
-              <div className="px-6 py-4 bg-surface-light border-b border-surface-dark">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">{component.name}</h2>
-                  <Link href={`/components?highlight=${component.id}`}>
-                    <Button variant="secondary" size="sm">
-                      View Component
-                    </Button>
-                  </Link>
+        <div className="bg-surface border border-surface-dark rounded-lg overflow-hidden">
+          <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-surface-light border-b border-surface-dark text-sm font-semibold text-gray-700">
+            <div className="col-span-2">Component</div>
+            <div className="col-span-2">Variant</div>
+            <div className="col-span-1">Status</div>
+            <div className="col-span-1">Stock</div>
+            <div className="col-span-2">Adjust</div>
+            <div className="col-span-4 text-right">Actions</div>
+          </div>
+
+          {displayVariants.map((variant) => {
+            const isOutOfStock = variant.stockQuantity <= 0;
+            const isLowStock =
+              variant.stockQuantity > 0 && variant.stockQuantity < 10;
+            const isUpdating = updatingStock.has(variant.id);
+
+            return (
+              <div
+                key={variant.id}
+                onClick={() => openViewEdit(variant)}
+                className={`grid grid-cols-12 gap-4 px-6 py-4 items-center border-b border-surface-dark last:border-b-0 cursor-pointer hover:bg-surface-light transition-colors ${
+                  isOutOfStock ? 'bg-error-50/30' : isLowStock ? 'bg-warning-50/30' : ''
+                }`}
+              >
+                <div className="col-span-2 text-sm text-gray-700">
+                  {variant.componentName}
+                </div>
+                <div className="col-span-2 flex items-center gap-3">
+                  {variant.imageUrl ? (
+                    <img
+                      src={`${API_BASE_URL}${variant.imageUrl}`}
+                      alt={variant.name}
+                      className="w-10 h-10 object-cover rounded border border-surface-dark flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-surface-light border border-surface-dark rounded flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
+                      No img
+                    </div>
+                  )}
+                  <span className="font-medium text-gray-900 truncate">
+                    {variant.name}
+                  </span>
+                </div>
+                <div className="col-span-1">
+                  <div className="flex flex-wrap gap-1">
+                    {!variant.isActive && (
+                      <StatusBadge status="INACTIVE" />
+                    )}
+                    {variant.isActive && isOutOfStock && (
+                      <StatusBadge status="OUT_OF_STOCK" />
+                    )}
+                    {variant.isActive && !isOutOfStock && isLowStock && (
+                      <StatusBadge status="LOW_STOCK" />
+                    )}
+                    {variant.isActive &&
+                      !isOutOfStock &&
+                      !isLowStock && (
+                        <StatusBadge status="AVAILABLE" />
+                      )}
+                  </div>
+                </div>
+                <div className="col-span-1">
+                  <StatisticsBadge
+                    label=""
+                    value={variant.stockQuantity}
+                    variant={
+                      isOutOfStock ? 'danger' : isLowStock ? 'warning' : 'success'
+                    }
+                    size="sm"
+                  />
+                </div>
+                <div
+                  className="col-span-2 flex gap-1 flex-wrap"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    onClick={() =>
+                      quickUpdateStock(variant.id, variant.stockQuantity - 1)
+                    }
+                    disabled={
+                      variant.stockQuantity <= 0 || isUpdating
+                    }
+                  >
+                    -1
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={() =>
+                      quickUpdateStock(variant.id, variant.stockQuantity + 1)
+                    }
+                    disabled={isUpdating}
+                  >
+                    +1
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={() =>
+                      quickUpdateStock(variant.id, variant.stockQuantity + 10)
+                    }
+                    disabled={isUpdating}
+                  >
+                    +10
+                  </Button>
+                </div>
+                <div
+                  className="col-span-4 flex justify-end gap-2"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => handleDeleteClick(variant.id)}
+                    className="flex items-center gap-1"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Delete</span>
+                  </Button>
                 </div>
               </div>
-              <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {componentVariants.map((variant) => {
-                    const isExpanded = expandedVariantId === variant.id;
-                    const isOutOfStock = variant.stockQuantity <= 0;
-                    const isLowStock = variant.stockQuantity > 0 && variant.stockQuantity < 10;
-                    const isUpdating = updatingStock.has(variant.id);
-
-                    return (
-                      <div
-                        key={variant.id}
-                        className={`border rounded-lg p-4 ${
-                          isOutOfStock
-                            ? 'bg-error-50 border-error-200'
-                            : isLowStock
-                              ? 'bg-warning-50 border-warning-200'
-                              : 'bg-white border-surface-dark'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900 mb-1">{variant.name}</h3>
-                            <div className="flex flex-wrap gap-2 mb-2">
-                              {!variant.isActive && <StatusBadge status="INACTIVE" />}
-                              {variant.isActive && isOutOfStock && <StatusBadge status="OUT_OF_STOCK" />}
-                              {variant.isActive && !isOutOfStock && isLowStock && (
-                                <StatusBadge status="LOW_STOCK" />
-                              )}
-                            </div>
-                          </div>
-                          {variant.imageUrl && (
-                            <img
-                              src={`${API_BASE_URL}${variant.imageUrl}`}
-                              alt={variant.name}
-                              className="w-16 h-16 object-cover rounded-md border border-surface-dark"
-                            />
-                          )}
-                        </div>
-
-                        <div className="flex items-center justify-between mb-3">
-                          <StatisticsBadge
-                            label="Stock"
-                            value={variant.stockQuantity}
-                            variant={
-                              isOutOfStock ? 'danger' : isLowStock ? 'warning' : 'success'
-                            }
-                            size="sm"
-                          />
-                          <div className="flex gap-1">
-                            <Button
-                              size="sm"
-                              variant="danger"
-                              onClick={() => quickUpdateStock(variant.id, variant.stockQuantity - 1)}
-                              disabled={variant.stockQuantity <= 0 || isUpdating}
-                            >
-                              -1
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="primary"
-                              onClick={() => quickUpdateStock(variant.id, variant.stockQuantity + 1)}
-                              disabled={isUpdating}
-                            >
-                              +1
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="primary"
-                              onClick={() => quickUpdateStock(variant.id, variant.stockQuantity + 10)}
-                              disabled={isUpdating}
-                            >
-                              +10
-                            </Button>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => setExpandedVariantId(isExpanded ? null : variant.id)}
-                            className="flex-1"
-                          >
-                            {isExpanded ? 'Hide Stats' : 'Show Stats'}
-                          </Button>
-                          <Link href={`/components/${component.id}/variants`}>
-                            <Button variant="primary" size="sm">
-                              Edit
-                            </Button>
-                          </Link>
-                        </div>
-
-                        {isExpanded && statistics && statistics.variantId === variant.id && (
-                          <div className="mt-4 pt-4 border-t border-surface-dark">
-                            {statsLoading ? (
-                              <Loading message="Loading statistics..." />
-                            ) : (
-                              <OrderStatisticsCard statistics={statistics} type="variant" />
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
+
+      <VariantModal
+        open={modalVariantId !== null}
+        onClose={closeModal}
+        variantId={modalVariantId === 'create' ? null : modalVariantId}
+        componentId={
+          componentIdFilter || (components[0]?.id ?? undefined)
+        }
+        initialVariant={modalInitialVariant}
+        onSaved={loadData}
+      />
+
+      <Dialog
+        open={showDeleteModal}
+        onOpenChange={(o) => !o && setShowDeleteModal(false)}
+      >
+        <DialogContent className="bg-surface border border-surface-dark rounded-lg max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">
+              Delete Variant?
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this variant? This action cannot
+              be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            {deletingVariantId && (
+              <p className="text-sm text-gray-600">
+                Variant{' '}
+                <strong>
+                  &quot;
+                  {variants.find((v) => v.id === deletingVariantId)?.name}
+                  &quot;
+                </strong>{' '}
+                will be permanently deleted.
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleDeleteConfirm}
+              disabled={deleting || !deletingVariantId}
+            >
+              {deleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

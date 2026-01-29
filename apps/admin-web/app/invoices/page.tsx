@@ -12,6 +12,14 @@ import { FormField } from '../../components/ui/form-field';
 import { DateInput } from '../../components/ui/date-input';
 import { StatusBadge } from '../../components/ui/status-badge';
 import { Button } from '../../components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../components/ui/table';
 import { ArrowLeft } from 'lucide-react';
 
 export default function InvoicesPage() {
@@ -216,28 +224,28 @@ export default function InvoicesPage() {
             </div>
             <h3 className="font-semibold mb-4">Items</h3>
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-surface-dark">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pack</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Date</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-surface divide-y divide-surface-dark">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Pack</TableHead>
+                    <TableHead>Order Date</TableHead>
+                    <TableHead className="text-right">Quantity</TableHead>
+                    <TableHead className="text-right">Unit Price</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {selectedInvoice.items.map((item) => (
-                    <tr key={item.id} className="hover:bg-surface-light">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.packName}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(item.orderDate).toLocaleDateString()}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{item.quantity}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{item.unitPrice.toFixed(2)} TND</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{item.totalPrice.toFixed(2)} TND</td>
-                    </tr>
+                    <TableRow key={item.id}>
+                      <TableCell className="whitespace-nowrap text-sm text-gray-900">{item.packName}</TableCell>
+                      <TableCell className="whitespace-nowrap text-sm text-gray-500">{new Date(item.orderDate).toLocaleDateString()}</TableCell>
+                      <TableCell className="whitespace-nowrap text-sm text-gray-900 text-right">{item.quantity}</TableCell>
+                      <TableCell className="whitespace-nowrap text-sm text-gray-900 text-right">{item.unitPrice.toFixed(2)} TND</TableCell>
+                      <TableCell className="whitespace-nowrap text-sm text-gray-900 text-right">{item.totalPrice.toFixed(2)} TND</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </div>
         </div>
@@ -257,42 +265,42 @@ export default function InvoicesPage() {
           ) : (
             <div className="bg-surface border border-surface-dark rounded-lg overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-surface-dark">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Business</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-surface divide-y divide-surface-dark">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Invoice #</TableHead>
+                      <TableHead>Business</TableHead>
+                      <TableHead>Service</TableHead>
+                      <TableHead>Period</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead>Due Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {invoices.map((invoice) => (
-                      <tr
+                      <TableRow
                         key={invoice.id}
                         onClick={() => loadInvoiceDetail(invoice.id)}
-                        className="hover:bg-surface-light cursor-pointer"
+                        className="cursor-pointer"
                       >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{invoice.invoiceNumber}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{invoice.businessName}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <TableCell className="whitespace-nowrap text-sm font-medium text-gray-900">{invoice.invoiceNumber}</TableCell>
+                        <TableCell className="whitespace-nowrap text-sm text-gray-900">{invoice.businessName}</TableCell>
+                        <TableCell className="whitespace-nowrap text-sm text-gray-600">
                           {invoice.serviceName || <span className="text-gray-400 italic">No service</span>}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-sm text-gray-500">
                           {invoice.periodStart} to {invoice.periodEnd}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
                           <StatusBadge status={invoice.status} />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">{invoice.total.toFixed(2)} TND</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{invoice.dueDate}</td>
-                      </tr>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-sm text-gray-900 text-right">{invoice.total.toFixed(2)} TND</TableCell>
+                        <TableCell className="whitespace-nowrap text-sm text-gray-500">{invoice.dueDate}</TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             </div>
           )}

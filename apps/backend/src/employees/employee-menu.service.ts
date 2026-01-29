@@ -1,7 +1,14 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrderingCutoffService } from '../common/services/ordering-cutoff.service';
-import { EmployeeMenuDto, AvailablePackDto, AvailableComponentDto, AvailableVariantDto, TokenPayload } from '@contracts/core';
+import {
+  EmployeeMenuDto,
+  EmployeeMenuServiceWindowDto,
+  AvailablePackDto,
+  AvailableComponentDto,
+  AvailableVariantDto,
+  TokenPayload,
+} from '@contracts/core';
 
 @Injectable()
 export class EmployeeMenuService {
@@ -20,6 +27,16 @@ export class EmployeeMenuService {
   async getMenuByDate(date: string, user: TokenPayload): Promise<EmployeeMenuDto> {
     const dateObj = new Date(date);
     dateObj.setHours(0, 0, 0, 0);
+
+    // Resolve businessId: use from token, or for employees load from Employee record (handles legacy users without User.businessId)
+    let businessId: string | undefined = user.businessId;
+    if (!businessId && user.employeeId) {
+      const employee = await this.prisma.employee.findUnique({
+        where: { id: user.employeeId },
+        select: { businessId: true },
+      });
+      businessId = employee?.businessId;
+    }
 
     // Validate that the requested date is not in the past
     // Orders can only be placed for today's menu, so past menus should not be accessible
@@ -156,11 +173,11 @@ export class EmployeeMenuService {
 
     // Get activated packs for this business (considering effective dates for pack changes)
     let activatedPackIds: Set<string> | null = null;
-    if (user.businessId) {
+    if (businessId) {
       // Get all active BusinessServices for this business
       const businessServices = await this.prisma.businessService.findMany({
         where: {
-          businessId: user.businessId,
+          businessId,
           isActive: true,
         },
         include: {
@@ -169,6 +186,7 @@ export class EmployeeMenuService {
               isActive: true,
             },
             include: {
+              pack: true,
               nextPack: true,
             },
           },
@@ -198,8 +216,32 @@ export class EmployeeMenuService {
       }
     }
 
+    // Services that are currently within their order window (for the menu date) are visible to employees
+    const now = new Date();
+    const menuDateForTime = new Date(dailyMenu.date);
+    menuDateForTime.setHours(0, 0, 0, 0);
+    const serviceIdsInWindow = new Set<string>();
+    for (const dailyMenuService of dailyMenu.services) {
+      const service = dailyMenuService.service;
+      let withinWindow = true;
+      if (service.orderStartTime) {
+        const [startH, startM] = service.orderStartTime.split(':').map(Number);
+        const windowStart = new Date(menuDateForTime);
+        windowStart.setHours(startH, startM, 0, 0);
+        if (now < windowStart) withinWindow = false;
+      }
+      if (withinWindow && service.cutoffTime) {
+        const [endH, endM] = service.cutoffTime.split(':').map(Number);
+        const windowEnd = new Date(menuDateForTime);
+        windowEnd.setHours(endH, endM, 0, 0);
+        if (now > windowEnd) withinWindow = false;
+      }
+      if (withinWindow) serviceIdsInWindow.add(dailyMenuService.serviceId);
+    }
+
     // Build packs with components and available variants
     // Filter by: pack is active AND (no business services configured OR pack is activated)
+    // AND pack's service is within its order window (or pack has no service)
     const availablePacks: AvailablePackDto[] = dailyMenu.packs
       .filter((dailyMenuPack) => {
         if (!dailyMenuPack.pack.isActive) {
@@ -207,10 +249,19 @@ export class EmployeeMenuService {
         }
         // If no business services are configured, show all packs (backward compatibility)
         if (!activatedPackIds) {
-          return true;
+          // Still respect service order window: hide packs whose service is out of time
+          const serviceId = packToServiceMap.get(dailyMenuPack.pack.id);
+          if (!serviceId) return true;
+          return serviceIdsInWindow.has(serviceId);
         }
         // Only show packs that are activated for this business
-        return activatedPackIds.has(dailyMenuPack.pack.id);
+        if (!activatedPackIds.has(dailyMenuPack.pack.id)) {
+          return false;
+        }
+        // Only show packs whose service is currently within its order window
+        const serviceId = packToServiceMap.get(dailyMenuPack.pack.id);
+        if (!serviceId) return true; // pack not attached to a service: show (e.g. legacy)
+        return serviceIdsInWindow.has(serviceId);
       })
       .map((dailyMenuPack) => {
         const pack = dailyMenuPack.pack;
@@ -240,64 +291,85 @@ export class EmployeeMenuService {
         };
       });
 
-    // Calculate cutoff time: prioritize service-level cutoff times, then daily menu cutoffHour, then meal-based
+    // Only compute cutoff/order windows when there are available packs (avoid showing countdown with no packs)
+    const visiblePackIds = new Set(availablePacks.map((p) => p.id));
+    const serviceIds = new Set<string>();
+    for (const dailyMenuService of dailyMenu.services) {
+      for (const servicePack of dailyMenuService.service.servicePacks) {
+        if (visiblePackIds.has(servicePack.packId)) {
+          serviceIds.add(dailyMenuService.serviceId);
+          break;
+        }
+      }
+    }
+
     let cutoffTime: Date | null = null;
     let orderStartTime: Date | null = null;
+    const serviceWindows: EmployeeMenuServiceWindowDto[] = [];
 
-    // Get services for activated packs
-    const serviceIds = new Set<string>();
-    if (activatedPackIds) {
+    if (availablePacks.length > 0) {
+      // Per-service windows for countdown (each available service gets its own)
       for (const dailyMenuService of dailyMenu.services) {
-        for (const servicePack of dailyMenuService.service.servicePacks) {
-          if (activatedPackIds.has(servicePack.packId)) {
-            serviceIds.add(dailyMenuService.serviceId);
+        if (!serviceIds.has(dailyMenuService.serviceId)) continue;
+        const service = dailyMenuService.service;
+        if (!service.cutoffTime) continue;
+
+        const [cutoffH, cutoffM] = service.cutoffTime.split(':').map(Number);
+        const serviceCutoff = new Date(dailyMenu.date);
+        serviceCutoff.setHours(cutoffH, cutoffM, 0, 0);
+
+        let orderStartIso: string | undefined;
+        if (service.orderStartTime) {
+          const [startH, startM] = service.orderStartTime.split(':').map(Number);
+          const serviceStart = new Date(dailyMenu.date);
+          serviceStart.setHours(startH, startM, 0, 0);
+          orderStartIso = serviceStart.toISOString();
+        }
+
+        serviceWindows.push({
+          serviceId: service.id,
+          serviceName: service.name,
+          cutoffTime: serviceCutoff.toISOString(),
+          orderStartTime: orderStartIso,
+        });
+      }
+
+      // Global cutoff/order start: earliest cutoff and latest order start from services with visible packs
+      const serviceCutoffTimes: Date[] = [];
+      const serviceOrderStartTimes: Date[] = [];
+      for (const dailyMenuService of dailyMenu.services) {
+        if (serviceIds.has(dailyMenuService.serviceId) || (!activatedPackIds && dailyMenu.services.length === 0)) {
+          const service = dailyMenuService.service;
+          if (service.cutoffTime) {
+            const [hours, minutes] = service.cutoffTime.split(':').map(Number);
+            const serviceCutoff = new Date(dailyMenu.date);
+            serviceCutoff.setHours(hours, minutes, 0, 0);
+            serviceCutoffTimes.push(serviceCutoff);
+          }
+          if (service.orderStartTime) {
+            const [hours, minutes] = service.orderStartTime.split(':').map(Number);
+            const serviceStart = new Date(dailyMenu.date);
+            serviceStart.setHours(hours, minutes, 0, 0);
+            serviceOrderStartTimes.push(serviceStart);
           }
         }
       }
-    }
 
-    // Collect service cutoff times and order start times
-    const serviceCutoffTimes: Date[] = [];
-    const serviceOrderStartTimes: Date[] = [];
-    
-    for (const dailyMenuService of dailyMenu.services) {
-      if (serviceIds.has(dailyMenuService.serviceId) || !activatedPackIds) {
-        const service = dailyMenuService.service;
-        
-        if (service.cutoffTime) {
-          const [hours, minutes] = service.cutoffTime.split(':').map(Number);
-          const serviceCutoff = new Date(dailyMenu.date);
-          serviceCutoff.setHours(hours, minutes, 0, 0);
-          serviceCutoffTimes.push(serviceCutoff);
-        }
-        
-        if (service.orderStartTime) {
-          const [hours, minutes] = service.orderStartTime.split(':').map(Number);
-          const serviceStart = new Date(dailyMenu.date);
-          serviceStart.setHours(hours, minutes, 0, 0);
-          serviceOrderStartTimes.push(serviceStart);
-        }
+      if (serviceCutoffTimes.length > 0) {
+        cutoffTime = new Date(Math.min(...serviceCutoffTimes.map((d) => d.getTime())));
+      } else if (dailyMenu.cutoffHour) {
+        const [hours, minutes] = dailyMenu.cutoffHour.split(':').map(Number);
+        cutoffTime = new Date(dailyMenu.date);
+        cutoffTime.setHours(hours, minutes, 0, 0);
+      } else {
+        cutoffTime = await this.orderingCutoffService.getCutoffTimeForDate(
+          dailyMenu.date.toISOString().split('T')[0],
+        );
       }
-    }
 
-    // Use earliest cutoff time from services (most restrictive)
-    if (serviceCutoffTimes.length > 0) {
-      cutoffTime = new Date(Math.min(...serviceCutoffTimes.map((d) => d.getTime())));
-    } else if (dailyMenu.cutoffHour) {
-      // Fallback to DailyMenu's cutoffHour
-      const [hours, minutes] = dailyMenu.cutoffHour.split(':').map(Number);
-      cutoffTime = new Date(dailyMenu.date);
-      cutoffTime.setHours(hours, minutes, 0, 0);
-    } else {
-      // Fallback to meal-based cutoff if no cutoffHour is set
-      cutoffTime = await this.orderingCutoffService.getCutoffTimeForDate(
-        dailyMenu.date.toISOString().split('T')[0],
-      );
-    }
-
-    // Use latest order start time from services (most permissive)
-    if (serviceOrderStartTimes.length > 0) {
-      orderStartTime = new Date(Math.max(...serviceOrderStartTimes.map((d) => d.getTime())));
+      if (serviceOrderStartTimes.length > 0) {
+        orderStartTime = new Date(Math.max(...serviceOrderStartTimes.map((d) => d.getTime())));
+      }
     }
 
     return {
@@ -307,6 +379,7 @@ export class EmployeeMenuService {
       packs: availablePacks,
       cutoffTime: cutoffTime ? cutoffTime.toISOString() : undefined,
       orderStartTime: orderStartTime ? orderStartTime.toISOString() : undefined,
+      serviceWindows: serviceWindows.length > 0 ? serviceWindows : undefined,
     };
   }
 }

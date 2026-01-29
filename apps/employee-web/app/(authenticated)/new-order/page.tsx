@@ -252,12 +252,22 @@ function NewOrderContent() {
         </div>
       )}
 
-      {/* Cutoff Countdown */}
-      {menu?.cutoffTime && !existingOrder && (
+      {/* Cutoff Countdown – only when there are available packs; one per service when serviceWindows present */}
+      {menu && menu.packs.length > 0 && !existingOrder && (menu.serviceWindows?.length ? (
+        <div className="mb-4 space-y-4">
+          {menu.serviceWindows.map((sw) => (
+            <CutoffCountdown
+              key={sw.serviceId}
+              cutoffTime={sw.cutoffTime}
+              label={sw.serviceName}
+            />
+          ))}
+        </div>
+      ) : menu.cutoffTime ? (
         <div className="mb-4">
           <CutoffCountdown cutoffTime={menu.cutoffTime} />
         </div>
-      )}
+      ) : null)}
 
       {/* Error Display */}
       {error && (

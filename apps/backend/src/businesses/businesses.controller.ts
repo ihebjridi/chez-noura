@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -32,6 +33,7 @@ import {
   UserRole,
   OrderSummaryDto,
   EmployeeDto,
+  BusinessDashboardSummaryDto,
 } from '@contracts/core';
 import { CreateBusinessDtoClass } from './dto/create-business.dto';
 
@@ -238,6 +240,28 @@ export class BusinessesController {
 @UseGuards(JwtAuthGuard, RolesGuard, BusinessScopeGuard)
 export class BusinessController {
   constructor(private readonly businessesService: BusinessesService) {}
+
+  @Get('dashboard/summary')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.BUSINESS_ADMIN)
+  @BusinessScoped()
+  @ApiOperation({
+    summary: 'Get dashboard summary for business portal (orders for date, active employee count)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Dashboard summary for the given date',
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  async getDashboardSummary(
+    @CurrentUser() user: TokenPayload,
+    @Query('date') date?: string,
+  ): Promise<BusinessDashboardSummaryDto> {
+    const dateStr =
+      date && /^\d{4}-\d{2}-\d{2}$/.test(date)
+        ? date
+        : new Date().toISOString().split('T')[0];
+    return this.businessesService.getDashboardSummary(user, dateStr);
+  }
 
   @Get('orders')
   @Roles(UserRole.SUPER_ADMIN, UserRole.BUSINESS_ADMIN)

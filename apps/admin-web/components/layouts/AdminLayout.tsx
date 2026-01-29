@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Logo } from '../common/logo';
+import { Breadcrumbs } from '../ui/breadcrumbs';
+import { BreadcrumbProvider } from '../../contexts/breadcrumb-context';
 import { useAuth } from '../../contexts/auth-context';
 import {
   Building2,
@@ -139,10 +141,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="h-full">{children}</div>
-        </main>
+        <BreadcrumbProvider>
+          {/* Breadcrumbs */}
+          <Breadcrumbs />
+
+          {/* Page content */}
+          <main className="flex-1 overflow-y-auto">
+            <div className="h-full">{children}</div>
+          </main>
+        </BreadcrumbProvider>
 
         {/* Footer */}
         <footer className="bg-surface border-t border-surface-dark py-4 px-4 sm:px-6 lg:px-8">

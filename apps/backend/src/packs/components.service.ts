@@ -9,8 +9,8 @@ import { FileStorageService } from '../common/services/file-storage.service';
 import {
   ComponentDto,
   CreateComponentDto,
+  UpdateComponentDto,
   VariantDto,
-  CreateVariantDto,
   UpdateVariantDto,
   TokenPayload,
   UserRole,
@@ -20,8 +20,6 @@ import {
   RecentUsageDto,
 } from '@contracts/core';
 import { Prisma } from '@prisma/client';
-import { Express } from 'express';
-
 @Injectable()
 export class ComponentsService {
   constructor(
@@ -61,6 +59,39 @@ export class ComponentsService {
     });
 
     return components.map((component) => this.mapComponentToDto(component));
+  }
+
+  /**
+   * Update a component
+   * Only SUPER_ADMIN can update components
+   */
+  async updateComponent(
+    componentId: string,
+    updateComponentDto: UpdateComponentDto,
+    user: TokenPayload,
+  ): Promise<ComponentDto> {
+    if (user.role !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Only SUPER_ADMIN can update components');
+    }
+
+    const existingComponent = await this.prisma.component.findUnique({
+      where: { id: componentId },
+    });
+
+    if (!existingComponent) {
+      throw new NotFoundException(`Component with ID ${componentId} not found`);
+    }
+
+    const component = await this.prisma.component.update({
+      where: { id: componentId },
+      data: {
+        ...(updateComponentDto.name !== undefined && {
+          name: updateComponentDto.name,
+        }),
+      },
+    });
+
+    return this.mapComponentToDto(component);
   }
 
   /**
@@ -151,13 +182,40 @@ export class ComponentsService {
     }
 
     const updateData: Prisma.VariantUpdateInput = {};
+    const targetComponentId =
+      updateVariantDto.componentId !== undefined && updateVariantDto.componentId !== existingVariant.componentId
+        ? updateVariantDto.componentId
+        : existingVariant.componentId;
+
+    if (updateVariantDto.componentId !== undefined && updateVariantDto.componentId !== existingVariant.componentId) {
+      const targetComponent = await this.prisma.component.findUnique({
+        where: { id: updateVariantDto.componentId },
+      });
+      if (!targetComponent) {
+        throw new NotFoundException(`Component with ID ${updateVariantDto.componentId} not found`);
+      }
+      const nameToCheck = updateVariantDto.name ?? existingVariant.name;
+      const nameConflictOnTarget = await this.prisma.variant.findUnique({
+        where: {
+          componentId_name: {
+            componentId: updateVariantDto.componentId,
+            name: nameToCheck,
+          },
+        },
+      });
+      if (nameConflictOnTarget && nameConflictOnTarget.id !== variantId) {
+        throw new BadRequestException(
+          `Variant "${nameToCheck}" already exists for the target component`,
+        );
+      }
+      updateData.component = { connect: { id: updateVariantDto.componentId } };
+    }
 
     if (updateVariantDto.name !== undefined) {
-      // Check if new name conflicts with existing variant
       const nameConflict = await this.prisma.variant.findUnique({
         where: {
           componentId_name: {
-            componentId: existingVariant.componentId,
+            componentId: targetComponentId,
             name: updateVariantDto.name,
           },
         },

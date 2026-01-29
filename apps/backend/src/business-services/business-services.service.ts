@@ -90,32 +90,77 @@ export class BusinessServicesService {
           serviceId: dto.serviceId,
         },
       },
+      include: {
+        businessServicePacks: true,
+      },
     });
 
-    if (existingBusinessService) {
+    // If service exists and is already active, throw error
+    if (existingBusinessService && existingBusinessService.isActive) {
       throw new BadRequestException('Service is already activated for this business');
     }
 
-    // Create BusinessService and BusinessServicePacks in a transaction
+    // Create or reactivate BusinessService and BusinessServicePacks in a transaction
     const result = await this.prisma.$transaction(async (tx) => {
-      const businessService = await tx.businessService.create({
-        data: {
-          businessId,
-          serviceId: dto.serviceId,
-          isActive: true,
-        },
-      });
+      let businessService;
+      
+      if (existingBusinessService) {
+        // Reactivate existing inactive service
+        businessService = await tx.businessService.update({
+          where: { id: existingBusinessService.id },
+          data: {
+            isActive: true,
+          },
+        });
 
-      // Create single BusinessServicePack (only one pack per service)
-      const businessServicePack = await tx.businessServicePack.create({
-        data: {
-          businessServiceId: businessService.id,
-          packId: dto.packIds[0],
-          isActive: true,
-        },
-      });
+        // Deactivate all existing packs
+        await tx.businessServicePack.updateMany({
+          where: { businessServiceId: businessService.id },
+          data: { isActive: false, nextPackId: null, effectiveDate: null },
+        });
 
-      return { businessService, businessServicePack };
+        // Activate the selected pack (upsert to handle case where pack was previously assigned)
+        const businessServicePack = await tx.businessServicePack.upsert({
+          where: {
+            businessServiceId_packId: {
+              businessServiceId: businessService.id,
+              packId: dto.packIds[0],
+            },
+          },
+          create: {
+            businessServiceId: businessService.id,
+            packId: dto.packIds[0],
+            isActive: true,
+          },
+          update: {
+            isActive: true,
+            nextPackId: null,
+            effectiveDate: null,
+          },
+        });
+
+        return { businessService, businessServicePack };
+      } else {
+        // Create new BusinessService
+        businessService = await tx.businessService.create({
+          data: {
+            businessId,
+            serviceId: dto.serviceId,
+            isActive: true,
+          },
+        });
+
+        // Create single BusinessServicePack (only one pack per service)
+        const businessServicePack = await tx.businessServicePack.create({
+          data: {
+            businessServiceId: businessService.id,
+            packId: dto.packIds[0],
+            isActive: true,
+          },
+        });
+
+        return { businessService, businessServicePack };
+      }
     });
 
     // Fetch the created pack with details
@@ -429,7 +474,7 @@ export class BusinessServicesService {
     await this.applyPendingPackChanges(businessId);
 
     const businessServices = await this.prisma.businessService.findMany({
-      where: { businessId },
+      where: { businessId, isActive: true },
       include: {
         service: true,
         businessServicePacks: {
@@ -513,6 +558,8 @@ export class BusinessServicesService {
       serviceId: businessService.serviceId,
       serviceName: service.name,
       serviceDescription: service.description || undefined,
+      orderStartTime: service.orderStartTime || undefined,
+      cutoffTime: service.cutoffTime || undefined,
       isActive: businessService.isActive,
       packs: businessServicePacks.map((bsp) => this.mapBusinessServicePackToDto(bsp)),
       createdAt: businessService.createdAt.toISOString(),

@@ -64,7 +64,9 @@
       "paidAt": "Payé le",
       "businessEmail": "E-mail de l'entreprise",
       "items": "Articles",
-      "orderDate": "Date de commande"
+      "orderDate": "Date de commande",
+      "inStock": "en stock",
+      "outOfStock": "rupture de stock"
     },
     "status": {
       "active": "ACTIF",
@@ -129,6 +131,9 @@
     "noSubscribedServices": "Aucun service souscrit",
     "noSubscribedServicesDescription": "Activez des services pour les rendre disponibles à vos employés.",
     "manageServices": "Gérer et activer les services",
+    "allTimeStats": "Statistiques globales",
+    "totalOrdersAllTime": "Total des commandes (tous temps)",
+    "totalCostAllTime": "Coût total (tous temps)",
     "statistics": {
       "totalOrders": "Total des commandes",
       "totalEmployees": "Total des employés",
@@ -157,7 +162,34 @@
     "emailPlaceholder": "employee@company.com",
     "firstNamePlaceholder": "Jean",
     "lastNamePlaceholder": "Dupont",
-    "viewOrdersCount": "Voir les commandes ({{count}})"
+    "viewOrdersCount": "Voir les commandes ({{count}})",
+    "searchPlaceholder": "Rechercher par nom ou e-mail...",
+    "searchResults": "{{count}} sur {{total}} employés",
+    "employee": "Employé",
+    "noSearchResults": "Aucun employé trouvé",
+    "noSearchResultsDescription": "Essayez d'ajuster votre recherche.",
+    "showingResults": "{{start}} à {{end}} sur {{total}} employés",
+    "previousPage": "Page précédente",
+    "nextPage": "Page suivante",
+    "bulkImport": "Import en masse",
+    "bulkImportDescription": "Téléchargez un modèle CSV, remplissez vos employés (e-mail, prénom, nom), puis importez-le ici.",
+    "downloadTemplate": "Télécharger le modèle",
+    "uploadCsv": "Importer un CSV",
+    "csvUploading": "Import en cours...",
+    "csvInvalidFormat": "CSV invalide : la première ligne doit contenir les en-têtes email, firstName, lastName.",
+    "csvEmailRequired": "L'e-mail est requis",
+    "csvInvalidEmail": "Format d'e-mail invalide",
+    "csvFirstNameRequired": "Le prénom est requis",
+    "csvLastNameRequired": "Le nom est requis",
+    "csvValidationErrors": "{{count}} ligne(s) contiennent des erreurs. Corrigez-les et réessayez.",
+    "csvNoRows": "Le CSV ne contient aucune donnée (seulement les en-têtes).",
+    "csvUploadSuccess": "{{count}} employé(s) créé(s) avec succès.",
+    "csvUploadPartial": "{{created}} créé(s), {{failed}} échec(s).",
+    "csvUploadFailed": "Aucun employé n'a été créé. Voir les erreurs ci-dessous.",
+    "csvCreatedCount": "{{count}} employé(s) créé(s).",
+    "csvFailedCount": "{{count}} ligne(s) en échec :",
+    "csvRowError": "Ligne {{row}} ({{email}}) : {{reason}}",
+    "csvMoreErrors": "... et {{count}} autre(s)."
   },
   "orders": {
     "title": "Commandes",
@@ -229,6 +261,16 @@
     "packChangeEffectiveNextDay": "Ce changement prendra effet demain",
     "packChangeScheduled": "Changement de pack programmé",
     "effectiveFrom": "effectif à partir du",
-    "noServicesActivated": "Aucun service n'est actuellement activé pour votre entreprise. Contactez votre administrateur pour activer des services."
+    "noServicesActivated": "Aucun service n'est actuellement activé pour votre entreprise. Contactez votre administrateur pour activer des services.",
+    "noVariantsAvailable": "Aucune variante disponible",
+    "variants": "Variantes",
+    "changePackConfirmTitle": "Changer de pack ?",
+    "changePackConditions": "Ce changement prendra effet au début du prochain jour de service. Jusqu'à cette date, le pack actuel reste actif. Vos employés verront le nouveau pack à compter de cette date.",
+    "cancel": "Annuler",
+    "confirmChangePack": "Confirmer le changement",
+    "cancelScheduledChange": "Annuler le changement programmé",
+    "cancelScheduledChangeTitle": "Annuler le changement de pack programmé ?",
+    "cancelScheduledChangeDescription": "Le changement programmé sera annulé. Le pack actuel restera actif.",
+    "confirmCancelChange": "Oui, annuler le changement"
   }
 }

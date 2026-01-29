@@ -6,6 +6,8 @@ import { Clock, AlertCircle } from 'lucide-react';
 
 interface CutoffCountdownProps {
   cutoffTime: string; // ISO datetime string
+  /** Optional label (e.g. service name) shown above the countdown */
+  label?: string;
 }
 
 function TimeCard({ value, label, isUrgent }: { value: number; label: string; isUrgent: boolean }) {
@@ -42,7 +44,7 @@ function TimeCard({ value, label, isUrgent }: { value: number; label: string; is
   );
 }
 
-export function CutoffCountdown({ cutoffTime }: CutoffCountdownProps) {
+export function CutoffCountdown({ cutoffTime, label }: CutoffCountdownProps) {
   const { t } = useTranslation();
   const [timeRemaining, setTimeRemaining] = useState<{
     hours: number;
@@ -126,7 +128,7 @@ export function CutoffCountdown({ cutoffTime }: CutoffCountdownProps) {
           </div>
           <div>
             <p className="text-base md:text-lg font-bold text-warning-900">
-              {t('cutoff.orderingClosed')}
+              {label ? `${label} – ${t('cutoff.orderingClosed')}` : t('cutoff.orderingClosed')}
             </p>
             <p className="text-sm text-warning-700 mt-0.5">
               {t('cutoff.cutoffTimePassed')}
@@ -185,7 +187,7 @@ export function CutoffCountdown({ cutoffTime }: CutoffCountdownProps) {
               ${isUrgent ? 'text-warning-900' : 'text-gray-900'}
             `}
           >
-            {t('cutoff.orderingClosesIn')}
+            {label ? `${label} – ${t('cutoff.orderingClosesIn')}` : t('cutoff.orderingClosesIn')}
           </h3>
           <p
             className={`

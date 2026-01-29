@@ -7,14 +7,15 @@ import { OrderDto, OrderStatus } from '@contracts/core';
 import { Loading } from '../../components/ui/loading';
 import { Error } from '../../components/ui/error';
 import { Empty } from '../../components/ui/empty';
-import { ChevronDown, ChevronUp, Users } from 'lucide-react';
+import { ChevronDown, ChevronUp, X } from 'lucide-react';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export default function OrdersPage() {
   const { t } = useTranslation();
   const [orders, setOrders] = useState<OrderDto[]>([]);
-  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
-  const [expandedEmployeeId, setExpandedEmployeeId] = useState<string | null>(null);
+  const [orderDetailsModal, setOrderDetailsModal] = useState<OrderDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [dateFilter, setDateFilter] = useState<'all' | 'custom'>('all');
@@ -40,45 +41,28 @@ export default function OrdersPage() {
 
   const filteredOrders = useMemo(() => {
     if (dateFilter === 'custom' && customDate) {
-      // Backend returns orderDate as YYYY-MM-DD (local timezone)
-      // Extract just the date part if it includes time, otherwise use as-is
       return orders.filter((order) => {
-        const orderDateOnly = order.orderDate.includes('T') 
-          ? order.orderDate.split('T')[0] 
+        const orderDateOnly = order.orderDate.includes('T')
+          ? order.orderDate.split('T')[0]
           : order.orderDate;
         return orderDateOnly === customDate;
       });
-    } else if (dateFilter === 'all') {
-      return orders;
     }
     return orders;
   }, [orders, dateFilter, customDate]);
 
-  // Group orders by date, then by employee
   const groupedOrders = useMemo(() => {
-    const byDate: Record<string, Record<string, OrderDto[]>> = {};
-    
+    const byDate: Record<string, OrderDto[]> = {};
     filteredOrders.forEach((order) => {
-      // Backend returns orderDate as YYYY-MM-DD (local timezone)
-      // Extract just the date part if it includes time, otherwise use as-is
-      const orderDateOnly = order.orderDate.includes('T') 
-        ? order.orderDate.split('T')[0] 
+      const orderDateOnly = order.orderDate.includes('T')
+        ? order.orderDate.split('T')[0]
         : order.orderDate;
-      const dateKey = orderDateOnly;
-      if (!byDate[dateKey]) {
-        byDate[dateKey] = {};
-      }
-      if (!byDate[dateKey][order.employeeId]) {
-        byDate[dateKey][order.employeeId] = [];
-      }
-      byDate[dateKey][order.employeeId].push(order);
+      if (!byDate[orderDateOnly]) byDate[orderDateOnly] = [];
+      byDate[orderDateOnly].push(order);
     });
-
-    // Sort dates descending
-    const sortedDates = Object.keys(byDate).sort((a, b) => 
-      new Date(b).getTime() - new Date(a).getTime()
+    const sortedDates = Object.keys(byDate).sort(
+      (a, b) => new Date(b).getTime() - new Date(a).getTime(),
     );
-
     return { byDate, sortedDates };
   }, [filteredOrders]);
 
@@ -97,21 +81,16 @@ export default function OrdersPage() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    // Get locale from cookie or default to French
     let locale = 'fr';
     if (typeof document !== 'undefined') {
       try {
         const cookies = document.cookie.split(';');
-        const localeCookie = cookies.find(c => c.trim().startsWith('NEXT_LOCALE='));
+        const localeCookie = cookies.find((c) => c.trim().startsWith('NEXT_LOCALE='));
         if (localeCookie) {
           const loc = localeCookie.split('=')[1].trim();
-          if (loc === 'fr' || loc === 'en') {
-            locale = loc;
-          }
+          if (loc === 'fr' || loc === 'en') locale = loc;
         }
-      } catch (e) {
-        // Fallback to default
-      }
+      } catch (_e) {}
     }
     return date.toLocaleDateString(locale, {
       weekday: 'long',
@@ -123,11 +102,8 @@ export default function OrdersPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8">
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-black mb-4">{t('orders.title')}</h1>
-        
-        {/* Date Filter Tabs */}
         <div className="bg-white border-2 border-gray-200 rounded-2xl p-5 shadow-md">
           <div className="flex items-center gap-3 flex-wrap">
             <button
@@ -152,7 +128,9 @@ export default function OrdersPage() {
                     : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200 hover:border-primary-300 shadow-sm hover:shadow-md'
                 }`}
               >
-                {customDate ? new Date(customDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : t('common.buttons.customDate')}
+                {customDate
+                  ? new Date(customDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                  : t('common.buttons.customDate')}
               </button>
               {showDatePicker && (
                 <div className="absolute top-full mt-2 left-0 bg-white border-2 border-gray-200 rounded-xl shadow-xl p-4 z-50">
@@ -162,9 +140,7 @@ export default function OrdersPage() {
                     onChange={(e) => {
                       const selectedDate = e.target.value;
                       setCustomDate(selectedDate);
-                      if (selectedDate) {
-                        setDateFilter('custom');
-                      }
+                      if (selectedDate) setDateFilter('custom');
                       setShowDatePicker(false);
                     }}
                     className="px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-gray-900 font-medium"
@@ -176,21 +152,18 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* Error Display */}
       {error && (
         <div className="mb-4">
           <Error message={error} onRetry={loadOrders} />
         </div>
       )}
 
-      {/* Loading State */}
       {loading && (
         <div className="bg-white border-2 border-gray-200 rounded-2xl shadow-md p-12">
           <Loading message={t('orders.loadingOrders')} />
         </div>
       )}
 
-      {/* Empty State */}
       {!loading && filteredOrders.length === 0 && (
         <div className="bg-white border-2 border-gray-200 rounded-2xl shadow-md p-12">
           <Empty
@@ -200,197 +173,182 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {/* Grouped Orders by Date and Employee */}
       {!loading && filteredOrders.length > 0 && (
         <div className="space-y-6">
           {groupedOrders.sortedDates.map((dateKey) => {
-            const employeesForDate = groupedOrders.byDate[dateKey];
-            const totalOrdersForDate = Object.values(employeesForDate).reduce(
-              (sum, orders) => sum + orders.length,
-              0
+            const ordersForDate = groupedOrders.byDate[dateKey];
+            const totalOrdersForDate = ordersForDate.length;
+            const totalAmountForDate = ordersForDate.reduce(
+              (sum, o) => sum + (o.totalAmount || 0),
+              0,
             );
-            const totalAmountForDate = filteredOrders
-              .filter((o) => {
-                const orderDateOnly = o.orderDate.includes('T') 
-                  ? o.orderDate.split('T')[0] 
-                  : o.orderDate;
-                return orderDateOnly === dateKey;
-              })
-              .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+            const isExpanded = expandedDate === dateKey;
 
             return (
-              <div key={dateKey} className="bg-white border-2 border-gray-200 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200">
-                {/* Date Header */}
+              <div
+                key={dateKey}
+                className="bg-white border-2 border-gray-200 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200"
+              >
                 <button
-                  onClick={() => setExpandedDate(expandedDate === dateKey ? null : dateKey)}
+                  onClick={() => setExpandedDate(isExpanded ? null : dateKey)}
                   className="w-full px-6 py-4 bg-gray-50 hover:bg-gray-100 transition-all duration-200 flex items-center justify-between"
                 >
                   <div className="flex items-center gap-4">
-                    {expandedDate === dateKey ? (
+                    {isExpanded ? (
                       <ChevronUp className="w-5 h-5 text-gray-600" />
                     ) : (
                       <ChevronDown className="w-5 h-5 text-gray-600" />
                     )}
                     <div className="text-left">
-                      <h3 className="text-lg font-semibold text-gray-900">{formatDate(dateKey)}</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {formatDate(dateKey)}
+                      </h3>
                       <p className="text-sm text-gray-600">
-                        {totalOrdersForDate} {totalOrdersForDate !== 1 ? t('common.labels.orders') : t('common.labels.order')} • {totalAmountForDate.toFixed(2)} TND
+                        {totalOrdersForDate}{' '}
+                        {totalOrdersForDate !== 1
+                          ? t('common.labels.orders')
+                          : t('common.labels.order')}{' '}
+                        • {totalAmountForDate.toFixed(2)} TND
                       </p>
                     </div>
                   </div>
                 </button>
 
-                {/* Employees for this date */}
-                {expandedDate === dateKey && (
-                  <div className="p-6 space-y-4">
-                    {Object.entries(employeesForDate).map(([employeeId, employeeOrders]) => {
-                      const employee = employeeOrders[0];
-                      const employeeTotal = employeeOrders.reduce(
-                        (sum, order) => sum + (order.totalAmount || 0),
-                        0
-                      );
-
-                      return (
-                        <div key={employeeId} className="border-2 border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
-                          {/* Employee Header */}
-                          <button
-                            onClick={() =>
-                              setExpandedEmployeeId(
-                                expandedEmployeeId === employeeId ? null : employeeId
-                              )
-                            }
-                            className="w-full px-4 py-3 bg-gradient-to-r from-primary-50 to-primary-100 hover:from-primary-100 hover:to-primary-200 transition-all duration-200 flex items-center justify-between"
+                {isExpanded && (
+                  <div className="p-4 overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200 text-left text-gray-600 font-semibold">
+                          <th className="pb-2 pr-4">{t('common.labels.employee')}</th>
+                          <th className="pb-2 pr-4">{t('common.labels.packLabel')}</th>
+                          <th className="pb-2 pr-4 text-right">{t('common.labels.amount')}</th>
+                          <th className="pb-2 pr-4">{t('common.labels.status')}</th>
+                          <th className="pb-2 w-28"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ordersForDate.map((order) => (
+                          <tr
+                            key={order.id}
+                            className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
                           >
-                            <div className="flex items-center gap-3">
-                              <Users className="w-5 h-5 text-primary-600" />
-                              <div className="text-left">
-                                <p className="font-semibold text-gray-900">
-                                  {employee.employeeName}
+                            <td className="py-3 pr-4">
+                              <div>
+                                <p className="font-medium text-gray-900">
+                                  {order.employeeName}
                                 </p>
-                                <p className="text-sm text-gray-600">{employee.employeeEmail}</p>
+                                <p className="text-xs text-gray-500">{order.employeeEmail}</p>
                               </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <div className="text-right">
-                                <p className="text-sm font-semibold text-gray-900">
-                                  {employeeOrders.length} {employeeOrders.length !== 1 ? t('common.labels.orders') : t('common.labels.order')}
-                                </p>
-                                <p className="text-xs text-gray-600">
-                                  {employeeTotal.toFixed(2)} TND
-                                </p>
-                              </div>
-                              {expandedEmployeeId === employeeId ? (
-                                <ChevronUp className="w-5 h-5 text-gray-600" />
-                              ) : (
-                                <ChevronDown className="w-5 h-5 text-gray-600" />
-                              )}
-                            </div>
-                          </button>
-
-                          {/* Orders for this employee */}
-                          {expandedEmployeeId === employeeId && (
-                            <div className="p-4 space-y-3 bg-surface">
-                              {employeeOrders.map((order) => (
-                                <div
-                                  key={order.id}
-                                  className="p-4 bg-gray-50 rounded-xl border-2 border-gray-200 hover:border-primary-300 transition-all duration-200"
-                                >
-                                  <div className="flex justify-between items-start mb-3">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-3 mb-2">
-                                        <h4 className="text-sm font-semibold text-gray-900">
-                                          {t('orders.orderNumber', { id: order.id.substring(0, 8) })}
-                                        </h4>
-                                        <span
-                                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(
-                                            order.status
-                                          )}`}
-                                        >
-                                          {order.status}
-                                        </span>
-                                      </div>
-                                      <p className="text-sm text-gray-600 mb-1">
-                                        <strong>{t('common.labels.packLabel')}</strong> {order.packName} - {order.packPrice.toFixed(2)} TND
-                                      </p>
-                                    </div>
-                                    <div className="text-right">
-                                      <p className="text-lg font-semibold text-gray-900">
-                                        {order.totalAmount.toFixed(2)} TND
-                                      </p>
-                                    </div>
-                                  </div>
-
-                                  {/* Expandable Order Details */}
-                                  <button
-                                    onClick={() =>
-                                      setExpandedOrderId(
-                                        expandedOrderId === order.id ? null : order.id
-                                      )
-                                    }
-                                    className="w-full text-left text-sm text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-primary-50 transition-all duration-200 border-2 border-transparent hover:border-primary-200"
-                                  >
-                                    {expandedOrderId === order.id ? (
-                                      <>
-                                        <ChevronUp className="w-3 h-3" />
-                                        {t('common.buttons.hideDetails')}
-                                      </>
-                                    ) : (
-                                      <>
-                                        <ChevronDown className="w-3 h-3" />
-                                        {t('common.buttons.showDetails')}
-                                      </>
-                                    )}
-                                  </button>
-
-                                  {expandedOrderId === order.id && (
-                                    <div className="mt-3 pt-3 border-t border-surface-dark">
-                                      <h5 className="text-xs font-semibold text-gray-700 mb-2">
-                                        {t('common.labels.componentSelections')}:
-                                      </h5>
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                        {order.items.map((item) => (
-                                          <div
-                                            key={item.id}
-                                            className="p-2 bg-surface rounded border border-surface-dark"
-                                          >
-                                            <div className="flex items-center gap-2">
-                                              {item.variantImageUrl ? (
-                                                <img
-                                                  src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${item.variantImageUrl}`}
-                                                  alt={item.variantName}
-                                                  className="w-10 h-10 object-cover rounded-md border border-surface-dark flex-shrink-0"
-                                                />
-                                              ) : (
-                                                <div className="w-10 h-10 bg-surface-light border border-surface-dark rounded-md flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
-                                                  {t('common.labels.noImage')}
-                                                </div>
-                                              )}
-                                              <div className="flex-1 flex justify-between items-center">
-                                                <span className="text-xs font-medium text-gray-900">
-                                                  {item.componentName}
-                                                </span>
-                                                <span className="text-xs text-gray-600">
-                                                  {item.variantName}
-                                                </span>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                            </td>
+                            <td className="py-3 pr-4 text-gray-700">
+                              {order.packName} — {order.packPrice.toFixed(2)} TND
+                            </td>
+                            <td className="py-3 pr-4 text-right font-medium text-gray-900">
+                              {order.totalAmount.toFixed(2)} TND
+                            </td>
+                            <td className="py-3 pr-4">
+                              <span
+                                className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(
+                                  order.status,
+                                )}`}
+                              >
+                                {order.status}
+                              </span>
+                            </td>
+                            <td className="py-3">
+                              <button
+                                type="button"
+                                onClick={() => setOrderDetailsModal(order)}
+                                className="text-primary-600 hover:text-primary-700 font-semibold text-xs"
+                              >
+                                {t('common.buttons.showDetails')}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Order details modal */}
+      {orderDetailsModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {t('orders.orderNumber', {
+                  id: orderDetailsModal.id.substring(0, 8),
+                })}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setOrderDetailsModal(null)}
+                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-3">
+              <p className="text-sm text-gray-600">
+                <strong>{t('common.labels.employee')}:</strong>{' '}
+                {orderDetailsModal.employeeName} ({orderDetailsModal.employeeEmail})
+              </p>
+              <p className="text-sm text-gray-600">
+                <strong>{t('common.labels.packLabel')}:</strong>{' '}
+                {orderDetailsModal.packName} — {orderDetailsModal.packPrice.toFixed(2)} TND
+              </p>
+              <p className="text-sm text-gray-600">
+                <strong>{t('common.labels.amount')}:</strong>{' '}
+                {orderDetailsModal.totalAmount.toFixed(2)} TND
+              </p>
+              <p className="text-sm text-gray-600">
+                <strong>{t('common.labels.status')}:</strong>{' '}
+                <span
+                  className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(
+                    orderDetailsModal.status,
+                  )}`}
+                >
+                  {orderDetailsModal.status}
+                </span>
+              </p>
+              <h4 className="text-sm font-semibold text-gray-900 pt-2 border-t border-gray-200">
+                {t('common.labels.componentSelections')}
+              </h4>
+              <div className="grid grid-cols-1 gap-2">
+                {orderDetailsModal.items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg border border-gray-200"
+                  >
+                    {item.variantImageUrl ? (
+                      <img
+                        src={`${API_BASE_URL}${item.variantImageUrl}`}
+                        alt={item.variantName}
+                        className="w-10 h-10 object-cover rounded-md border border-gray-200 flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-500 flex-shrink-0">
+                        {t('common.labels.noImage')}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">
+                        {item.componentName}
+                      </p>
+                      <p className="text-xs text-gray-600">{item.variantName}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

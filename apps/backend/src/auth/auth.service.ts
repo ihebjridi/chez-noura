@@ -78,12 +78,14 @@ export class AuthService {
 
     // EMPLOYEE uses email-based auth (no password required)
     // Just verify the user exists and is an employee
+    // For employees, ensure businessId is set from Employee when User.businessId is missing (legacy/migration)
+    const resolvedBusinessId = user.businessId ?? user.employee?.businessId ?? undefined;
 
     return {
       id: user.id,
       email: user.email,
       role: user.role as UserRole,
-      businessId: user.businessId || undefined,
+      businessId: resolvedBusinessId,
       employeeId: user.employeeId || undefined,
     };
   }
