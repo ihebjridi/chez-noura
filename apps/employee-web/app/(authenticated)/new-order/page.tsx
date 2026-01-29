@@ -390,7 +390,7 @@ function NewOrderContent() {
               ) : (
                 <div className="space-y-4">
                   {packs.map((pack) => (
-                    <Card key={pack.id} className="overflow-hidden hover:scale-[1.02] transition-transform duration-200">
+                    <Card key={pack.id} className="overflow-hidden transition-transform duration-200">
                       <button
                         onClick={() => handlePackSelect(pack)}
                         className="relative z-10 w-full p-5 sm:p-6 text-left hover:bg-gray-50 transition-colors cursor-pointer"
@@ -401,9 +401,16 @@ function NewOrderContent() {
                               <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
                                 <Package className="w-5 h-5 text-primary-600" />
                               </div>
-                              <h3 className="text-xl font-bold text-black truncate">
-                                {pack.name}
-                              </h3>
+                              <div className="min-w-0 flex-1">
+                                <h3 className="text-xl font-bold text-black truncate">
+                                  {pack.name}
+                                </h3>
+                                {pack.serviceName && (
+                                  <p className="text-sm text-gray-500 font-medium mt-0.5 truncate">
+                                    {pack.serviceName}
+                                  </p>
+                                )}
+                              </div>
                             </div>
                             <p className="text-base text-gray-600 mb-2">
                               {pack.components.length} {pack.components.length !== 1 ? t('common.labels.items') : t('common.labels.item')}
@@ -426,9 +433,14 @@ function NewOrderContent() {
               {/* Selected Pack Header */}
               <div className="bg-surface border border-surface-dark rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Package className="w-5 h-5 text-primary-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">{selectedPack.name}</h3>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Package className="w-5 h-5 text-primary-600 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <h3 className="text-lg font-semibold text-gray-900 truncate">{selectedPack.name}</h3>
+                      {selectedPack.serviceName && (
+                        <p className="text-sm text-gray-500 font-medium truncate">{selectedPack.serviceName}</p>
+                      )}
+                    </div>
                   </div>
                   <button
                     onClick={() => {
