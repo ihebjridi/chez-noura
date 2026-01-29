@@ -108,21 +108,24 @@ export class EmployeeMenuService {
 
     // Return menu even if not published - status field will indicate availability
 
-    // Build variant map by component ID for quick lookup
-    // Start with pack-level variants (for backward compatibility)
-    const variantMapByComponent = new Map<string, AvailableVariantDto[]>();
-    
+    // Build pack-to-service mapping
+    const packToServiceMap = new Map<string, string>();
+    for (const dailyMenuService of dailyMenu.services) {
+      for (const servicePack of dailyMenuService.service.servicePacks) {
+        packToServiceMap.set(servicePack.packId, dailyMenuService.serviceId);
+      }
+    }
+
+    // Pack-level variants: componentId -> variants (available for any pack that has that component)
+    const packLevelVariantsByComponent = new Map<string, AvailableVariantDto[]>();
     for (const dailyMenuVariant of dailyMenu.variants) {
       const variant = dailyMenuVariant.variant;
       const componentId = variant.componentId;
-      
-      // Only include variants with stock > 0
       if (dailyMenuVariant.initialStock > 0) {
-        if (!variantMapByComponent.has(componentId)) {
-          variantMapByComponent.set(componentId, []);
+        if (!packLevelVariantsByComponent.has(componentId)) {
+          packLevelVariantsByComponent.set(componentId, []);
         }
-        
-        variantMapByComponent.get(componentId)!.push({
+        packLevelVariantsByComponent.get(componentId)!.push({
           id: variant.id,
           name: variant.name,
           stockQuantity: dailyMenuVariant.initialStock,
@@ -132,44 +135,62 @@ export class EmployeeMenuService {
       }
     }
 
-    // Add service-level variants (apply to all packs in the service)
-    // Build a map of pack IDs to their service IDs
-    const packToServiceMap = new Map<string, string>();
+    // Service-level variants: serviceId -> (componentId -> variants)
+    // Each pack will only see variants from pack-level + its own service
+    const serviceVariantsByServiceAndComponent = new Map<
+      string,
+      Map<string, AvailableVariantDto[]>
+    >();
     for (const dailyMenuService of dailyMenu.services) {
-      for (const servicePack of dailyMenuService.service.servicePacks) {
-        packToServiceMap.set(servicePack.packId, dailyMenuService.serviceId);
-      }
-    }
-
-    // Add service variants to the variant map
-    for (const dailyMenuService of dailyMenu.services) {
+      const byComponent = new Map<string, AvailableVariantDto[]>();
       for (const serviceVariant of dailyMenuService.variants) {
         const variant = serviceVariant.variant;
         const componentId = variant.componentId;
-        
-        // Only include variants with stock > 0
         if (serviceVariant.initialStock > 0) {
-          if (!variantMapByComponent.has(componentId)) {
-            variantMapByComponent.set(componentId, []);
+          if (!byComponent.has(componentId)) {
+            byComponent.set(componentId, []);
           }
-          
-          // Check if variant already exists (from pack-level), if so, use the higher stock
-          const existing = variantMapByComponent.get(componentId)!.find((v) => v.id === variant.id);
+          byComponent.get(componentId)!.push({
+            id: variant.id,
+            name: variant.name,
+            stockQuantity: serviceVariant.initialStock,
+            isActive: variant.isActive,
+            imageUrl: variant.imageUrl || undefined,
+          });
+        }
+      }
+      serviceVariantsByServiceAndComponent.set(dailyMenuService.serviceId, byComponent);
+    }
+
+    /**
+     * Get variants for a component valid for a given pack.
+     * Valid = pack-level variants for that component OR variants from the pack's service.
+     * Merge by variant id and keep max stock (same variant can appear in both).
+     */
+    const getVariantsForPackComponent = (
+      packId: string,
+      componentId: string,
+    ): AvailableVariantDto[] => {
+      const byId = new Map<string, AvailableVariantDto>();
+      const packLevel = packLevelVariantsByComponent.get(componentId) || [];
+      for (const v of packLevel) {
+        byId.set(v.id, { ...v });
+      }
+      const serviceId = packToServiceMap.get(packId);
+      if (serviceId) {
+        const serviceByComponent = serviceVariantsByServiceAndComponent.get(serviceId);
+        const serviceVariants = serviceByComponent?.get(componentId) || [];
+        for (const v of serviceVariants) {
+          const existing = byId.get(v.id);
           if (existing) {
-            // Use the higher stock value
-            existing.stockQuantity = Math.max(existing.stockQuantity, serviceVariant.initialStock);
+            existing.stockQuantity = Math.max(existing.stockQuantity, v.stockQuantity);
           } else {
-            variantMapByComponent.get(componentId)!.push({
-              id: variant.id,
-              name: variant.name,
-              stockQuantity: serviceVariant.initialStock,
-              isActive: variant.isActive,
-              imageUrl: variant.imageUrl || undefined,
-            });
+            byId.set(v.id, { ...v });
           }
         }
       }
-    }
+      return Array.from(byId.values());
+    };
 
     // Get activated packs for this business (considering effective dates for pack changes)
     let activatedPackIds: Set<string> | null = null;
@@ -266,11 +287,10 @@ export class EmployeeMenuService {
       .map((dailyMenuPack) => {
         const pack = dailyMenuPack.pack;
         
-        // Get components for this pack
+        // Get components for this pack (only variants valid for this pack: pack-level + this pack's service)
         const components: AvailableComponentDto[] = pack.packComponents.map((packComponent) => {
           const component = packComponent.component;
-          const variants = variantMapByComponent.get(component.id) || [];
-          
+          const variants = getVariantsForPackComponent(pack.id, component.id);
           return {
             id: component.id,
             name: component.name,
@@ -280,6 +300,14 @@ export class EmployeeMenuService {
           };
         });
 
+        // Get service information for this pack
+        const serviceId = packToServiceMap.get(pack.id);
+        let serviceName: string | undefined;
+        if (serviceId) {
+          const dailyMenuService = dailyMenu.services.find((dms) => dms.serviceId === serviceId);
+          serviceName = dailyMenuService?.service.name;
+        }
+
         return {
           id: pack.id,
           name: pack.name,
@@ -288,6 +316,8 @@ export class EmployeeMenuService {
           createdAt: pack.createdAt.toISOString(),
           updatedAt: pack.updatedAt.toISOString(),
           components,
+          serviceId: serviceId || undefined,
+          serviceName: serviceName || undefined,
         };
       });
 

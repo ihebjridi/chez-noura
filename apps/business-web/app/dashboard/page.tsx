@@ -164,47 +164,53 @@ export default function DashboardPage() {
       <div className="mb-8">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('dashboard.allTimeStats')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="p-6 hover:scale-105 transition-transform duration-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">{t('dashboard.totalOrdersAllTime')}</p>
-                <p className="text-4xl font-bold text-black">{totalOrdersAllTime}</p>
+          <Link href="/orders" className="block">
+            <Card className="p-6 hover:border-primary-400 hover:bg-primary-50/50 hover:shadow-md transition-all duration-200 cursor-pointer h-full">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">{t('dashboard.totalOrdersAllTime')}</p>
+                  <p className="text-4xl font-bold text-black">{totalOrdersAllTime}</p>
+                </div>
+                <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <ShoppingCart className="w-7 h-7 text-white" />
+                </div>
               </div>
-              <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <ShoppingCart className="w-7 h-7 text-white" />
-              </div>
-            </div>
-          </Card>
+            </Card>
+          </Link>
 
-          <Card className="p-6 hover:scale-105 transition-transform duration-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">{t('dashboard.totalCostAllTime')}</p>
-                <p className="text-4xl font-bold text-black">
-                  {totalCostAllTime.toLocaleString(i18n.language || 'fr', {
-                    style: 'currency',
-                    currency: 'TND',
-                    minimumFractionDigits: 0,
-                  })}
-                </p>
+          <Link href="/invoices" className="block">
+            <Card className="p-6 hover:border-accent-400 hover:bg-accent-50/50 hover:shadow-md transition-all duration-200 cursor-pointer h-full">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">{t('dashboard.totalCostAllTime')}</p>
+                  <p className="text-4xl font-bold text-black">
+                    {totalCostAllTime.toLocaleString(i18n.language || 'fr', {
+                      style: 'currency',
+                      currency: 'TND',
+                      minimumFractionDigits: 0,
+                    })}
+                  </p>
+                </div>
+                <div className="w-14 h-14 bg-gradient-to-br from-accent-500 to-accent-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <DollarSign className="w-7 h-7 text-white" />
+                </div>
               </div>
-              <div className="w-14 h-14 bg-gradient-to-br from-accent-500 to-accent-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <DollarSign className="w-7 h-7 text-white" />
-              </div>
-            </div>
-          </Card>
+            </Card>
+          </Link>
 
-          <Card className="p-6 hover:scale-105 transition-transform duration-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">{t('dashboard.activeEmployees')}</p>
-                <p className="text-4xl font-bold text-black">{activeEmployeesCount}</p>
+          <Link href="/employees" className="block">
+            <Card className="p-6 hover:border-primary-400 hover:bg-primary-50/50 hover:shadow-md transition-all duration-200 cursor-pointer h-full">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">{t('dashboard.activeEmployees')}</p>
+                  <p className="text-4xl font-bold text-black">{activeEmployeesCount}</p>
+                </div>
+                <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Users className="w-7 h-7 text-white" />
+                </div>
               </div>
-              <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <Users className="w-7 h-7 text-white" />
-              </div>
-            </div>
-          </Card>
+            </Card>
+          </Link>
         </div>
       </div>
 
@@ -262,35 +268,39 @@ export default function DashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <Card className="p-6 hover:scale-105 transition-transform duration-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">{t('dashboard.totalOrders')}</p>
-              <p className="text-4xl font-bold text-black">{totalOrdersToday}</p>
+        <Link href="/orders" className="block">
+          <Card className="p-6 hover:border-primary-400 hover:bg-primary-50/50 hover:shadow-md transition-all duration-200 cursor-pointer h-full">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">{t('dashboard.totalOrders')}</p>
+                <p className="text-4xl font-bold text-black">{totalOrdersToday}</p>
+              </div>
+              <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <ShoppingCart className="w-7 h-7 text-white" />
+              </div>
             </div>
-            <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <ShoppingCart className="w-7 h-7 text-white" />
-            </div>
-          </div>
-        </Card>
+          </Card>
+        </Link>
 
-        <Card className="p-6 hover:scale-105 transition-transform duration-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">{t('dashboard.totalCost')}</p>
-              <p className="text-4xl font-bold text-black">
-                {totalCostToday.toLocaleString(i18n.language || 'fr', {
-                  style: 'currency',
-                  currency: 'TND',
-                  minimumFractionDigits: 0,
-                })}
-              </p>
+        <Link href="/invoices" className="block">
+          <Card className="p-6 hover:border-accent-400 hover:bg-accent-50/50 hover:shadow-md transition-all duration-200 cursor-pointer h-full">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">{t('dashboard.totalCost')}</p>
+                <p className="text-4xl font-bold text-black">
+                  {totalCostToday.toLocaleString(i18n.language || 'fr', {
+                    style: 'currency',
+                    currency: 'TND',
+                    minimumFractionDigits: 0,
+                  })}
+                </p>
+              </div>
+              <div className="w-14 h-14 bg-gradient-to-br from-accent-500 to-accent-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <DollarSign className="w-7 h-7 text-white" />
+              </div>
             </div>
-            <div className="w-14 h-14 bg-gradient-to-br from-accent-500 to-accent-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <DollarSign className="w-7 h-7 text-white" />
-            </div>
-          </div>
-        </Card>
+          </Card>
+        </Link>
       </div>
 
       {/* Daily Summary Section */}
@@ -420,7 +430,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Link 
             href="/employees" 
-            className="bg-white border-2 border-gray-200 rounded-2xl hover:border-primary-400 hover:shadow-xl transition-all duration-200 cursor-pointer block p-6 group transform hover:scale-105"
+            className="bg-white border-2 border-gray-200 rounded-2xl hover:border-primary-400 hover:bg-primary-50/50 transition-all duration-200 cursor-pointer block p-6 group"
           >
             <div className="flex items-center gap-4 mb-3">
               <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
@@ -433,7 +443,7 @@ export default function DashboardPage() {
 
           <Link 
             href="/services" 
-            className="bg-white border-2 border-gray-200 rounded-2xl hover:border-green-400 hover:shadow-xl transition-all duration-200 cursor-pointer block p-6 group transform hover:scale-105"
+            className="bg-white border-2 border-gray-200 rounded-2xl hover:border-green-400 hover:bg-green-50/50 transition-all duration-200 cursor-pointer block p-6 group"
           >
             <div className="flex items-center gap-4 mb-3">
               <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
@@ -446,7 +456,7 @@ export default function DashboardPage() {
 
           <Link 
             href="/orders" 
-            className="bg-white border-2 border-gray-200 rounded-2xl hover:border-primary-400 hover:shadow-xl transition-all duration-200 cursor-pointer block p-6 group transform hover:scale-105"
+            className="bg-white border-2 border-gray-200 rounded-2xl hover:border-primary-400 hover:bg-primary-50/50 transition-all duration-200 cursor-pointer block p-6 group"
           >
             <div className="flex items-center gap-4 mb-3">
               <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
@@ -459,7 +469,7 @@ export default function DashboardPage() {
 
           <Link 
             href="/invoices" 
-            className="bg-white border-2 border-gray-200 rounded-2xl hover:border-accent-400 hover:shadow-xl transition-all duration-200 cursor-pointer block p-6 group transform hover:scale-105"
+            className="bg-white border-2 border-gray-200 rounded-2xl hover:border-accent-400 hover:bg-accent-50/50 transition-all duration-200 cursor-pointer block p-6 group"
           >
             <div className="flex items-center gap-4 mb-3">
               <div className="w-12 h-12 bg-gradient-to-br from-accent-500 to-accent-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">

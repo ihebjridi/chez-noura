@@ -212,6 +212,7 @@ export class EmployeeOrdersService {
       let dailyMenuVariant = dailyMenuVariantMap.get(selectedVariant.variantId);
 
       // If not found as pack-level, check if it's available as service-level variant
+      // First try the service that the pack belongs to
       if (!dailyMenuVariant) {
         const serviceId = packToServiceMap.get(createOrderDto.packId);
         if (serviceId) {
@@ -225,6 +226,28 @@ export class EmployeeOrdersService {
               initialStock: serviceVariant.initialStock,
               variant: serviceVariant.variant,
             } as any;
+          }
+        }
+      }
+
+      // If still not found and pack doesn't have a service, check all services for this variant
+      // This handles legacy packs that might not be assigned to a service
+      if (!dailyMenuVariant) {
+        const packServiceId = packToServiceMap.get(createOrderDto.packId);
+        if (!packServiceId) {
+          // Pack doesn't belong to a service, check all services
+          for (const dailyMenuService of dailyMenu.services) {
+            const serviceVariantKey = `${dailyMenuService.serviceId}:${selectedVariant.variantId}`;
+            const serviceVariant = serviceVariantMap.get(serviceVariantKey);
+            if (serviceVariant) {
+              dailyMenuVariant = {
+                id: serviceVariant.id,
+                variantId: serviceVariant.variantId,
+                initialStock: serviceVariant.initialStock,
+                variant: serviceVariant.variant,
+              } as any;
+              break;
+            }
           }
         }
       }
@@ -257,22 +280,61 @@ export class EmployeeOrdersService {
     const orderDate = new Date(dailyMenu.date);
     orderDate.setHours(0, 0, 0, 0);
 
-    // Check for existing order for this employee on this date (one order per day)
+    // Get the service ID for the pack being ordered
+    const serviceIdForPack = packToServiceMap.get(createOrderDto.packId);
+
+    // Check for existing order for this employee on this date for the same service
+    // Employees can place one order per service per day, not just one order per day
     const nextDay = new Date(orderDate);
     nextDay.setDate(nextDay.getDate() + 1);
 
-    const existingOrder = await this.prisma.order.findFirst({
-      where: {
-        employeeId: user.employeeId,
-        orderDate: {
-          gte: orderDate,
-          lt: nextDay,
+    if (serviceIdForPack) {
+      // Find all existing orders for this employee on this date
+      const existingOrders = await this.prisma.order.findMany({
+        where: {
+          employeeId: user.employeeId,
+          orderDate: {
+            gte: orderDate,
+            lt: nextDay,
+          },
         },
-      },
-    });
+        include: {
+          pack: {
+            include: {
+              servicePack: {
+                include: {
+                  service: true,
+                },
+              },
+            },
+          },
+        },
+      });
 
-    if (existingOrder) {
-      throw new ConflictException('Employee can only place one order per day');
+      // Check if any existing order is for a pack in the same service
+      for (const existingOrder of existingOrders) {
+        const existingServiceId = existingOrder.pack.servicePack?.serviceId;
+        if (existingServiceId === serviceIdForPack) {
+          throw new ConflictException(
+            `You have already placed an order for ${existingOrder.pack.servicePack.service.name} on this date. Only one order per service per day is allowed.`,
+          );
+        }
+      }
+    } else {
+      // If pack doesn't belong to a service (legacy), check for any existing order (backward compatibility)
+      const existingOrder = await this.prisma.order.findFirst({
+        where: {
+          employeeId: user.employeeId,
+          orderDate: {
+            gte: orderDate,
+            lt: nextDay,
+          },
+        },
+      });
+
+      if (existingOrder) {
+        throw new ConflictException('Employee can only place one order per day');
+      }
     }
 
     // Calculate total amount (pack price)
@@ -281,6 +343,54 @@ export class EmployeeOrdersService {
     // Create order with items and decrement stock atomically in a transaction
     try {
       const order = await this.prisma.$transaction(async (tx) => {
+        // Re-check for existing order for the same service within transaction to prevent race conditions
+        if (serviceIdForPack) {
+          const existingOrdersInTx = await tx.order.findMany({
+            where: {
+              employeeId: user.employeeId,
+              orderDate: {
+                gte: orderDate,
+                lt: nextDay,
+              },
+            },
+            include: {
+              pack: {
+                include: {
+                  servicePack: {
+                    include: {
+                      service: true,
+                    },
+                  },
+                },
+              },
+            },
+          });
+
+          for (const existingOrder of existingOrdersInTx) {
+            const existingServiceId = existingOrder.pack.servicePack?.serviceId;
+            if (existingServiceId === serviceIdForPack) {
+              throw new ConflictException(
+                `You have already placed an order for ${existingOrder.pack.servicePack.service.name} on this date. Only one order per service per day is allowed.`,
+              );
+            }
+          }
+        } else {
+          // Legacy: check for any existing order if pack doesn't belong to a service
+          const existingOrderInTx = await tx.order.findFirst({
+            where: {
+              employeeId: user.employeeId,
+              orderDate: {
+                gte: orderDate,
+                lt: nextDay,
+              },
+            },
+          });
+
+          if (existingOrderInTx) {
+            throw new ConflictException('Employee can only place one order per day');
+          }
+        }
+
         // Re-check stock within transaction to prevent race conditions
         // Check both pack-level and service-level variants
         const variantIds = createOrderDto.selectedVariants.map((v) => v.variantId);
@@ -318,6 +428,27 @@ export class EmployeeOrdersService {
                 variant: true,
               },
             });
+          }
+        } else {
+          // If pack doesn't have a service, check all services for variants
+          // This handles legacy packs that might not be assigned to a service
+          const allDailyMenuServices = await tx.dailyMenuService.findMany({
+            where: {
+              dailyMenuId: dailyMenu.id,
+            },
+          });
+
+          for (const dailyMenuService of allDailyMenuServices) {
+            const serviceVariants = await tx.dailyMenuServiceVariant.findMany({
+              where: {
+                dailyMenuServiceId: dailyMenuService.id,
+                variantId: { in: variantIds },
+              },
+              include: {
+                variant: true,
+              },
+            });
+            dailyMenuServiceVariantsInTx.push(...serviceVariants);
           }
         }
 
@@ -369,41 +500,49 @@ export class EmployeeOrdersService {
               })),
             },
           },
+      include: {
+        employee: {
+          select: {
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        business: {
+          select: {
+            name: true,
+          },
+        },
+        pack: {
           include: {
-            employee: {
-              select: {
-                email: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-            business: {
-              select: {
-                name: true,
-              },
-            },
-            pack: {
-              select: {
-                name: true,
-                price: true,
-              },
-            },
-            items: {
+            servicePack: {
               include: {
-                component: {
+                service: {
                   select: {
+                    id: true,
                     name: true,
-                  },
-                },
-                variant: {
-                  select: {
-                    name: true,
-                    imageUrl: true,
                   },
                 },
               },
             },
           },
+        },
+        items: {
+          include: {
+            component: {
+              select: {
+                name: true,
+              },
+            },
+            variant: {
+              select: {
+                name: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
+      },
         });
 
         // Decrement stock from the appropriate source (pack-level or service-level) atomically
@@ -443,20 +582,95 @@ export class EmployeeOrdersService {
 
       return this.mapOrderToDto(order);
     } catch (error) {
-      // Handle unique constraint violation (duplicate order)
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        throw new ConflictException('Employee can only place one order per day');
-      }
+      // Handle any other errors that might occur during order creation
+      // Note: Service-level duplicate checks are done before the transaction
+      // The unique constraint on [employeeId, orderDate] has been removed to allow
+      // multiple orders per day (one per service)
       throw error;
     }
   }
 
   /**
+   * Get all orders for today for the current employee
+   * Returns array of orders (can be multiple - one per service)
+   */
+  async getTodayOrders(user: TokenPayload): Promise<OrderDto[]> {
+    if (user.role !== UserRole.EMPLOYEE) {
+      throw new ForbiddenException('Only employees can access their orders');
+    }
+
+    if (!user.employeeId) {
+      throw new BadRequestException('Employee ID not found');
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const nextDay = new Date(today);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    const orders = await this.prisma.order.findMany({
+      where: {
+        employeeId: user.employeeId,
+        orderDate: {
+          gte: today,
+          lt: nextDay,
+        },
+      },
+      include: {
+        employee: {
+          select: {
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        business: {
+          select: {
+            name: true,
+          },
+        },
+        pack: {
+          include: {
+            servicePack: {
+              include: {
+                service: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        items: {
+          include: {
+            component: {
+              select: {
+                name: true,
+              },
+            },
+            variant: {
+              select: {
+                name: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return orders.map((order) => this.mapOrderToDto(order));
+  }
+
+  /**
    * Get today's order for the current employee
    * Returns null if no order exists for today
+   * @deprecated Use getTodayOrders instead to support multiple orders per day (one per service)
    */
   async getTodayOrder(user: TokenPayload): Promise<OrderDto | null> {
     if (user.role !== UserRole.EMPLOYEE) {
@@ -524,6 +738,9 @@ export class EmployeeOrdersService {
   }
 
   private mapOrderToDto(order: any): OrderDto {
+    const serviceId = order.pack?.servicePack?.serviceId;
+    const serviceName = order.pack?.servicePack?.service?.name;
+    
     return {
       id: order.id,
       employeeId: order.employeeId,
@@ -547,6 +764,9 @@ export class EmployeeOrdersService {
       totalAmount: Number(order.totalAmount),
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
-    };
+      // Add service information (optional fields for backward compatibility)
+      serviceId: serviceId || undefined,
+      serviceName: serviceName || undefined,
+    } as OrderDto;
   }
 }

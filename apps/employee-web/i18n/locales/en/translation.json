@@ -163,7 +163,8 @@
     "viewAllPastUpcoming": "View all your past and upcoming orders",
     "confirmedReadyPickup": "Confirmed - Ready for pickup",
     "pendingConfirmation": "Pending confirmation",
-    "cancelled": "Cancelled"
+    "cancelled": "Cancelled",
+    "dateGroups": "dates"
   },
   "calendar": {
     "title": "Calendar",
@@ -185,7 +186,9 @@
   "today": {
     "title": "Today",
     "todaysOrder": "Today's Order",
-    "loadingTodaysOrder": "Loading today's order...",
+    "todaysOrders": "Today's Orders ({{count}})",
+    "orderAnotherService": "You can place an order for another service",
+    "loadingTodaysOrder": "Loading today's orders...",
     "noOrderToday": "No order for today",
     "noOrderTodayDescription": "You can place an order now",
     "menuPublishedNoPacks": "Menu is published but no packs are available",

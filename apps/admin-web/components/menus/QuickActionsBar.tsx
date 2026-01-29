@@ -1,47 +1,40 @@
 'use client';
 
-import { DailyMenuWithDetailsDto, DailyMenuStatus } from '@contracts/core';
+import { DailyMenuWithDetailsDto, DailyMenuStatus, ServiceDto } from '@contracts/core';
 import { InlineToolbar } from '../layouts/InlineToolbar';
 import { PublishConfirmModal } from '../../app/daily-menus/[id]/components/PublishConfirmModal';
 import { DeleteConfirmModal } from '../../app/daily-menus/[id]/components/DeleteConfirmModal';
-import { CutoffHourEditor } from './CutoffHourEditor';
 
 interface QuickActionsBarProps {
   dailyMenu: DailyMenuWithDetailsDto | null;
+  allServices?: ServiceDto[];
   isReadOnly?: boolean;
   onPublish: () => void;
   onLock: () => void;
   onUnlock: () => void;
-  onChangeCutoff: (cutoffHour: string) => void;
   onDelete: () => void;
   showPublishConfirm: boolean;
   showDeleteConfirm: boolean;
-  showCutoffEditor: boolean;
   onPublishConfirm: () => void;
   onPublishCancel: () => void;
   onDeleteConfirm: () => void;
   onDeleteCancel: () => void;
-  onCutoffEditorOpen: () => void;
-  onCutoffEditorClose: () => void;
 }
 
 export function QuickActionsBar({
   dailyMenu,
+  allServices = [],
   isReadOnly = false,
   onPublish,
   onLock,
   onUnlock,
-  onChangeCutoff,
   onDelete,
   showPublishConfirm,
   showDeleteConfirm,
-  showCutoffEditor,
   onPublishConfirm,
   onPublishCancel,
   onDeleteConfirm,
   onDeleteCancel,
-  onCutoffEditorOpen,
-  onCutoffEditorClose,
 }: QuickActionsBarProps) {
   if (!dailyMenu) {
     return null;
@@ -50,17 +43,44 @@ export function QuickActionsBar({
   const isDraft = dailyMenu.status === DailyMenuStatus.DRAFT;
   const isPublished = dailyMenu.status === DailyMenuStatus.PUBLISHED;
   const isLocked = dailyMenu.status === DailyMenuStatus.LOCKED;
-  
-  // Use cutoffHour from menu, default to "14:00" if not set
-  const cutoffHour = dailyMenu.cutoffHour || '14:00';
-  const [cutoffHourPart, cutoffMinutePart] = cutoffHour.split(':');
-  const cutoffTime = new Date(dailyMenu.date + `T${cutoffHourPart}:${cutoffMinutePart}:00`);
-  const canLock = isPublished && new Date() >= cutoffTime;
 
-  const cutoffDisplay = cutoffTime.toLocaleString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  // Collect service cutoff times for display
+  const serviceCutoffTimes = dailyMenu.services
+    .map((menuService) => {
+      const service = allServices.find((s) => s.id === menuService.serviceId);
+      return service?.cutoffTime || null;
+    })
+    .filter((time): time is string => time !== null);
+
+  // Build info message showing service cutoff times
+  const getInfoMessage = () => {
+    if (isLocked) {
+      return <span className="text-sm text-gray-600">Menu is locked and cannot be modified</span>;
+    }
+
+    if (serviceCutoffTimes.length > 0) {
+      const uniqueCutoffs = [...new Set(serviceCutoffTimes)];
+      if (uniqueCutoffs.length === 1) {
+        return (
+          <span className="text-sm text-gray-600">
+            Service cutoff: <span className="font-medium">{uniqueCutoffs[0]}</span>
+          </span>
+        );
+      } else {
+        return (
+          <span className="text-sm text-gray-600">
+            Service cutoffs: <span className="font-medium">{uniqueCutoffs.join(', ')}</span>
+          </span>
+        );
+      }
+    }
+
+    return (
+      <span className="text-sm text-gray-500">
+        Cutoff times are configured per service in the Services page
+      </span>
+    );
+  };
 
   // If read-only (past menu), hide all actions
   if (isReadOnly) {
@@ -84,21 +104,6 @@ export function QuickActionsBar({
       label: 'Unlock Menu',
       onClick: onUnlock,
     });
-  } else if (isDraft || isPublished) {
-    // Change Cutoff button for DRAFT and PUBLISHED menus
-    secondaryActions.push({
-      label: 'Change Cutoff',
-      onClick: onCutoffEditorOpen,
-    });
-    
-    // Lock button for published menus (if not already showing as primary)
-    if (isPublished && !canLock) {
-      secondaryActions.push({
-        label: 'Close Orders',
-        onClick: onLock,
-        disabled: !canLock,
-      });
-    }
   }
 
   return (
@@ -112,7 +117,7 @@ export function QuickActionsBar({
               }
             : isLocked
             ? undefined
-            : canLock
+            : isPublished
             ? {
                 label: 'Close Orders',
                 onClick: onLock,
@@ -128,15 +133,7 @@ export function QuickActionsBar({
               }
             : undefined
         }
-        info={
-          isLocked ? (
-            <span className="text-sm text-gray-600">Menu is locked and cannot be modified</span>
-          ) : (
-            <span className="text-sm text-gray-600">
-              Cutoff: <span className="font-medium">{cutoffDisplay}</span>
-            </span>
-          )
-        }
+        info={getInfoMessage()}
       />
 
       <PublishConfirmModal
@@ -149,16 +146,6 @@ export function QuickActionsBar({
         isOpen={showDeleteConfirm}
         onConfirm={onDeleteConfirm}
         onCancel={onDeleteCancel}
-      />
-
-      <CutoffHourEditor
-        isOpen={showCutoffEditor}
-        currentCutoffHour={cutoffHour}
-        onSave={(newCutoffHour) => {
-          onChangeCutoff(newCutoffHour);
-          onCutoffEditorClose();
-        }}
-        onCancel={onCutoffEditorClose}
       />
     </>
   );

@@ -24,7 +24,8 @@
       "showDetails": "Show Details",
       "hideDetails": "Hide Details",
       "viewOrders": "View Orders",
-      "hideOrders": "Hide Orders"
+      "hideOrders": "Hide Orders",
+      "close": "Close"
     },
     "labels": {
       "email": "Email",
@@ -66,7 +67,9 @@
       "items": "Items",
       "orderDate": "Order Date",
       "inStock": "in stock",
-      "outOfStock": "out of stock"
+      "outOfStock": "out of stock",
+      "breadcrumb": "Breadcrumb",
+      "changeLanguage": "Change language"
     },
     "status": {
       "active": "ACTIVE",
@@ -96,7 +99,12 @@
       "failedToDisableEmployee": "Failed to disable employee",
       "failedToEnableEmployee": "Failed to enable employee",
       "confirmDisableEmployee": "Are you sure you want to disable this employee? They will not be able to place new orders.",
-      "accessDenied": "Access denied. Business Admin access required."
+      "accessDenied": "Access denied. Business Admin access required.",
+      "failedToLoadServices": "Failed to load services",
+      "businessIdNotFound": "Business ID not found",
+      "failedToActivateService": "Failed to activate service",
+      "failedToUpdateService": "Failed to update service",
+      "failedToDeactivateService": "Failed to deactivate service"
     }
   },
   "auth": {

@@ -1,18 +1,18 @@
 /**
- * Maps path segments to breadcrumb labels for business portal.
+ * Maps path segments to i18n translation keys for business portal.
  */
-const SEGMENT_LABELS: Record<string, string> = {
-  dashboard: 'Dashboard',
-  employees: 'Employees',
-  services: 'Services',
-  orders: 'Orders',
-  invoices: 'Invoices',
-  login: 'Login',
+const SEGMENT_I18N_KEYS: Record<string, string> = {
+  dashboard: 'navigation.dashboard',
+  employees: 'navigation.employees',
+  services: 'navigation.services',
+  orders: 'navigation.orders',
+  invoices: 'navigation.invoices',
+  login: 'common.buttons.login',
 };
 
-/** Parent path prefix -> label for dynamic [id] segment */
-const DYNAMIC_SEGMENT_LABELS: Record<string, string> = {
-  '/invoices': 'Invoice',
+/** Parent path prefix -> i18n key for dynamic [id] segment */
+const DYNAMIC_SEGMENT_I18N_KEYS: Record<string, string> = {
+  '/invoices': 'invoices.invoiceNumber',
 };
 
 export interface BreadcrumbSegment {
@@ -25,21 +25,23 @@ function isLikelyId(segment: string): boolean {
 }
 
 function getDynamicLabel(parentPath: string, _segment: string): string {
-  for (const [prefix, label] of Object.entries(DYNAMIC_SEGMENT_LABELS)) {
+  for (const [prefix, i18nKey] of Object.entries(DYNAMIC_SEGMENT_I18N_KEYS)) {
     if (parentPath === prefix || parentPath.startsWith(prefix + '/')) {
-      return label;
+      return i18nKey;
     }
   }
-  return 'Detail';
+  // Return a generic i18n key for detail pages
+  return 'common.buttons.view';
 }
 
 /**
  * Build breadcrumb segments from pathname.
  * Root '/' is treated as Dashboard.
+ * Returns i18n keys as labels, which should be translated in the component.
  */
 export function getBreadcrumbsFromPath(pathname: string | null): BreadcrumbSegment[] {
   if (!pathname || pathname === '/') {
-    return [{ label: 'Dashboard' }];
+    return [{ label: 'navigation.dashboard' }];
   }
 
   const segments = pathname.split('/').filter(Boolean);
@@ -50,7 +52,7 @@ export function getBreadcrumbsFromPath(pathname: string | null): BreadcrumbSegme
     const href = '/' + segments.slice(0, i + 1).join('/');
 
     const label =
-      SEGMENT_LABELS[segment] ??
+      SEGMENT_I18N_KEYS[segment] ??
       (isLikelyId(segment)
         ? getDynamicLabel(result.length > 0 ? '/' + segments.slice(0, i).join('/') : '', segment)
         : segment);

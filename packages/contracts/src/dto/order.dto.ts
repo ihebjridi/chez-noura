@@ -31,6 +31,9 @@ export interface OrderDto {
   totalAmount: number;
   createdAt: string;
   updatedAt: string;
+  // Service information (optional for backward compatibility)
+  serviceId?: string;
+  serviceName?: string;
 }
 
 /**

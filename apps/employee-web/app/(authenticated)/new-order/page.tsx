@@ -17,6 +17,7 @@ import { CutoffCountdown } from '../../../components/cutoff-countdown';
 import { CollapsibleSection } from '../../../components/layouts/CollapsibleSection';
 import { CheckCircle, Clock, Package, AlertCircle, Calendar, ChevronRight } from 'lucide-react';
 import { getTodayISO, getTomorrowISO } from '../../../lib/date-utils';
+import { getLatestServiceCutoff } from '../../../lib/service-window-utils';
 
 function NewOrderContent() {
   const { t, i18n } = useTranslation();
@@ -28,7 +29,7 @@ function NewOrderContent() {
   const [error, setError] = useState('');
   const [selectedPack, setSelectedPack] = useState<AvailablePackDto | null>(null);
   const [selections, setSelections] = useState<Record<string, string>>({});
-  const [existingOrder, setExistingOrder] = useState<OrderDto | null>(null);
+  const [existingOrders, setExistingOrders] = useState<OrderDto[]>([]);
   const [submitting, setSubmitting] = useState(false);
   
   // Get date from query param or default to today
@@ -38,26 +39,32 @@ function NewOrderContent() {
   useEffect(() => {
     // Validate that selectedDate is not in the past
     if (selectedDate < today) {
-      // Redirect to today's date if past date is detected
       router.replace(`/new-order?date=${today}`);
       setError(t('menu.pastDateMenu'));
       return;
     }
     
-    loadMenu();
-    if (selectedDate === today) {
-      checkExistingOrder();
-    }
+    // Load data: existing orders first (for today), then menu
+    const loadData = async () => {
+      if (selectedDate === today) {
+        const orders = await checkExistingOrders();
+        await loadMenu(orders);
+      } else {
+        await loadMenu();
+      }
+    };
+    
+    loadData();
   }, [selectedDate]);
 
-  const loadMenu = async () => {
+  const loadMenu = async (ordersToUse?: OrderDto[]) => {
     try {
       setLoading(true);
       setError('');
       setSelectedPack(null);
       setSelections({});
       
-      // Validate date is not in the past before making API call
+      // Validate date is not in the past
       if (selectedDate < today) {
         setError(t('menu.pastDateMenu'));
         router.replace(`/new-order?date=${today}`);
@@ -65,8 +72,27 @@ function NewOrderContent() {
       }
       
       const menuData = await apiClient.getEmployeeMenu(selectedDate);
+      const orders = ordersToUse ?? existingOrders;
+      
+      // Get service IDs that already have orders
+      const orderedServiceIds = new Set(
+        orders
+          .map((order) => order.serviceId)
+          .filter((id): id is string => !!id)
+      );
+      
+      // Filter packs: only show packs for services without orders
+      const availablePacks = menuData.packs.filter((pack) => {
+        if (!pack.serviceId) {
+          // Legacy pack: only show if no orders exist
+          return orders.length === 0;
+        }
+        // Service pack: only show if service doesn't have an order
+        return !orderedServiceIds.has(pack.serviceId);
+      });
+      
       setMenu(menuData);
-      setPacks(menuData.packs);
+      setPacks(availablePacks);
     } catch (err: any) {
       if (err.message?.includes('not found') || err.message?.includes('404')) {
         setError(t('common.messages.menuNotAvailableDate'));
@@ -84,13 +110,15 @@ function NewOrderContent() {
     }
   };
 
-  const checkExistingOrder = async () => {
+  const checkExistingOrders = async () => {
     try {
-      const order = await apiClient.getTodayOrder();
-      setExistingOrder(order);
+      const orders = await apiClient.getTodayOrders();
+      setExistingOrders(orders);
+      return orders;
     } catch (err) {
       // Silently fail - not critical
-      setExistingOrder(null);
+      setExistingOrders([]);
+      return [];
     }
   };
 
@@ -116,10 +144,18 @@ function NewOrderContent() {
     (component) => !component.required || selections[component.id]
   );
 
-  // Calculate ready time
-  const readyTime = menu?.cutoffTime
+  // Calculate ready time - use latest cutoff when multiple services exist
+  const readyTime = menu
     ? (() => {
-        const cutoffDate = new Date(menu.cutoffTime);
+        // If multiple services, use the latest cutoff; otherwise use global cutoffTime
+        const cutoffDate = menu.serviceWindows?.length
+          ? getLatestServiceCutoff(menu)
+          : menu.cutoffTime
+            ? new Date(menu.cutoffTime)
+            : null;
+        
+        if (!cutoffDate) return null;
+        
         const readyDate = new Date(cutoffDate.getTime() + 2 * 60 * 60 * 1000); // +2 hours
         const now = new Date();
         const isToday = readyDate.toDateString() === now.toDateString();
@@ -134,7 +170,20 @@ function NewOrderContent() {
     : null;
 
   const handlePlaceOrder = async () => {
-    if (existingOrder) {
+    // Check if user already ordered from this pack's service
+    if (selectedPack?.serviceId) {
+      const hasOrderForService = existingOrders.some(
+        (order) => order.serviceId === selectedPack.serviceId
+      );
+      if (hasOrderForService) {
+        const serviceName = selectedPack.serviceName || 'this service';
+        setError(
+          `You have already placed an order for ${serviceName} on this date. Only one order per service per day is allowed.`
+        );
+        return;
+      }
+    } else if (existingOrders.length > 0) {
+      // Legacy pack without service - only allow one order per day
       setError(t('common.messages.alreadyOrderedDate'));
       return;
     }
@@ -153,12 +202,20 @@ function NewOrderContent() {
         variantId,
       }));
 
-      await apiClient.createEmployeeOrder({
+      const order = await apiClient.createEmployeeOrder({
         dailyMenuId: menu.id,
         packId: selectedPack.id,
         selectedVariants,
       });
 
+      // Update existing orders and reload menu to get filtered packs
+      const updatedOrders = [...existingOrders, order];
+      setExistingOrders(updatedOrders);
+      
+      // Reload menu with updated orders to properly filter packs and service windows
+      await loadMenu(updatedOrders);
+      
+      // Redirect to today page
       router.push(`/today?success=true`);
     } catch (err: any) {
       const errorMessage = err.message || t('common.messages.failedToPlaceOrder');
@@ -180,6 +237,10 @@ function NewOrderContent() {
         errorMessage.includes('Conflict')
       ) {
         setError(t('common.messages.alreadyOrderedDate'));
+        // If order already exists, check for it to update state
+        if (selectedDate === today) {
+          checkExistingOrders();
+        }
       } else {
         setError(errorMessage);
       }
@@ -240,34 +301,56 @@ function NewOrderContent() {
         </div>
       </div>
 
-      {/* Existing Order Warning */}
-      {existingOrder && (
+      {/* Existing Orders Warning */}
+      {existingOrders.length > 0 && (
         <div className="mb-4 p-4 bg-warning-50 border border-warning-300 text-warning-800 rounded-lg">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5" />
             <p className="text-sm font-semibold">
-              {t('common.messages.alreadyOrderedDate')}
+              {existingOrders.length === 1
+                ? `You have already placed an order for ${existingOrders[0].serviceName || 'today'}.`
+                : `You have already placed ${existingOrders.length} orders for today.`}
             </p>
           </div>
         </div>
       )}
 
-      {/* Cutoff Countdown – only when there are available packs; one per service when serviceWindows present */}
-      {menu && menu.packs.length > 0 && !existingOrder && (menu.serviceWindows?.length ? (
-        <div className="mb-4 space-y-4">
-          {menu.serviceWindows.map((sw) => (
-            <CutoffCountdown
-              key={sw.serviceId}
-              cutoffTime={sw.cutoffTime}
-              label={sw.serviceName}
-            />
-          ))}
-        </div>
-      ) : menu.cutoffTime ? (
-        <div className="mb-4">
-          <CutoffCountdown cutoffTime={menu.cutoffTime} />
-        </div>
-      ) : null)}
+      {/* Cutoff Countdown – only show for services that still have available packs */}
+      {menu && packs.length > 0 && (() => {
+        // Get service IDs that still have available packs
+        const availableServiceIds = new Set(
+          packs
+            .map((pack) => pack.serviceId)
+            .filter((id): id is string => !!id)
+        );
+        
+        // Filter service windows to only show those with available packs
+        const relevantServiceWindows = menu.serviceWindows?.filter((sw) =>
+          availableServiceIds.has(sw.serviceId)
+        );
+        
+        if (relevantServiceWindows && relevantServiceWindows.length > 0) {
+          return (
+            <div className="mb-4 space-y-4">
+              {relevantServiceWindows.map((sw) => (
+                <CutoffCountdown
+                  key={sw.serviceId}
+                  cutoffTime={sw.cutoffTime}
+                  label={sw.serviceName}
+                />
+              ))}
+            </div>
+          );
+        } else if (menu.cutoffTime && availableServiceIds.size === 0) {
+          // Legacy: show global cutoff if no service-specific windows
+          return (
+            <div className="mb-4">
+              <CutoffCountdown cutoffTime={menu.cutoffTime} />
+            </div>
+          );
+        }
+        return null;
+      })()}
 
       {/* Error Display */}
       {error && (
@@ -288,8 +371,8 @@ function NewOrderContent() {
         </div>
       )}
 
-      {/* Menu Available */}
-      {menu && !existingOrder && (
+      {/* Menu Available - show if there are available packs */}
+      {menu && packs.length > 0 && (
         <div className="space-y-4">
           {/* Pack Selection */}
           {!selectedPack ? (
@@ -403,8 +486,8 @@ function NewOrderContent() {
                           ) : null
                         }
                       >
-                        <div className="space-y-3 pt-3">
-                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                        <div className="space-y-2 pt-2">
+                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
                             {t('menu.selectVariant')} {component.name}:
                           </p>
                           {component.variants.map((variant) => {
@@ -420,52 +503,52 @@ function NewOrderContent() {
                                   !isDisabled && handleVariantSelect(component.id, variant.id)
                                 }
                                 disabled={isDisabled}
-                                className={`relative z-10 w-full text-left p-5 rounded-2xl transition-all duration-200 min-h-[80px] ${
+                                className={`relative z-10 w-full text-left p-3 rounded-xl transition-all duration-200 min-h-[64px] ${
                                   isSelected
-                                    ? 'border-[3px] border-primary-600 bg-primary-50 shadow-lg scale-[1.02]'
-                                    : 'border-2 border-gray-200 hover:border-primary-400 hover:bg-gray-50 hover:shadow-md'
+                                    ? 'border-[2px] border-primary-600 bg-primary-50 shadow-md scale-[1.01]'
+                                    : 'border border-gray-200 hover:border-primary-400 hover:bg-gray-50 hover:shadow-sm'
                                 } ${
                                   isDisabled
                                     ? 'opacity-50 cursor-not-allowed bg-gray-50'
                                     : 'cursor-pointer'
                                 }`}
                               >
-                                <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-3">
                                     {variant.imageUrl ? (
                                     <img
                                       src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${variant.imageUrl}`}
                                       alt={variant.name}
-                                      className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-2xl border-2 border-gray-200 flex-shrink-0 shadow-sm"
+                                      className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-xl border border-gray-200 flex-shrink-0 shadow-sm"
                                     />
                                     ) : (
-                                      <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-100 border-2 border-gray-200 rounded-2xl flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
+                                      <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gray-100 border border-gray-200 rounded-xl flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
                                         {t('common.labels.noImage')}
                                       </div>
                                     )}
                                     <div className="flex-1 flex justify-between items-center min-w-0">
                                       <div className="flex-1 min-w-0">
-                                        <span className={`block text-base ${isSelected ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
+                                        <span className={`block text-sm ${isSelected ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
                                           {variant.name}
                                         </span>
                                         {isSelected && (
-                                          <span className="text-xs text-primary-600 font-medium mt-1 block">
+                                          <span className="text-xs text-primary-600 font-medium mt-0.5 block">
                                             {t('common.labels.selected')}
                                           </span>
                                         )}
                                       </div>
-                                      <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                                      <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
                                         {isOutOfStock && (
-                                          <span className="px-2 py-1 text-xs text-destructive font-medium bg-destructive/10 rounded border border-destructive/20">
+                                          <span className="px-1.5 py-0.5 text-xs text-destructive font-medium bg-destructive/10 rounded border border-destructive/20">
                                             {t('common.labels.outOfStock')}
                                           </span>
                                         )}
                                         {!isOutOfStock && variant.stockQuantity < 10 && (
-                                          <span className="px-2 py-1 text-xs text-warning-700 font-medium bg-warning-50 rounded border border-warning-200">
+                                          <span className="px-1.5 py-0.5 text-xs text-warning-700 font-medium bg-warning-50 rounded border border-warning-200">
                                             {variant.stockQuantity} {t('common.labels.left')}
                                           </span>
                                         )}
                                       {isSelected && (
-                                        <CheckCircle className="w-5 h-5 text-primary-600 flex-shrink-0" />
+                                        <CheckCircle className="w-4 h-4 text-primary-600 flex-shrink-0" />
                                       )}
                                     </div>
                                   </div>
@@ -486,18 +569,18 @@ function NewOrderContent() {
               </div>
 
               {/* Sticky Bottom Bar */}
-              <div className="sticky bottom-0 bg-white border-t-2 border-primary-600 shadow-2xl rounded-t-3xl mt-8 mb-16 lg:mb-0">
-                <div className="px-5 py-4">
+              <div className="sticky bottom-0 z-50 bg-white/50 backdrop-blur-xl border-t border-primary-600/30 shadow-lg rounded-t-xl mt-4 mb-16 lg:mb-0">
+                <div className="px-3 py-2">
                   {/* Ready Time Display */}
                   {readyTime && (
-                    <div className="bg-gradient-to-r from-primary-50 to-accent-50 border-2 border-primary-200 rounded-2xl p-4 mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                          <Clock className="w-5 h-5 text-white" />
+                    <div className="bg-gradient-to-r from-primary-50 to-accent-50 border border-primary-200 rounded-xl p-2.5 mb-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Clock className="w-3.5 h-3.5 text-white" />
                         </div>
                         <div>
-                          <p className="text-xs text-gray-600 font-medium uppercase tracking-wide">{t('common.labels.readyAt')}</p>
-                          <p className="text-lg font-bold text-black">
+                          <p className="text-[10px] text-gray-600 font-medium uppercase tracking-wide">{t('common.labels.readyAt')}</p>
+                          <p className="text-sm font-bold text-black">
                             {readyTime.isToday
                               ? `${t('common.labels.today')} ${readyTime.timeStr}`
                               : readyTime.date.toLocaleDateString(i18n.language || 'fr', {
@@ -517,7 +600,7 @@ function NewOrderContent() {
                   <button
                     onClick={handlePlaceOrder}
                     disabled={!isOrderValid || submitting}
-                    className="w-full py-4 px-6 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-bold text-lg rounded-2xl hover:from-primary-700 hover:to-primary-800 transition-all duration-200 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] min-h-[56px]"
+                    className="w-full py-2.5 px-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-bold text-base rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all duration-200 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform hover:scale-[1.01] active:scale-[0.99] min-h-[44px]"
                   >
                     {submitting
                       ? t('newOrder.placingOrder')

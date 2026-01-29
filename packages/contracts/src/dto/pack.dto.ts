@@ -38,6 +38,9 @@ export interface PackWithComponentsDto extends PackDto {
 
 export interface AvailablePackDto extends PackDto {
   components: AvailableComponentDto[];
+  // Service information (optional for backward compatibility)
+  serviceId?: string;
+  serviceName?: string;
 }
 
 export interface AvailableComponentDto {

@@ -42,7 +42,7 @@ import { EmployeeListModal } from '../../../components/business/employee-list-mo
 import { CredentialsModal } from '../../../components/business/credentials-modal';
 import { AssignServiceModal } from '../../../components/business/assign-service-modal';
 import { ServiceSubscriptions } from '../../../components/business/service-subscriptions';
-import { CollapsibleSection } from '../../../components/ui/collapsible-section';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs';
 import { useBreadcrumbSegment } from '../../../contexts/breadcrumb-context';
 import Link from 'next/link';
 
@@ -316,82 +316,63 @@ export default function BusinessDetailPage() {
           </div>
         )}
 
-        <div className="space-y-4">
-          <CollapsibleSection
-            title="Quick Actions"
-            icon={<Package className="h-4 w-4" />}
-            defaultOpen={true}
-          >
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => {
-                  setAssignServiceModalOpen(true);
-                }}
-                className="flex items-center gap-1"
-              >
-                <Package className="h-4 w-4" />
-                Assign Service
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  setEmployeeModalOpen(true);
-                }}
-                className="flex items-center gap-1"
-              >
-                <Users className="h-4 w-4" />
-                View Employees
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleStatusToggle}
-                className={`flex items-center gap-1 ${
-                  business?.status === EntityStatus.ACTIVE
-                    ? 'text-warning-600 hover:text-warning-700 hover:bg-warning-50'
-                    : 'text-success-600 hover:text-success-700 hover:bg-success-50'
-                }`}
-              >
-                {business?.status === EntityStatus.ACTIVE ? (
-                  <>
-                    <PowerOff className="h-4 w-4" />
-                    Disable Business
-                  </>
-                ) : (
-                  <>
-                    <Power className="h-4 w-4" />
-                    Enable Business
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleGeneratePassword}
-                className="flex items-center gap-1"
-              >
-                <Key className="h-4 w-4" />
-                Generate New Password
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={handleDelete}
-                className="flex items-center gap-1"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete Business
-              </Button>
-            </div>
-          </CollapsibleSection>
+        {/* Quick Actions */}
+        <div className="mb-6 bg-surface border border-surface-dark rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Package className="h-4 w-4 text-gray-600" />
+            <h3 className="font-semibold text-gray-900">Quick Actions</h3>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                setAssignServiceModalOpen(true);
+              }}
+              className="flex items-center gap-1"
+            >
+              <Package className="h-4 w-4" />
+              Assign Service
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleGeneratePassword}
+              className="flex items-center gap-1"
+            >
+              <Key className="h-4 w-4" />
+              Generate New Password
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={handleDelete}
+              className="flex items-center gap-1"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Business
+            </Button>
+          </div>
+        </div>
 
-          <CollapsibleSection
-            title="Business Information"
-            defaultOpen={true}
-          >
+        <Tabs defaultValue="information" className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="information">Business Information</TabsTrigger>
+            <TabsTrigger value="employees">
+              <Users className="h-4 w-4 mr-2" />
+              Employees
+            </TabsTrigger>
+            <TabsTrigger value="services">
+              <Layers className="h-4 w-4 mr-2" />
+              Services
+            </TabsTrigger>
+            <TabsTrigger value="activity">
+              <Activity className="h-4 w-4 mr-2" />
+              Activity Logs
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="information" className="bg-surface border border-surface-dark rounded-lg p-6">
             <form onSubmit={handleSave} className="space-y-4">
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0">
@@ -512,13 +493,20 @@ export default function BusinessDetailPage() {
                 </Button>
               </div>
             </form>
-          </CollapsibleSection>
+          </TabsContent>
 
-          <CollapsibleSection
-            title="Employees"
-            icon={<Users className="h-4 w-4" />}
-            defaultOpen={false}
-          >
+          <TabsContent value="employees" className="bg-surface border border-surface-dark rounded-lg p-6">
+            <div className="mb-4">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setEmployeeModalOpen(true)}
+                className="flex items-center gap-1"
+              >
+                <Users className="h-4 w-4" />
+                Manage Employees
+              </Button>
+            </div>
             {loadingEmployees ? (
               <Loading message="Loading employees..." />
             ) : employees.length === 0 ? (
@@ -549,24 +537,9 @@ export default function BusinessDetailPage() {
                 </TableBody>
               </Table>
             )}
-            <div className="mt-3">
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setEmployeeModalOpen(true)}
-                className="flex items-center gap-1"
-              >
-                <Users className="h-4 w-4" />
-                Manage Employees
-              </Button>
-            </div>
-          </CollapsibleSection>
+          </TabsContent>
 
-          <CollapsibleSection
-            title="Services"
-            icon={<Layers className="h-4 w-4" />}
-            defaultOpen={false}
-          >
+          <TabsContent value="services" className="bg-surface border border-surface-dark rounded-lg p-6">
             <ServiceSubscriptions
               key={serviceSubscriptionsRefreshTrigger}
               businessId={businessId}
@@ -580,13 +553,9 @@ export default function BusinessDetailPage() {
                 loadServices();
               }}
             />
-          </CollapsibleSection>
+          </TabsContent>
 
-          <CollapsibleSection
-            title="Activity Logs"
-            icon={<Activity className="h-4 w-4" />}
-            defaultOpen={false}
-          >
+          <TabsContent value="activity" className="bg-surface border border-surface-dark rounded-lg p-6">
             {loadingLogs ? (
               <Loading message="Loading activity logs..." />
             ) : activityLogs.length === 0 ? (
@@ -647,8 +616,8 @@ export default function BusinessDetailPage() {
                 </Table>
               </div>
             )}
-          </CollapsibleSection>
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Employee List Modal */}

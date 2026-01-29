@@ -163,7 +163,8 @@
     "viewAllPastUpcoming": "Voir toutes vos commandes passées et à venir",
     "confirmedReadyPickup": "Confirmé - Prêt pour récupération",
     "pendingConfirmation": "En attente de confirmation",
-    "cancelled": "Annulé"
+    "cancelled": "Annulé",
+    "dateGroups": "dates"
   },
   "calendar": {
     "title": "Calendrier",
@@ -185,7 +186,9 @@
   "today": {
     "title": "Aujourd'hui",
     "todaysOrder": "Commande du jour",
-    "loadingTodaysOrder": "Chargement de la commande du jour...",
+    "todaysOrders": "Commandes du jour ({{count}})",
+    "orderAnotherService": "Vous pouvez passer une commande pour un autre service",
+    "loadingTodaysOrder": "Chargement des commandes du jour...",
     "noOrderToday": "Aucune commande pour aujourd'hui",
     "noOrderTodayDescription": "Vous pouvez passer une commande maintenant",
     "menuPublishedNoPacks": "Le menu est publié mais aucun pack n'est disponible",

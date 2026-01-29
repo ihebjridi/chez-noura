@@ -290,7 +290,7 @@ export default function OrdersPage() {
                 type="button"
                 onClick={() => setOrderDetailsModal(null)}
                 className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"
-                aria-label="Close"
+                aria-label={t('common.buttons.close')}
               >
                 <X className="w-5 h-5" />
               </button>

@@ -253,8 +253,8 @@ model Order {
   dailyMenu DailyMenu  @relation(fields: [dailyMenuId], references: [id])
   items     OrderItem[]
 
-  // Prevent duplicate orders per employee per day
-  @@unique([employeeId, orderDate])
+  // Note: Application logic enforces one order per service per day (not per day)
+  // Multiple orders per day are allowed as long as they're for different services
   @@index([employeeId])
   @@index([businessId])
   @@index([packId])

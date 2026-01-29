@@ -244,14 +244,47 @@ class ApiClient {
   }
 
   /**
-   * Get today's order for the current employee
+   * Get all today's orders for the current employee (one per service)
+   * Returns array of orders - can be multiple if employee ordered from multiple services
+   */
+  async getTodayOrders(): Promise<OrderDto[]> {
+    try {
+      const orders = await this.request<OrderDto[]>('/employee/orders/today', {}, true);
+      // Handle case where backend returns empty array or null
+      return Array.isArray(orders) ? orders : [];
+    } catch (error: any) {
+      // If 404, that means no orders exist - return empty array
+      if (error.message?.includes('404') || error.message?.includes('not found')) {
+        return [];
+      }
+      
+      // If backend is degraded, try to return cached data
+      if (error.message === 'BACKEND_DEGRADED') {
+        const cached = readOnlyFallback.getCachedOrders();
+        if (cached) {
+          const { getTodayISO } = await import('./date-utils');
+          const today = getTodayISO();
+          const todayOrders = cached.filter((o) => o.orderDate === today);
+          if (todayOrders.length > 0) {
+            console.warn('Using cached today orders - backend is degraded');
+            return todayOrders;
+          }
+        }
+        return [];
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get today's first order for the current employee (backward compatibility)
    * Returns null if no order exists for today
+   * @deprecated Use getTodayOrders instead to support multiple orders per day
    */
   async getTodayOrder(): Promise<OrderDto | null> {
     try {
-      const order = await this.request<OrderDto | null>('/employee/orders/today', {}, true);
-      // Handle case where backend returns null (no order for today)
-      return order || null;
+      const orders = await this.getTodayOrders();
+      return orders.length > 0 ? orders[0] : null;
     } catch (error: any) {
       // If 404, that means no order exists - return null
       if (error.message?.includes('404') || error.message?.includes('not found')) {

@@ -10,9 +10,9 @@ import { Error } from '../../../components/ui/error';
 import { Empty } from '../../../components/ui/empty';
 import { CollapsibleSection } from '../../../components/layouts/CollapsibleSection';
 import { CheckCircle, Clock, X, Package, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getTodayISO, getTomorrowISO, formatDateToISO } from '../../../lib/date-utils';
+import { getTodayISO, getTomorrowISO } from '../../../lib/date-utils';
 
-const ITEMS_PER_PAGE = 10;
+const DATE_GROUPS_PER_PAGE = 5;
 
 function OrderHistoryContent() {
   const { t, i18n } = useTranslation();
@@ -105,13 +105,27 @@ function OrderHistoryContent() {
     }
   };
 
-  // Pagination logic
-  const totalPages = Math.ceil(orders.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const paginatedOrders = useMemo(() => {
-    return orders.slice(startIndex, endIndex);
-  }, [orders, startIndex, endIndex]);
+  // Group orders by date (same date can have multiple orders from different services)
+  const ordersByDate = useMemo(() => {
+    const map = new Map<string, OrderDto[]>();
+    for (const order of orders) {
+      const dateKey = order.orderDate;
+      if (!map.has(dateKey)) map.set(dateKey, []);
+      map.get(dateKey)!.push(order);
+    }
+    // Sort dates descending (most recent first)
+    return Array.from(map.entries())
+      .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
+      .map(([date, dateOrders]) => ({ date, orders: dateOrders }));
+  }, [orders]);
+
+  // Pagination by date groups
+  const totalPages = Math.ceil(ordersByDate.length / DATE_GROUPS_PER_PAGE) || 1;
+  const startIndex = (currentPage - 1) * DATE_GROUPS_PER_PAGE;
+  const endIndex = startIndex + DATE_GROUPS_PER_PAGE;
+  const paginatedDateGroups = useMemo(() => {
+    return ordersByDate.slice(startIndex, endIndex);
+  }, [ordersByDate, startIndex, endIndex]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -172,90 +186,106 @@ function OrderHistoryContent() {
         </div>
       ) : (
         <>
-          <div className="space-y-3 mb-6">
-            {paginatedOrders.map((order) => {
-              const statusInfo = getStatusInfo(order.status);
-              const StatusIcon = statusInfo.icon;
-              const isExpanded = expandedOrders.has(order.id);
+          <div className="space-y-6 mb-6">
+            {paginatedDateGroups.map(({ date, orders: dateOrders }) => (
+              <div key={date} className="space-y-3">
+                {/* Date header */}
+                <div className="flex items-center gap-2 sticky top-0 z-10 bg-background/95 backdrop-blur py-2 -mx-1 px-2 rounded">
+                  <Calendar className="w-5 h-5 text-primary-600 flex-shrink-0" />
+                  <span className="font-bold text-base text-gray-900">
+                    {formatOrderDate(date)}
+                  </span>
+                  {dateOrders.length > 1 && (
+                    <span className="text-sm text-gray-500 font-normal">
+                      ({dateOrders.length} {t('common.labels.orders')})
+                    </span>
+                  )}
+                </div>
+                {/* Orders for this date (can be from different services) */}
+                <div className="space-y-3 pl-1">
+                  {dateOrders.map((order) => {
+                    const statusInfo = getStatusInfo(order.status);
+                    const StatusIcon = statusInfo.icon;
+                    const isExpanded = expandedOrders.has(order.id);
 
-              return (
-                <CollapsibleSection
-                  key={order.id}
-                  title={
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 w-full pr-2">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <Calendar className="w-4 h-4 text-gray-600 flex-shrink-0" />
-                        <span className="font-semibold text-sm sm:text-base truncate">
-                          {formatOrderDate(order.orderDate)}
-                        </span>
-                      </div>
-                      <div className={`px-2 py-1 rounded text-xs font-semibold border flex items-center gap-1 w-fit ${statusInfo.className}`}>
-                        <StatusIcon className="w-3 h-3" />
-                        <span className="hidden sm:inline">{order.status}</span>
-                      </div>
-                    </div>
-                  }
-                  defaultOpen={isExpanded}
-                  headerClassName="py-3 px-4"
-                >
-                  <div className="space-y-3 pt-2 px-4 pb-4">
-                    {/* Pack Info */}
-                    <div className="bg-surface-light rounded-lg p-3">
-                      <div className="flex items-center gap-2">
-                        <Package className="w-4 h-4 text-primary-600 flex-shrink-0" />
-                        <p className="font-semibold text-gray-900">{order.packName}</p>
-                      </div>
-                    </div>
-
-                    {/* Order Items */}
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                        {t('common.labels.yourSelection')}
-                      </p>
-                      {order.items.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center gap-3 py-2 border-b border-surface-dark last:border-0"
-                        >
-                          {item.variantImageUrl ? (
-                            <img
-                              src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${item.variantImageUrl}`}
-                              alt={item.variantName}
-                              className="w-12 h-12 object-cover rounded-md border border-surface-dark flex-shrink-0"
-                            />
-                          ) : (
-                            <div className="w-12 h-12 bg-surface-light border border-surface-dark rounded-md flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
-                              {t('common.labels.noImage')}
+                    return (
+                      <CollapsibleSection
+                        key={order.id}
+                        title={
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 w-full pr-2">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <Package className="w-4 h-4 text-primary-600 flex-shrink-0" />
+                              <span className="font-semibold text-sm sm:text-base truncate">
+                                {order.packName}
+                              </span>
+                              {order.serviceName && (
+                                <span className="px-2 py-0.5 text-xs font-medium bg-primary-100 text-primary-700 rounded flex-shrink-0">
+                                  {order.serviceName}
+                                </span>
+                              )}
                             </div>
-                          )}
-                          <p className="text-sm text-gray-700 font-normal">
-                            <span className="font-medium text-gray-900">{item.componentName}:</span>{' '}
-                            {item.variantName}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
+                            <div className={`px-2 py-1 rounded text-xs font-semibold border flex items-center gap-1 w-fit ${statusInfo.className}`}>
+                              <StatusIcon className="w-3 h-3" />
+                              <span className="hidden sm:inline">{order.status}</span>
+                            </div>
+                          </div>
+                        }
+                        defaultOpen={isExpanded}
+                        headerClassName="py-3 px-4"
+                      >
+                        <div className="space-y-3 pt-2 px-4 pb-4">
+                          {/* Order Items */}
+                          <div className="space-y-2">
+                            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                              {t('common.labels.yourSelection')}
+                            </p>
+                            {order.items.map((item) => (
+                              <div
+                                key={item.id}
+                                className="flex items-center gap-3 py-2 border-b border-surface-dark last:border-0"
+                              >
+                                {item.variantImageUrl ? (
+                                  <img
+                                    src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${item.variantImageUrl}`}
+                                    alt={item.variantName}
+                                    className="w-12 h-12 object-cover rounded-md border border-surface-dark flex-shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-12 h-12 bg-surface-light border border-surface-dark rounded-md flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
+                                    {t('common.labels.noImage')}
+                                  </div>
+                                )}
+                                <p className="text-sm text-gray-700 font-normal">
+                                  <span className="font-medium text-gray-900">{item.componentName}:</span>{' '}
+                                  {item.variantName}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
 
-                    {/* Status Description */}
-                    <div className="bg-background rounded-lg p-3 border border-surface-dark">
-                      <div className="flex items-center gap-2">
-                        <StatusIcon className="w-4 h-4 text-gray-600 flex-shrink-0" />
-                        <p className="text-sm text-gray-600 font-normal">
-                          {statusInfo.description}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </CollapsibleSection>
-              );
-            })}
+                          {/* Status Description */}
+                          <div className="bg-background rounded-lg p-3 border border-surface-dark">
+                            <div className="flex items-center gap-2">
+                              <StatusIcon className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                              <p className="text-sm text-gray-600 font-normal">
+                                {statusInfo.description}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </CollapsibleSection>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-surface-dark">
               <div className="text-sm text-gray-600">
-                {t('common.labels.showing')} {startIndex + 1} {t('common.labels.to')} {Math.min(endIndex, orders.length)} {t('common.labels.of')} {orders.length} {t('common.labels.orders')}
+                {t('common.labels.showing')} {startIndex + 1} {t('common.labels.to')} {Math.min(endIndex, ordersByDate.length)} {t('common.labels.of')} {ordersByDate.length} {t('orders.dateGroups', { defaultValue: 'dates' })}
               </div>
               <div className="flex items-center gap-2">
                 <button

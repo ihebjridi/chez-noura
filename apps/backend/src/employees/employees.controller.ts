@@ -77,10 +77,26 @@ export class EmployeesController {
   @Get('orders/today')
   @Roles(UserRole.EMPLOYEE)
   @BusinessScoped()
-  @ApiOperation({ summary: 'Get today\'s order for the current employee' })
+  @ApiOperation({ summary: 'Get all today\'s orders for the current employee (one per service)' })
   @ApiResponse({
     status: 200,
-    description: 'Today\'s order if exists, otherwise null. Returns OrderDto or null.',
+    description: 'Array of today\'s orders. Can be multiple orders (one per service).',
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden - EMPLOYEE only' })
+  async getTodayOrders(
+    @CurrentUser() user: TokenPayload,
+  ): Promise<OrderDto[]> {
+    const orders = await this.employeeOrdersService.getTodayOrders(user);
+    return orders;
+  }
+
+  @Get('orders/today/single')
+  @Roles(UserRole.EMPLOYEE)
+  @BusinessScoped()
+  @ApiOperation({ summary: 'Get today\'s first order for the current employee (backward compatibility)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Today\'s first order if exists, otherwise null. Returns OrderDto or null.',
   })
   @ApiResponse({ status: 403, description: 'Forbidden - EMPLOYEE only' })
   async getTodayOrder(

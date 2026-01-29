@@ -24,7 +24,8 @@
       "showDetails": "Afficher les détails",
       "hideDetails": "Masquer les détails",
       "viewOrders": "Voir les commandes",
-      "hideOrders": "Masquer les commandes"
+      "hideOrders": "Masquer les commandes",
+      "close": "Fermer"
     },
     "labels": {
       "email": "E-mail",
@@ -66,7 +67,9 @@
       "items": "Articles",
       "orderDate": "Date de commande",
       "inStock": "en stock",
-      "outOfStock": "rupture de stock"
+      "outOfStock": "rupture de stock",
+      "breadcrumb": "Fil d'Ariane",
+      "changeLanguage": "Changer la langue"
     },
     "status": {
       "active": "ACTIF",
@@ -96,7 +99,12 @@
       "failedToDisableEmployee": "Échec de la désactivation de l'employé",
       "failedToEnableEmployee": "Échec de l'activation de l'employé",
       "confirmDisableEmployee": "Êtes-vous sûr de vouloir désactiver cet employé ? Il ne pourra plus passer de nouvelles commandes.",
-      "accessDenied": "Accès refusé. Accès administrateur d'entreprise requis."
+      "accessDenied": "Accès refusé. Accès administrateur d'entreprise requis.",
+      "failedToLoadServices": "Échec du chargement des services",
+      "businessIdNotFound": "ID d'entreprise introuvable",
+      "failedToActivateService": "Échec de l'activation du service",
+      "failedToUpdateService": "Échec de la mise à jour du service",
+      "failedToDeactivateService": "Échec de la désactivation du service"
     }
   },
   "auth": {
