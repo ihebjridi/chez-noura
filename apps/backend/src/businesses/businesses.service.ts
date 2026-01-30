@@ -16,6 +16,7 @@ import {
   BusinessDto,
   CreateBusinessDto,
   UpdateBusinessDto,
+  UpdateEmployeeDto,
   EntityStatus,
   EmployeeDto,
   BusinessDashboardSummaryDto,
@@ -598,10 +599,13 @@ export class BusinessesService {
       throw new NotFoundException(`Business with ID ${businessId} not found`);
     }
 
-    // Get all employees for this business
+    // Get all employees for this business (include User to derive role: BUSINESS_ADMIN vs EMPLOYEE)
     const employees = await this.prisma.employee.findMany({
       where: {
         businessId: businessId,
+      },
+      include: {
+        user: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -615,9 +619,97 @@ export class BusinessesService {
       lastName: employee.lastName,
       businessId: employee.businessId,
       status: employee.status as EntityStatus,
+      role: employee.user?.role as UserRole | undefined,
       createdAt: employee.createdAt.toISOString(),
       updatedAt: employee.updatedAt.toISOString(),
     }));
+  }
+
+  /**
+   * Update an employee for a business (SUPER_ADMIN only).
+   * Allows editing any employee including the business admin.
+   */
+  async updateBusinessEmployee(
+    businessId: string,
+    employeeId: string,
+    updateDto: UpdateEmployeeDto,
+  ): Promise<EmployeeDto> {
+    const business = await this.prisma.business.findUnique({
+      where: { id: businessId },
+    });
+    if (!business) {
+      throw new NotFoundException(`Business with ID ${businessId} not found`);
+    }
+
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+    });
+    if (!employee) {
+      throw new NotFoundException(`Employee with ID ${employeeId} not found`);
+    }
+    if (employee.businessId !== businessId) {
+      throw new NotFoundException(`Employee with ID ${employeeId} not found`);
+    }
+
+    const updateData: Prisma.EmployeeUpdateInput = {};
+    if (updateDto.firstName !== undefined) updateData.firstName = updateDto.firstName;
+    if (updateDto.lastName !== undefined) updateData.lastName = updateDto.lastName;
+    if (updateDto.status !== undefined) updateData.status = updateDto.status as any;
+
+    const updated = await this.prisma.employee.update({
+      where: { id: employeeId },
+      data: updateData,
+    });
+
+    return {
+      id: updated.id,
+      email: updated.email,
+      firstName: updated.firstName,
+      lastName: updated.lastName,
+      businessId: updated.businessId,
+      status: updated.status as EntityStatus,
+      createdAt: updated.createdAt.toISOString(),
+      updatedAt: updated.updatedAt.toISOString(),
+    };
+  }
+
+  /**
+   * Delete an employee from a business (SUPER_ADMIN only).
+   * Deletes the linked User (if any) then the Employee. Allows deleting the business admin.
+   */
+  async deleteBusinessEmployee(
+    businessId: string,
+    employeeId: string,
+    user: TokenPayload,
+  ): Promise<void> {
+    const business = await this.prisma.business.findUnique({
+      where: { id: businessId },
+    });
+    if (!business) {
+      throw new NotFoundException(`Business with ID ${businessId} not found`);
+    }
+
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      include: { user: true },
+    });
+    if (!employee) {
+      throw new NotFoundException(`Employee with ID ${employeeId} not found`);
+    }
+    if (employee.businessId !== businessId) {
+      throw new NotFoundException(`Employee with ID ${employeeId} not found`);
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      if (employee.user) {
+        await tx.user.delete({
+          where: { id: employee.user.id },
+        });
+      }
+      await tx.employee.delete({
+        where: { id: employeeId },
+      });
+    });
   }
 
   /**

@@ -34,6 +34,7 @@ import {
   UserRole,
   OrderSummaryDto,
   EmployeeDto,
+  UpdateEmployeeDto,
   BusinessDashboardSummaryDto,
 } from '@contracts/core';
 import { CreateBusinessDtoClass } from './dto/create-business.dto';
@@ -173,6 +174,46 @@ export class BusinessesController {
     @CurrentUser() user: TokenPayload,
   ): Promise<EmployeeDto[]> {
     return this.businessesService.getEmployeesByBusinessId(id);
+  }
+
+  @Patch(':id/employees/:employeeId')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Update an employee for a business' })
+  @ApiParam({ name: 'id', description: 'Business ID' })
+  @ApiParam({ name: 'employeeId', description: 'Employee ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Employee updated successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Business or employee not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - SUPER_ADMIN only' })
+  async updateEmployee(
+    @Param('id') id: string,
+    @Param('employeeId') employeeId: string,
+    @Body() updateDto: UpdateEmployeeDto,
+    @CurrentUser() user: TokenPayload,
+  ): Promise<EmployeeDto> {
+    return this.businessesService.updateBusinessEmployee(id, employeeId, updateDto);
+  }
+
+  @Delete(':id/employees/:employeeId')
+  @Roles(UserRole.SUPER_ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete an employee from a business' })
+  @ApiParam({ name: 'id', description: 'Business ID' })
+  @ApiParam({ name: 'employeeId', description: 'Employee ID' })
+  @ApiResponse({
+    status: 204,
+    description: 'Employee deleted successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Business or employee not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - SUPER_ADMIN only' })
+  async deleteEmployee(
+    @Param('id') id: string,
+    @Param('employeeId') employeeId: string,
+    @CurrentUser() user: TokenPayload,
+  ): Promise<void> {
+    return this.businessesService.deleteBusinessEmployee(id, employeeId, user);
   }
 
   @Post(':id/generate-password')

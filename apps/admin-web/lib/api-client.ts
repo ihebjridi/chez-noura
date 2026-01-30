@@ -41,6 +41,7 @@ import {
   PublishDailyMenuResponseDto,
   ActivityLogDto,
   EmployeeDto,
+  UpdateEmployeeDto,
   PackStatisticsDto,
   ComponentStatisticsDto,
   VariantStatisticsDto,
@@ -269,6 +270,30 @@ class ApiClient {
 
   async getBusinessEmployees(businessId: string): Promise<EmployeeDto[]> {
     return this.request<EmployeeDto[]>(`/businesses/${businessId}/employees`);
+  }
+
+  async updateBusinessEmployee(
+    businessId: string,
+    employeeId: string,
+    data: UpdateEmployeeDto,
+  ): Promise<EmployeeDto> {
+    return this.request<EmployeeDto>(
+      `/businesses/${businessId}/employees/${employeeId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      },
+    );
+  }
+
+  async deleteBusinessEmployee(
+    businessId: string,
+    employeeId: string,
+  ): Promise<void> {
+    return this.request<void>(
+      `/businesses/${businessId}/employees/${employeeId}`,
+      { method: 'DELETE' },
+    );
   }
 
   async generateBusinessAdminPassword(businessId: string): Promise<{

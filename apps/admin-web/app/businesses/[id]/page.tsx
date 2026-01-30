@@ -8,8 +8,10 @@ import {
   UpdateBusinessDto,
   EntityStatus,
   EmployeeDto,
+  UserRole,
   BusinessServiceDto,
   ActivityLogDto,
+  UpdateEmployeeDto,
 } from '@contracts/core';
 import { FormField } from '../../../components/ui/form-field';
 import { Input } from '../../../components/ui/input';
@@ -36,9 +38,11 @@ import {
   AlertTriangle,
   Package,
   ArrowLeft,
+  Pencil,
 } from 'lucide-react';
 import { formatDateTime } from '../../../lib/date-utils';
 import { EmployeeListModal } from '../../../components/business/employee-list-modal';
+import { EditEmployeeModal } from '../../../components/business/edit-employee-modal';
 import { CredentialsModal } from '../../../components/business/credentials-modal';
 import { AssignServiceModal } from '../../../components/business/assign-service-modal';
 import { ServiceSubscriptions } from '../../../components/business/service-subscriptions';
@@ -47,6 +51,11 @@ import { useBreadcrumbSegment } from '../../../contexts/breadcrumb-context';
 import Link from 'next/link';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+/** Employee with optional role (from list endpoint); satisfies TS when contract dist is stale */
+function getEmployeeRole(employee: EmployeeDto): UserRole | undefined {
+  return (employee as EmployeeDto & { role?: UserRole }).role;
+}
 
 export default function BusinessDetailPage() {
   const params = useParams();
@@ -67,6 +76,7 @@ export default function BusinessDetailPage() {
   const [loadingServices, setLoadingServices] = useState(false);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [employeeModalOpen, setEmployeeModalOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<EmployeeDto | null>(null);
   const [assignServiceModalOpen, setAssignServiceModalOpen] = useState(false);
   const [credentialsModal, setCredentialsModal] = useState<{
     isOpen: boolean;
@@ -161,6 +171,38 @@ export default function BusinessDetailPage() {
       setError(err.message || 'Failed to load activity logs');
     } finally {
       setLoadingLogs(false);
+    }
+  };
+
+  const handleUpdateEmployee = async (
+    employeeId: string,
+    data: UpdateEmployeeDto,
+  ) => {
+    if (!businessId) return;
+    const updated = await apiClient.updateBusinessEmployee(
+      businessId,
+      employeeId,
+      data,
+    );
+    setEmployees((prev) =>
+      prev.map((e) => (e.id === employeeId ? { ...e, ...updated } : e)),
+    );
+  };
+
+  const handleDeleteEmployee = async (employee: EmployeeDto) => {
+    if (!businessId) return;
+    const roleLabel =
+      getEmployeeRole(employee) === UserRole.BUSINESS_ADMIN ? 'Admin' : 'Employee';
+    const confirmed = window.confirm(
+      `Delete ${employee.firstName} ${employee.lastName} (${employee.email})? This ${roleLabel} will be removed from the business. This cannot be undone.`,
+    );
+    if (!confirmed) return;
+    try {
+      setError('');
+      await apiClient.deleteBusinessEmployee(businessId, employee.id);
+      setEmployees((prev) => prev.filter((e) => e.id !== employee.id));
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete employee');
     }
   };
 
@@ -545,7 +587,9 @@ export default function BusinessDetailPage() {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -556,7 +600,43 @@ export default function BusinessDetailPage() {
                       </TableCell>
                       <TableCell>{employee.email}</TableCell>
                       <TableCell>
+                        <span
+                          className={
+                            getEmployeeRole(employee) === UserRole.BUSINESS_ADMIN
+                              ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200'
+                              : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300'
+                          }
+                        >
+                          {getEmployeeRole(employee) === UserRole.BUSINESS_ADMIN
+                            ? 'Admin'
+                            : 'Employee'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
                         <StatusBadge status={employee.status} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingEmployee(employee)}
+                            aria-label="Edit employee"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteEmployee(employee)}
+                            aria-label="Delete employee"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -657,6 +737,16 @@ export default function BusinessDetailPage() {
           businessId={businessId}
           businessName={business?.name || ''}
           onLoadEmployees={apiClient.getBusinessEmployees}
+        />
+      )}
+
+      {/* Edit Employee Modal */}
+      {businessId && (
+        <EditEmployeeModal
+          isOpen={!!editingEmployee}
+          onClose={() => setEditingEmployee(null)}
+          employee={editingEmployee}
+          onSave={handleUpdateEmployee}
         />
       )}
 

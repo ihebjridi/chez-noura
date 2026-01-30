@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { EmployeeDto } from '@contracts/core';
+import { EmployeeDto, UserRole } from '@contracts/core';
 import { Loading } from '../ui/loading';
 import { Error } from '../ui/error';
 import { Empty } from '../ui/empty';
@@ -98,6 +98,7 @@ export function EmployeeListModal({
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Created</TableHead>
                   </TableRow>
@@ -112,6 +113,19 @@ export function EmployeeListModal({
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
                         <span className="text-sm text-gray-600">{employee.email}</span>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <span
+                          className={
+                            employee.role === UserRole.BUSINESS_ADMIN
+                              ? 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200'
+                              : 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300'
+                          }
+                        >
+                          {employee.role === UserRole.BUSINESS_ADMIN
+                            ? 'Admin'
+                            : 'Employee'}
+                        </span>
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
                         <StatusBadge status={employee.status} />

@@ -1,7 +1,8 @@
-import { EntityStatus } from '../enums';
+import { EntityStatus, UserRole } from '../enums';
 
 /**
  * Employee entity DTO
+ * role is set when listing business employees (Admin vs Employee)
  */
 export interface EmployeeDto {
   id: string;
@@ -10,6 +11,8 @@ export interface EmployeeDto {
   lastName: string;
   businessId: string;
   status: EntityStatus;
+  /** Present when listing employees for a business (BUSINESS_ADMIN = admin, EMPLOYEE = employee) */
+  role?: UserRole;
   createdAt: string;
   updatedAt: string;
 }
