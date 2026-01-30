@@ -4,6 +4,7 @@ import { DailyMenuWithDetailsDto, DailyMenuStatus, ServiceDto } from '@contracts
 import { InlineToolbar } from '../layouts/InlineToolbar';
 import { PublishConfirmModal } from '../../app/daily-menus/[id]/components/PublishConfirmModal';
 import { DeleteConfirmModal } from '../../app/daily-menus/[id]/components/DeleteConfirmModal';
+import { UnpublishConfirmModal } from '../../app/daily-menus/[id]/components/UnpublishConfirmModal';
 
 interface QuickActionsBarProps {
   dailyMenu: DailyMenuWithDetailsDto | null;
@@ -12,11 +13,15 @@ interface QuickActionsBarProps {
   onPublish: () => void;
   onLock: () => void;
   onUnlock: () => void;
+  onUnpublish: () => void;
   onDelete: () => void;
   showPublishConfirm: boolean;
+  showUnpublishConfirm: boolean;
   showDeleteConfirm: boolean;
   onPublishConfirm: () => void;
   onPublishCancel: () => void;
+  onUnpublishConfirm: () => void;
+  onUnpublishCancel: () => void;
   onDeleteConfirm: () => void;
   onDeleteCancel: () => void;
 }
@@ -28,11 +33,15 @@ export function QuickActionsBar({
   onPublish,
   onLock,
   onUnlock,
+  onUnpublish,
   onDelete,
   showPublishConfirm,
+  showUnpublishConfirm,
   showDeleteConfirm,
   onPublishConfirm,
   onPublishCancel,
+  onUnpublishConfirm,
+  onUnpublishCancel,
   onDeleteConfirm,
   onDeleteCancel,
 }: QuickActionsBarProps) {
@@ -99,10 +108,15 @@ export function QuickActionsBar({
   const secondaryActions = [];
   
   if (isLocked) {
-    // Unlock button for locked menus
     secondaryActions.push({
       label: 'Unlock Menu',
       onClick: onUnlock,
+    });
+  }
+  if (isPublished) {
+    secondaryActions.push({
+      label: 'Unpublish (reset to draft)',
+      onClick: onUnpublish,
     });
   }
 
@@ -140,6 +154,12 @@ export function QuickActionsBar({
         isOpen={showPublishConfirm}
         onConfirm={onPublishConfirm}
         onCancel={onPublishCancel}
+      />
+
+      <UnpublishConfirmModal
+        isOpen={showUnpublishConfirm}
+        onConfirm={onUnpublishConfirm}
+        onCancel={onUnpublishCancel}
       />
 
       <DeleteConfirmModal

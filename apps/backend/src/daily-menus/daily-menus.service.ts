@@ -916,6 +916,36 @@ export class DailyMenusService {
     return this.mapToDto(updated);
   }
 
+  /**
+   * Unpublish a daily menu (PUBLISHED -> DRAFT).
+   * Allows editing variants and components again.
+   */
+  async unpublish(id: string): Promise<DailyMenuDto> {
+    const menu = await this.prisma.dailyMenu.findUnique({
+      where: { id },
+    });
+
+    if (!menu) {
+      throw new NotFoundException(`Daily menu with ID ${id} not found`);
+    }
+
+    if (menu.status !== 'PUBLISHED') {
+      throw new BadRequestException(
+        `Cannot unpublish menu with status ${menu.status}. Only PUBLISHED menus can be reset to draft.`,
+      );
+    }
+
+    const updated = await this.prisma.dailyMenu.update({
+      where: { id },
+      data: {
+        status: 'DRAFT' as any,
+        publishedAt: null,
+      },
+    });
+
+    return this.mapToDto(updated);
+  }
+
   async updateCutoffHour(id: string, cutoffHour: string): Promise<DailyMenuDto> {
     const menu = await this.prisma.dailyMenu.findUnique({
       where: { id },

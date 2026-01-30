@@ -186,6 +186,19 @@ export class DailyMenusController {
     return this.dailyMenusService.unlock(id);
   }
 
+  @Post(':id/unpublish')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Unpublish a daily menu (PUBLISHED -> DRAFT)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Daily menu reset to draft successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - Only PUBLISHED menus can be unpublished' })
+  @ApiResponse({ status: 404, description: 'Daily menu not found' })
+  async unpublish(@Param('id') id: string): Promise<DailyMenuDto> {
+    return this.dailyMenusService.unpublish(id);
+  }
+
   @Patch(':id/cutoff-hour')
   @Roles(UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update cutoff hour for a daily menu' })

@@ -45,6 +45,7 @@ export default function MenusPage() {
   } = useDailyMenuState();
 
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
+  const [showUnpublishConfirm, setShowUnpublishConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['services']));
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -412,6 +413,21 @@ export default function MenusPage() {
     }
   };
 
+  // Unpublish handler (reset to draft)
+  const handleUnpublish = async () => {
+    if (!dailyMenu) return;
+
+    try {
+      setError('');
+      await apiClient.unpublishDailyMenu(dailyMenu.id);
+      setShowUnpublishConfirm(false);
+      await loadDailyMenuDetails(dailyMenu.id);
+    } catch (err: any) {
+      setError(err.message || 'Failed to unpublish daily menu');
+      setShowUnpublishConfirm(false);
+    }
+  };
+
   // Delete handler
   const handleDelete = async () => {
     if (!dailyMenu) return;
@@ -459,11 +475,15 @@ export default function MenusPage() {
             onPublish={() => setShowPublishConfirm(true)}
             onLock={handleLock}
             onUnlock={handleUnlock}
+            onUnpublish={() => setShowUnpublishConfirm(true)}
             onDelete={() => setShowDeleteConfirm(true)}
             showPublishConfirm={showPublishConfirm}
+            showUnpublishConfirm={showUnpublishConfirm}
             showDeleteConfirm={showDeleteConfirm}
             onPublishConfirm={handlePublish}
             onPublishCancel={() => setShowPublishConfirm(false)}
+            onUnpublishConfirm={handleUnpublish}
+            onUnpublishCancel={() => setShowUnpublishConfirm(false)}
             onDeleteConfirm={handleDelete}
             onDeleteCancel={() => setShowDeleteConfirm(false)}
           />

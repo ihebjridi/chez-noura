@@ -236,13 +236,29 @@ export default function BusinessDetailPage() {
 
   const handleDelete = async () => {
     if (!businessId || !business) return;
-    if (confirm(`Are you sure you want to delete "${business.name}"? This action cannot be undone.`)) {
+    if (confirm(`Are you sure you want to delete "${business.name}"? This only works if the business has no employees, orders, or invoices.`)) {
       try {
         setError('');
         await apiClient.deleteBusiness(businessId);
         router.push('/businesses');
       } catch (err: any) {
         setError(err.message || 'Failed to delete business. The business may have related records that prevent deletion.');
+      }
+    }
+  };
+
+  const handleForceDelete = async () => {
+    if (!businessId || !business) return;
+    const message =
+      `This will permanently delete "${business.name}" and ALL related data:\n\n` +
+      '• All employees\n• All orders\n• All invoices\n\nThis cannot be undone. Are you sure?';
+    if (confirm(message)) {
+      try {
+        setError('');
+        await apiClient.forceDeleteBusiness(businessId);
+        router.push('/businesses');
+      } catch (err: any) {
+        setError(err.message || 'Failed to delete business.');
       }
     }
   };
@@ -351,6 +367,16 @@ export default function BusinessDetailPage() {
             >
               <Trash2 className="h-4 w-4" />
               Delete Business
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={handleForceDelete}
+              className="flex items-center gap-1 border-error-300 bg-error-50 text-error-700 hover:bg-error-100"
+              title="Permanently delete this business and all its employees, orders, and invoices"
+            >
+              <AlertTriangle className="h-4 w-4" />
+              Delete business and all related data
             </Button>
           </div>
         </div>

@@ -545,6 +545,12 @@ class ApiClient {
     });
   }
 
+  async unpublishDailyMenu(id: string): Promise<DailyMenuDto> {
+    return this.request<DailyMenuDto>(`/daily-menus/${id}/unpublish`, {
+      method: 'POST',
+    });
+  }
+
   async updateDailyMenuCutoffHour(id: string, cutoffHour: string): Promise<DailyMenuDto> {
     return this.request<DailyMenuDto>(`/daily-menus/${id}/cutoff-hour`, {
       method: 'PATCH',
