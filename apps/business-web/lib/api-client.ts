@@ -16,6 +16,7 @@ import {
   PackWithComponentsDto,
   BusinessDashboardSummaryDto,
   VariantDto,
+  BusinessDto,
 } from '@contracts/core';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -79,6 +80,10 @@ class ApiClient {
 
   async getCurrentUser(): Promise<UserDto> {
     return this.request<UserDto>('/auth/me');
+  }
+
+  async getMyBusiness(): Promise<BusinessDto> {
+    return this.request<BusinessDto>('/business/me');
   }
 
   // Employee management endpoints (for BUSINESS_ADMIN)

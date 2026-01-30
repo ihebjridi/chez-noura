@@ -8,6 +8,7 @@ import { Logo } from '../logo';
 import { LanguageSwitcher } from '../language-switcher';
 import { Breadcrumbs } from '../ui/breadcrumbs';
 import { useAuth } from '../../contexts/auth-context';
+import { useBusiness } from '../../hooks/useBusiness';
 import { BottomNavigation } from './BottomNavigation';
 import {
   LayoutDashboard,
@@ -28,7 +29,18 @@ export function BusinessLayout({ children }: BusinessLayoutProps) {
   const { t } = useTranslation();
   const pathname = usePathname();
   const { logout, user } = useAuth();
+  const { business } = useBusiness();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Construct full logo URL from API endpoint
+  const getLogoUrl = (logoUrl: string | null | undefined): string | null => {
+    if (!logoUrl) return null;
+    if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://')) {
+      return logoUrl;
+    }
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    return `${API_BASE_URL}${logoUrl}`;
+  };
 
   const navigation = [
     { name: t('navigation.dashboard'), href: '/dashboard', icon: LayoutDashboard, current: false },
@@ -130,7 +142,16 @@ export function BusinessLayout({ children }: BusinessLayoutProps) {
             </div>
             <div className="flex items-center gap-4">
               <LanguageSwitcher />
-              <span className="hidden sm:inline text-sm text-gray-600">{user?.email}</span>
+              <div className="hidden sm:flex flex-col items-end gap-1">
+                {getLogoUrl(business?.logoUrl) && (
+                  <img
+                    src={getLogoUrl(business?.logoUrl)!}
+                    alt={business?.name || 'Business logo'}
+                    className="h-8 w-auto max-w-32 object-contain"
+                  />
+                )}
+                <span className="text-sm text-gray-600">{user?.email}</span>
+              </div>
             </div>
           </div>
         </header>
