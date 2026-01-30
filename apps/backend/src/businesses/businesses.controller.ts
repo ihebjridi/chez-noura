@@ -12,6 +12,7 @@ import {
   HttpStatus,
   UseInterceptors,
   UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -240,6 +241,19 @@ export class BusinessesController {
 @UseGuards(JwtAuthGuard, RolesGuard, BusinessScopeGuard)
 export class BusinessController {
   constructor(private readonly businessesService: BusinessesService) {}
+
+  @Get('me')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.BUSINESS_ADMIN)
+  @BusinessScoped()
+  @ApiOperation({ summary: 'Get the authenticated business admin\'s business' })
+  @ApiResponse({ status: 200, description: 'Business details' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  async getMyBusiness(@CurrentUser() user: TokenPayload): Promise<BusinessDto> {
+    if (!user.businessId) {
+      throw new BadRequestException('Not associated with a business');
+    }
+    return this.businessesService.findOne(user.businessId);
+  }
 
   @Get('dashboard/summary')
   @Roles(UserRole.SUPER_ADMIN, UserRole.BUSINESS_ADMIN)
