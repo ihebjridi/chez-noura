@@ -24,7 +24,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '../../components/ui/dialog';
-import { CheckCircle2, Package, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle2, Package, Clock, ChevronDown, ChevronUp, Loader2, ArrowRight } from 'lucide-react';
 
 // --- Types ---
 
@@ -106,6 +106,7 @@ function PackBlock({
   appearance = 'active',
   hasScheduledChange,
   onCancelScheduledChange,
+  isSwitching = false,
   t,
 }: {
   packId: string;
@@ -122,6 +123,7 @@ function PackBlock({
   appearance?: 'active' | 'alternate';
   hasScheduledChange?: boolean;
   onCancelScheduledChange?: () => void;
+  isSwitching?: boolean;
   t: (key: string) => string;
 }) {
   const sortedComponents = [...components].sort((a, b) => a.orderIndex - b.orderIndex);
@@ -130,7 +132,12 @@ function PackBlock({
   const hoverBg = isActive ? 'hover:bg-green-100/50' : 'hover:bg-gray-100/50';
 
   return (
-    <div className={`${bg} rounded-lg border overflow-hidden`}>
+    <div className={`${bg} rounded-lg border overflow-hidden relative ${isSwitching ? 'opacity-70 pointer-events-none' : ''}`}>
+      {isSwitching && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/60 rounded-lg z-10">
+          <Loader2 className="w-6 h-6 text-primary-600 animate-spin" />
+        </div>
+      )}
       <div
         className={`p-4 flex items-center gap-3 rounded-lg ${hoverBg} transition-colors`}
       >
@@ -349,8 +356,15 @@ export default function ServicesPage() {
     serviceId: string;
     packId: string;
     packName: string;
+    packPrice: number;
+    currentPackId: string;
+    currentPackName: string;
+    currentPackPrice: number;
   } | null>(null);
   const [switchingPack, setSwitchingPack] = useState(false);
+  const [switchingPackId, setSwitchingPackId] = useState<string | null>(null);
+  const [packChangeError, setPackChangeError] = useState<string | null>(null);
+  const [packChangeSuccess, setPackChangeSuccess] = useState<{ packName: string } | null>(null);
 
   // Cancel scheduled pack change: show dialog before cancelling
   const [pendingCancelPackChange, setPendingCancelPackChange] = useState<{
@@ -361,34 +375,82 @@ export default function ServicesPage() {
   const [cancellingPackChange, setCancellingPackChange] = useState(false);
 
   const handleSwitchPack = useCallback(
-    async (serviceId: string, packId: string) => {
+    async (serviceId: string, packId: string, packName: string) => {
       try {
         setError('');
+        setPackChangeError(null);
         setSwitchingPack(true);
+        setSwitchingPackId(packId);
         await updateService(serviceId, { packIds: [packId] });
-        setServiceDetails(new Map());
-        setPendingPackChange(null);
+        // Reload business services first
         await loadBusinessServices();
-      } catch {
-        // setError from hook
+        // Manually reload service details for the changed service
+        // (serviceIdsKey doesn't change when only pack changes, so useEffect won't run)
+        setDetailsLoading(true);
+        try {
+          const details = await apiClient.getServiceById(serviceId);
+          setServiceDetails((prev) => new Map(prev).set(serviceId, details));
+          // Reload pack details for all packs in this service
+          for (const p of details.packs) {
+            const packDetail = await apiClient.getPackById(p.packId);
+            setPackDetails((prev) => new Map(prev).set(p.packId, packDetail));
+          }
+        } catch (err: any) {
+          setError(err?.message || t('services.failedToLoadServiceDetails'));
+        } finally {
+          setDetailsLoading(false);
+        }
+        setPackChangeSuccess({ packName });
+        setPendingPackChange(null);
+        // Auto-close success after 2.5s
+        setTimeout(() => setPackChangeSuccess(null), 2500);
+      } catch (err: any) {
+        setPackChangeError(err?.message || t('services.packChangeError'));
+        setDetailsLoading(false);
       } finally {
         setSwitchingPack(false);
+        setSwitchingPackId(null);
       }
     },
-    [updateService, loadBusinessServices, setError]
+    [updateService, loadBusinessServices, setError, t]
   );
 
   const openChangePackDialog = useCallback(
-    (serviceId: string, packId: string, packName: string) => {
-      setPendingPackChange({ serviceId, packId, packName });
+    (
+      serviceId: string,
+      packId: string,
+      packName: string,
+      packPrice: number,
+      currentPackId: string,
+      currentPackName: string,
+      currentPackPrice: number
+    ) => {
+      setPackChangeError(null);
+      setPackChangeSuccess(null);
+      setPendingPackChange({
+        serviceId,
+        packId,
+        packName,
+        packPrice,
+        currentPackId,
+        currentPackName,
+        currentPackPrice,
+      });
     },
     []
   );
 
   const confirmChangePack = useCallback(() => {
     if (!pendingPackChange) return;
-    handleSwitchPack(pendingPackChange.serviceId, pendingPackChange.packId);
+    handleSwitchPack(pendingPackChange.serviceId, pendingPackChange.packId, pendingPackChange.packName);
   }, [pendingPackChange, handleSwitchPack]);
+
+  const closeChangePackDialog = useCallback(() => {
+    if (switchingPack) return;
+    setPendingPackChange(null);
+    setPackChangeError(null);
+    setPackChangeSuccess(null);
+  }, [switchingPack]);
 
   const openCancelPackChangeDialog = useCallback(
     (serviceId: string, packId: string, packName: string) => {
@@ -426,20 +488,132 @@ export default function ServicesPage() {
 
       {error && <Error message={error} onRetry={() => setError('')} />}
 
+      {/* Success notification (after dialog closes) */}
+      {packChangeSuccess && (
+        <div
+          role="alert"
+          className="flex items-center gap-3 p-4 rounded-lg border border-green-200 bg-green-50 text-green-800"
+        >
+          <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+          <p className="text-sm font-medium">
+            {t('services.packChangeSuccess', { packName: packChangeSuccess.packName })}
+          </p>
+        </div>
+      )}
+
       {/* Pack change confirmation dialog */}
-      <Dialog open={!!pendingPackChange} onOpenChange={(open) => !open && setPendingPackChange(null)}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog open={!!pendingPackChange} onOpenChange={(open) => !open && closeChangePackDialog()}>
+        <DialogContent
+          className="sm:max-w-lg"
+          onPointerDownOutside={(e) => switchingPack && e.preventDefault()}
+          onEscapeKeyDown={(e) => switchingPack && e.preventDefault()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !switchingPack && pendingPackChange) {
+              e.preventDefault();
+              confirmChangePack();
+            }
+          }}
+        >
           <DialogHeader>
             <DialogTitle>{t('services.changePackConfirmTitle')}</DialogTitle>
             <DialogDescription className="pt-1">
               {t('services.changePackConditions')}
             </DialogDescription>
           </DialogHeader>
+
+          {pendingPackChange && (
+            <>
+              {/* Comparison: current pack -> new pack */}
+              <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-start py-4">
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                    {t('services.currentPack')}
+                  </p>
+                  <p className="font-semibold text-gray-900">{pendingPackChange.currentPackName}</p>
+                  <p className="text-sm text-gray-600 mt-0.5">
+                    {pendingPackChange.currentPackPrice.toFixed(2)} TND
+                  </p>
+                  {(() => {
+                    const detail = packDetails.get(pendingPackChange.currentPackId);
+                    const comps = detail?.components ?? [];
+                    const sorted = [...comps].sort((a, b) => a.orderIndex - b.orderIndex);
+                    if (sorted.length > 0) {
+                      return (
+                        <ul className="mt-2 space-y-0.5 text-xs text-gray-600">
+                          {sorted.slice(0, 5).map((c) => (
+                            <li key={c.id}>• {c.componentName}</li>
+                          ))}
+                          {sorted.length > 5 && (
+                            <li className="text-gray-400">+{sorted.length - 5} more</li>
+                          )}
+                        </ul>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+                <div className="flex items-center pt-8 text-gray-400">
+                  <ArrowRight className="w-5 h-5" />
+                </div>
+                <div className="rounded-lg border border-primary-200 bg-primary-50 p-3">
+                  <p className="text-xs font-semibold text-primary-700 uppercase tracking-wide mb-1">
+                    {t('services.newPack')}
+                  </p>
+                  <p className="font-semibold text-gray-900">{pendingPackChange.packName}</p>
+                  <p className="text-sm text-gray-600 mt-0.5">
+                    {pendingPackChange.packPrice.toFixed(2)} TND
+                    {pendingPackChange.packPrice !== pendingPackChange.currentPackPrice && (
+                      <span className="ml-1 text-primary-600">
+                        ({pendingPackChange.packPrice > pendingPackChange.currentPackPrice ? '+' : ''}
+                        {(pendingPackChange.packPrice - pendingPackChange.currentPackPrice).toFixed(2)} TND)
+                      </span>
+                    )}
+                  </p>
+                  {(() => {
+                    const detail = packDetails.get(pendingPackChange.packId);
+                    const comps = detail?.components ?? [];
+                    const sorted = [...comps].sort((a, b) => a.orderIndex - b.orderIndex);
+                    if (sorted.length > 0) {
+                      return (
+                        <ul className="mt-2 space-y-0.5 text-xs text-gray-600">
+                          {sorted.slice(0, 5).map((c) => (
+                            <li key={c.id}>• {c.componentName}</li>
+                          ))}
+                          {sorted.length > 5 && (
+                            <li className="text-gray-400">+{sorted.length - 5} more</li>
+                          )}
+                        </ul>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+              </div>
+
+              {packChangeError && (
+                <div className="flex items-center gap-2 p-3 rounded-lg border border-red-200 bg-red-50 text-red-800 text-sm">
+                  <span className="flex-1">{packChangeError}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPackChangeError(null);
+                      confirmChangePack();
+                    }}
+                    className="px-2 py-1 text-xs font-medium text-red-700 border border-red-200 rounded hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  >
+                    {t('services.retry')}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
           <DialogFooter className="gap-2 sm:gap-0">
             <button
               type="button"
-              onClick={() => setPendingPackChange(null)}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              onClick={closeChangePackDialog}
+              disabled={switchingPack}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none"
             >
               {t('services.cancel')}
             </button>
@@ -447,9 +621,16 @@ export default function ServicesPage() {
               type="button"
               onClick={confirmChangePack}
               disabled={switchingPack || !pendingPackChange}
-              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none"
+              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none inline-flex items-center gap-2"
             >
-              {switchingPack ? t('services.loading') : t('services.confirmChangePack')}
+              {switchingPack ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {t('services.switching')}
+                </>
+              ) : (
+                t('services.confirmChangePack')
+              )}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -577,65 +758,84 @@ export default function ServicesPage() {
                             !businessService.packs
                               .filter((p) => p.isActive)
                               .some((bp) => bp.packId === sp.packId)
-                        ).length > 0 && (
-                          <section>
-                            <h4 className="font-semibold text-gray-900 mb-3">
-                              {t('services.changePack')}
-                            </h4>
-                            <div className="space-y-3">
-                              {details.packs
-                                .filter(
-                                  (sp) =>
-                                    !businessService.packs
-                                      .filter((p) => p.isActive)
-                                      .some((bp) => bp.packId === sp.packId)
-                                )
-                                .map((servicePack) => {
-                                  const packDetail = packDetails.get(servicePack.packId);
-                                  return (
-                                    <div key={servicePack.id}>
-                                      {packDetail && packDetail.components.length > 0 ? (
-                                        <PackBlock
-                                          packId={servicePack.packId}
-                                          packName={servicePack.packName}
-                                          packPrice={servicePack.packPrice}
-                                          components={packDetail.components}
-                                          isExpanded={expandedPackIds.has(servicePack.packId)}
-                                          onToggle={() => togglePack(servicePack.packId)}
-                                          variantsByComponentId={componentVariants}
-                                          variantsLoading={variantsLoadingForPacks.has(servicePack.packId)}
-                                          action={
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                openChangePackDialog(
-                                                  service.id,
-                                                  servicePack.packId,
-                                                  servicePack.packName
-                                                );
-                                              }}
-                                              className="px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                                            >
-                                              {t('services.switchToThisPack')}
-                                            </button>
-                                          }
-                                          appearance="alternate"
-                                          t={t}
-                                        />
-                                      ) : (
-                                        <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
-                                          <p className="text-sm text-gray-500">
-                                            {t('services.noComponentsAvailable')}
-                                          </p>
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                            </div>
-                          </section>
-                        )}
+                        ).length > 0 && (() => {
+                          const activePack = businessService.packs.find((p) => p.isActive);
+                          return (
+                            <section>
+                              <h4 className="font-semibold text-gray-900 mb-3">
+                                {t('services.changePack')}
+                              </h4>
+                              <div className="space-y-3">
+                                {details.packs
+                                  .filter(
+                                    (sp) =>
+                                      !businessService.packs
+                                        .filter((p) => p.isActive)
+                                        .some((bp) => bp.packId === sp.packId)
+                                  )
+                                  .map((servicePack) => {
+                                    const packDetail = packDetails.get(servicePack.packId);
+                                    const isThisPackSwitching = switchingPackId === servicePack.packId;
+                                    const anySwitching = !!switchingPackId;
+                                    return (
+                                      <div key={servicePack.id}>
+                                        {packDetail && packDetail.components.length > 0 ? (
+                                          <PackBlock
+                                            packId={servicePack.packId}
+                                            packName={servicePack.packName}
+                                            packPrice={servicePack.packPrice}
+                                            components={packDetail.components}
+                                            isExpanded={expandedPackIds.has(servicePack.packId)}
+                                            onToggle={() => togglePack(servicePack.packId)}
+                                            variantsByComponentId={componentVariants}
+                                            variantsLoading={variantsLoadingForPacks.has(servicePack.packId)}
+                                            isSwitching={isThisPackSwitching}
+                                            action={
+                                              <button
+                                                type="button"
+                                                disabled={anySwitching}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  if (!activePack) return;
+                                                  openChangePackDialog(
+                                                    service.id,
+                                                    servicePack.packId,
+                                                    servicePack.packName,
+                                                    servicePack.packPrice,
+                                                    activePack.packId,
+                                                    activePack.packName,
+                                                    activePack.packPrice
+                                                  );
+                                                }}
+                                                className="px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none inline-flex items-center gap-1.5"
+                                              >
+                                                {isThisPackSwitching ? (
+                                                  <>
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    {t('services.switching')}
+                                                  </>
+                                                ) : (
+                                                  t('services.switchToThisPack')
+                                                )}
+                                              </button>
+                                            }
+                                            appearance="alternate"
+                                            t={t}
+                                          />
+                                        ) : (
+                                          <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+                                            <p className="text-sm text-gray-500">
+                                              {t('services.noComponentsAvailable')}
+                                            </p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                              </div>
+                            </section>
+                          );
+                        })()}
                       </div>
                     )}
                   </CardContent>

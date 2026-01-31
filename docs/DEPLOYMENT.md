@@ -119,7 +119,7 @@ sudo apt install certbot python3-certbot-nginx -y
 ### 2. Obtain SSL Certificates
 
 ```bash
-sudo certbot --nginx -d api.chez-noura.com -d admin.chez-noura.com -d business.chez-noura.com -d client.chez-noura.com
+sudo certbot --nginx -d api.cheznoura.com -d admin.cheznoura.com -d business.cheznoura.com -d client.cheznoura.com
 ```
 
 Follow the prompts. Certbot will automatically configure Nginx.
@@ -184,7 +184,7 @@ NEXT_PUBLIC_API_URL=https://api.chez-noura.com
 Copy the Nginx configuration:
 
 ```bash
-sudo cp ~/chez-noura/nginx/nginx.conf /etc/nginx/sites-available/chez-noura
+sudo cp ~/chez-noura-catering/chez-noura/nginx/nginx.conf /etc/nginx/sites-available/chez-noura
 sudo ln -s /etc/nginx/sites-available/chez-noura /etc/nginx/sites-enabled/
 ```
 

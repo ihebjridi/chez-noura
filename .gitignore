@@ -15,6 +15,7 @@ dist/
 build/
 .next/
 out/
+next-env.d.ts
 
 # Misc
 .DS_Store
@@ -52,3 +53,5 @@ Thumbs.db
 
 variant-images/
 .cursor/
+
+.env.prod.example

@@ -279,6 +279,13 @@
     "cancelScheduledChange": "Cancel scheduled change",
     "cancelScheduledChangeTitle": "Cancel scheduled pack change?",
     "cancelScheduledChangeDescription": "The scheduled change will be cancelled. The current pack will remain active.",
-    "confirmCancelChange": "Yes, cancel change"
+    "confirmCancelChange": "Yes, cancel change",
+    "currentPack": "Current pack",
+    "newPack": "New pack",
+    "switching": "Switching...",
+    "packChangeSuccess": "Pack changed to {{packName}}. The change will take effect at the start of the next service day.",
+    "packChangeError": "Failed to change pack. Please try again.",
+    "retry": "Retry",
+    "priceDifference": "Price difference"
   }
 }

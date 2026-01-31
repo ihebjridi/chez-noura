@@ -279,6 +279,13 @@
     "cancelScheduledChange": "Annuler le changement programmé",
     "cancelScheduledChangeTitle": "Annuler le changement de pack programmé ?",
     "cancelScheduledChangeDescription": "Le changement programmé sera annulé. Le pack actuel restera actif.",
-    "confirmCancelChange": "Oui, annuler le changement"
+    "confirmCancelChange": "Oui, annuler le changement",
+    "currentPack": "Pack actuel",
+    "newPack": "Nouveau pack",
+    "switching": "Changement en cours...",
+    "packChangeSuccess": "Pack changé vers {{packName}}. Le changement prendra effet au début du prochain jour de service.",
+    "packChangeError": "Échec du changement de pack. Veuillez réessayer.",
+    "retry": "Réessayer",
+    "priceDifference": "Différence de prix"
   }
 }
