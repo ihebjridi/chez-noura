@@ -92,7 +92,7 @@ jobs:
             set -e
             
             echo "=== Deployment Configuration ==="
-            DEPLOY_PATH="${{ secrets.VPS_DEPLOY_PATH || '/home/ubuntu/chez-noura-catering/chez-noura' }}"
+            DEPLOY_PATH="${{ secrets.VPS_DEPLOY_PATH || '/home/iheb/chez-noura-catering/chez-noura' }}"
             echo "Deployment path: $DEPLOY_PATH"
             
             # Navigate to repository directory
