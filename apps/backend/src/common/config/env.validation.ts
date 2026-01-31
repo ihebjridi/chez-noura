@@ -64,6 +64,28 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   SMTP_SECURE?: string;
+
+  // Cloudflare R2 Storage (required for image uploads)
+  @IsString()
+  @IsNotEmpty()
+  R2_ACCOUNT_ID: string;
+
+  @IsString()
+  @IsNotEmpty()
+  R2_ACCESS_KEY_ID: string;
+
+  @IsString()
+  @IsNotEmpty()
+  R2_SECRET_ACCESS_KEY: string;
+
+  @IsString()
+  @IsNotEmpty()
+  R2_BUCKET: string;
+
+  /** Public base URL for R2 objects (e.g. https://pub-xxx.r2.dev or custom domain). No trailing slash. */
+  @IsString()
+  @IsNotEmpty()
+  R2_PUBLIC_URL: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {

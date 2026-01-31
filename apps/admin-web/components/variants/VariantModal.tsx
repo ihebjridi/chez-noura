@@ -22,6 +22,7 @@ import { Button } from '../ui/button';
 import { Loading } from '../ui/loading';
 import { StatusBadge } from '../ui/status-badge';
 import { Trash2 } from 'lucide-react';
+import { getImageSrc } from '../../lib/utils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -119,9 +120,7 @@ export function VariantModal({
                 componentId: foundVariant.componentId,
               });
               setImagePreview(
-                foundVariant.imageUrl
-                  ? `${API_BASE_URL}${foundVariant.imageUrl}`
-                  : null,
+                getImageSrc(foundVariant.imageUrl, API_BASE_URL) || null,
               );
             }
           }

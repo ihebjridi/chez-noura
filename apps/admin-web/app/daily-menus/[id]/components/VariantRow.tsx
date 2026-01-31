@@ -1,5 +1,6 @@
 import { VariantDto } from '@contracts/core';
 import { ToggleSwitch } from './ToggleSwitch';
+import { getImageSrc } from '../../../../lib/utils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -36,7 +37,7 @@ export function VariantRow({
       />
       {variant.imageUrl ? (
         <img
-          src={`${API_BASE_URL}${variant.imageUrl}`}
+          src={getImageSrc(variant.imageUrl, API_BASE_URL)}
           alt={variant.name}
           className="w-12 h-12 object-cover rounded-md border border-surface-dark flex-shrink-0"
         />

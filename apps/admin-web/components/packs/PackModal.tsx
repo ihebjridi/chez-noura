@@ -35,6 +35,7 @@ import {
   TableRow,
 } from '../ui/table';
 import { Trash2, Plus, Package } from 'lucide-react';
+import { getImageSrc } from '../../lib/utils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -742,7 +743,7 @@ export function PackModal({
                                             <div className="flex items-center gap-2">
                                               {v.imageUrl ? (
                                                 <img
-                                                  src={`${API_BASE_URL}${v.imageUrl}`}
+                                                  src={getImageSrc(v.imageUrl, API_BASE_URL)}
                                                   alt={v.name}
                                                   className="w-8 h-8 object-cover rounded border border-surface-dark"
                                                 />

@@ -20,6 +20,7 @@ import { BusinessModal } from '../../components/business/BusinessModal';
 import { formatDateTime } from '../../lib/date-utils';
 import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
+import { getImageSrc } from '../../lib/utils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -94,7 +95,7 @@ export default function BusinessesPage() {
                     <TableCell className="whitespace-nowrap">
                       {business.logoUrl ? (
                         <img
-                          src={`${API_BASE_URL}${business.logoUrl}`}
+                          src={getImageSrc(business.logoUrl, API_BASE_URL)}
                           alt={business.name}
                           className="h-12 w-12 object-contain rounded"
                         />

@@ -51,6 +51,7 @@ import { CredentialsModal } from './credentials-modal';
 import { AssignServiceModal } from './assign-service-modal';
 import { ServiceSubscriptions } from './service-subscriptions';
 import { CollapsibleSection } from '../ui/collapsible-section';
+import { getImageSrc } from '../../lib/utils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -165,7 +166,7 @@ export function BusinessModal({
             status: businessData.status,
           });
           if (businessData.logoUrl) {
-            setLogoPreview(`${API_BASE_URL}${businessData.logoUrl}`);
+            setLogoPreview(getImageSrc(businessData.logoUrl, API_BASE_URL) || null);
           }
 
           // Load related data

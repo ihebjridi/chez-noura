@@ -22,6 +22,7 @@ import {
   DialogFooter,
 } from '../../components/ui/dialog';
 import { ArrowLeft, Trash2, Plus } from 'lucide-react';
+import { getImageSrc } from '../../lib/utils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -233,7 +234,7 @@ export default function VariantsPage() {
                 <div className="col-span-2 flex items-center gap-3">
                   {variant.imageUrl ? (
                     <img
-                      src={`${API_BASE_URL}${variant.imageUrl}`}
+                      src={getImageSrc(variant.imageUrl, API_BASE_URL)}
                       alt={variant.name}
                       className="w-10 h-10 object-cover rounded border border-surface-dark flex-shrink-0"
                     />

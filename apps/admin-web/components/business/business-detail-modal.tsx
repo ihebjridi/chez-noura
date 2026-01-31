@@ -20,6 +20,7 @@ import {
   Trash2,
   AlertTriangle,
 } from 'lucide-react';
+import { getImageSrc } from '../../lib/utils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -67,7 +68,7 @@ export function BusinessDetailModal({
           <div className="flex items-start gap-4">
             {business.logoUrl ? (
               <img
-                src={`${API_BASE_URL}${business.logoUrl}`}
+                src={getImageSrc(business.logoUrl, API_BASE_URL)}
                 alt={business.name}
                 className="h-16 w-16 object-contain rounded-lg border border-surface-dark bg-white flex-shrink-0"
               />

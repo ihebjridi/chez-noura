@@ -1,8 +1,12 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { Express } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
 
 export interface FileUploadResult {
   filename: string;
@@ -12,9 +16,9 @@ export interface FileUploadResult {
 
 @Injectable()
 export class FileStorageService {
-  private readonly uploadsDir = path.join(process.cwd(), 'uploads');
-  private readonly variantsDir = path.join(this.uploadsDir, 'variants');
-  private readonly businessesDir = path.join(this.uploadsDir, 'businesses');
+  private readonly s3: S3Client;
+  private readonly bucket: string;
+  private readonly publicBaseUrl: string;
   private readonly maxFileSize = 5 * 1024 * 1024; // 5MB
   private readonly allowedMimeTypes = [
     'image/jpeg',
@@ -23,31 +27,44 @@ export class FileStorageService {
     'image/webp',
   ];
 
+  /** Local uploads dir for backward compatibility when deleting legacy /uploads/ URLs */
+  private readonly uploadsDir = path.join(process.cwd(), 'uploads');
+
   constructor() {
-    // Ensure upload directories exist
-    this.ensureDirectoryExists(this.uploadsDir);
-    this.ensureDirectoryExists(this.variantsDir);
-    this.ensureDirectoryExists(this.businessesDir);
+    const accountId = process.env.R2_ACCOUNT_ID;
+    const accessKeyId = process.env.R2_ACCESS_KEY_ID;
+    const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+    this.bucket = process.env.R2_BUCKET ?? '';
+    this.publicBaseUrl = (process.env.R2_PUBLIC_URL ?? '').replace(/\/$/, '');
+
+    this.s3 = new S3Client({
+      region: 'auto',
+      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: accessKeyId ?? '',
+        secretAccessKey: secretAccessKey ?? '',
+      },
+    });
   }
 
   /**
-   * Upload a variant image
+   * Upload a variant image to R2
    */
   async uploadVariantImage(file: Express.Multer.File): Promise<FileUploadResult> {
     this.validateFile(file);
-    return this.saveFile(file, this.variantsDir, 'variants');
+    return this.uploadToR2(file, 'variants');
   }
 
   /**
-   * Upload a business logo
+   * Upload a business logo to R2
    */
   async uploadBusinessLogo(file: Express.Multer.File): Promise<FileUploadResult> {
     this.validateFile(file);
-    return this.saveFile(file, this.businessesDir, 'businesses');
+    return this.uploadToR2(file, 'businesses');
   }
 
   /**
-   * Delete a file by URL
+   * Delete a file by URL. Supports both R2 URLs and legacy /uploads/ paths.
    */
   async deleteFile(fileUrl: string): Promise<void> {
     if (!fileUrl) {
@@ -55,31 +72,20 @@ export class FileStorageService {
     }
 
     try {
-      // Extract path from URL (e.g., /uploads/variants/uuid.jpg)
-      let urlPath: string;
       if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
-        const url = new URL(fileUrl);
-        urlPath = url.pathname;
-      } else {
-        // Assume it's already a path
-        urlPath = fileUrl;
+        const key = this.getR2KeyFromUrl(fileUrl);
+        if (key) {
+          await this.s3.send(
+            new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),
+          );
+        }
+        return;
       }
 
-      const filePath = path.join(process.cwd(), urlPath);
-
-      // Verify the file is within the uploads directory for security
-      const normalizedPath = path.normalize(filePath);
-      const normalizedUploadsDir = path.normalize(this.uploadsDir);
-
-      if (!normalizedPath.startsWith(normalizedUploadsDir)) {
-        throw new BadRequestException('Invalid file path');
-      }
-
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
+      if (fileUrl.startsWith('/uploads/')) {
+        this.deleteLegacyFile(fileUrl);
       }
     } catch (error) {
-      // Log error but don't throw - file deletion failures shouldn't break the flow
       console.error(`Failed to delete file ${fileUrl}:`, error);
     }
   }
@@ -106,32 +112,70 @@ export class FileStorageService {
   }
 
   /**
-   * Save file to disk
+   * Upload file to R2 and return public URL
    */
-  private async saveFile(
+  private async uploadToR2(
     file: Express.Multer.File,
-    directory: string,
     category: string,
   ): Promise<FileUploadResult> {
-    // Generate unique filename
-    const fileExtension = path.extname(file.originalname) || this.getExtensionFromMimeType(file.mimetype);
+    const fileExtension =
+      path.extname(file.originalname) ||
+      this.getExtensionFromMimeType(file.mimetype);
     const filename = `${uuidv4()}${fileExtension}`;
-    const filePath = path.join(directory, filename);
+    const key = `${category}/${filename}`;
 
-    // Ensure directory exists
-    this.ensureDirectoryExists(directory);
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      }),
+    );
 
-    // Write file to disk
-    fs.writeFileSync(filePath, file.buffer);
-
-    // Generate URL path
-    const url = `/uploads/${category}/${filename}`;
+    const url = `${this.publicBaseUrl}/${key}`;
 
     return {
       filename,
-      path: filePath,
+      path: key,
       url,
     };
+  }
+
+  /**
+   * Extract R2 object key from a full URL or path
+   */
+  private getR2KeyFromUrl(fileUrl: string): string | null {
+    let pathname: string;
+    if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+      try {
+        pathname = new URL(fileUrl).pathname;
+      } catch {
+        return null;
+      }
+    } else {
+      pathname = fileUrl;
+    }
+    const key = pathname.replace(/^\//, '');
+    return key || null;
+  }
+
+  /**
+   * Delete legacy file from local disk (backward compatibility)
+   */
+  private deleteLegacyFile(fileUrl: string): void {
+    const urlPath = fileUrl.startsWith('/') ? fileUrl : `/${fileUrl}`;
+    const filePath = path.join(process.cwd(), urlPath);
+    const normalizedPath = path.normalize(filePath);
+    const normalizedUploadsDir = path.normalize(this.uploadsDir);
+
+    if (!normalizedPath.startsWith(normalizedUploadsDir)) {
+      return;
+    }
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
   }
 
   /**
@@ -145,14 +189,5 @@ export class FileStorageService {
       'image/webp': '.webp',
     };
     return mimeToExt[mimeType] || '.jpg';
-  }
-
-  /**
-   * Ensure directory exists, create if it doesn't
-   */
-  private ensureDirectoryExists(dirPath: string): void {
-    if (!fs.existsSync(dirPath)) {
-      fs.mkdirSync(dirPath, { recursive: true });
-    }
   }
 }

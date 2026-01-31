@@ -18,6 +18,7 @@ import { CollapsibleSection } from '../../../components/layouts/CollapsibleSecti
 import { CheckCircle, Clock, Package, AlertCircle, Calendar, ChevronRight } from 'lucide-react';
 import { getTodayISO, getTomorrowISO } from '../../../lib/date-utils';
 import { getLatestServiceCutoff } from '../../../lib/service-window-utils';
+import { getImageSrc } from '../../../lib/utils';
 
 function NewOrderContent() {
   const { t, i18n } = useTranslation();
@@ -528,7 +529,7 @@ function NewOrderContent() {
                                 <div className="flex items-center gap-3">
                                     {variant.imageUrl ? (
                                     <img
-                                      src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${variant.imageUrl}`}
+                                      src={getImageSrc(variant.imageUrl, process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000')}
                                       alt={variant.name}
                                       className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-xl border border-gray-200 flex-shrink-0 shadow-sm"
                                     />

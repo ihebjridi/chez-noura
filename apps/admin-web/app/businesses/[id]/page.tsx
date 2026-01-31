@@ -51,6 +51,7 @@ import { ServiceSubscriptions } from '../../../components/business/service-subsc
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs';
 import { useBreadcrumbSegment } from '../../../contexts/breadcrumb-context';
 import Link from 'next/link';
+import { getImageSrc } from '../../../lib/utils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -122,7 +123,7 @@ export default function BusinessDetailPage() {
           status: businessData.status,
         });
         if (businessData.logoUrl) {
-          setLogoPreview(`${API_BASE_URL}${businessData.logoUrl}`);
+          setLogoPreview(getImageSrc(businessData.logoUrl, API_BASE_URL) || null);
         }
 
         // Load related data
