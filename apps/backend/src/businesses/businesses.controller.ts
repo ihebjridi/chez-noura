@@ -38,6 +38,7 @@ import {
   BusinessDashboardSummaryDto,
 } from '@contracts/core';
 import { CreateBusinessDtoClass } from './dto/create-business.dto';
+import { SetBusinessPasswordDto } from './dto/set-business-password.dto';
 
 @ApiTags('businesses')
 @ApiBearerAuth('JWT-auth')
@@ -232,6 +233,25 @@ export class BusinessesController {
     @CurrentUser() user: TokenPayload,
   ): Promise<{ email: string; temporaryPassword: string }> {
     return this.businessesService.generateNewPassword(id, user);
+  }
+
+  @Patch(':id/password')
+  @Roles(UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Set business admin password to a specific value' })
+  @ApiParam({ name: 'id', description: 'Business ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Password set successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid password (e.g. too short)' })
+  @ApiResponse({ status: 404, description: 'Business or admin user not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - SUPER_ADMIN only' })
+  async setPassword(
+    @Param('id') id: string,
+    @Body() dto: SetBusinessPasswordDto,
+    @CurrentUser() user: TokenPayload,
+  ): Promise<{ email: string }> {
+    return this.businessesService.setBusinessAdminPassword(id, dto.newPassword, user);
   }
 
   @Delete(':id')

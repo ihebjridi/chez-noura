@@ -586,6 +586,67 @@ export class BusinessesService {
   }
 
   /**
+   * Set the business admin password to a specific value (SUPER_ADMIN only).
+   * Does not send email; admin is responsible for sharing the password.
+   */
+  async setBusinessAdminPassword(
+    businessId: string,
+    newPassword: string,
+    user: TokenPayload,
+  ): Promise<{ email: string }> {
+    const business = await this.prisma.business.findUnique({
+      where: { id: businessId },
+    });
+
+    if (!business) {
+      throw new NotFoundException(`Business with ID ${businessId} not found`);
+    }
+
+    const adminUser = await this.prisma.user.findFirst({
+      where: {
+        businessId: businessId,
+        role: UserRole.BUSINESS_ADMIN,
+      },
+    });
+
+    if (!adminUser) {
+      throw new NotFoundException('Business admin user not found');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: adminUser.id },
+          data: { password: hashedPassword },
+        });
+      });
+    } catch (error) {
+      console.error('Failed to set password in database:', error);
+      throw new BadRequestException(
+        'Failed to set password. Please try again.',
+      );
+    }
+
+    try {
+      await this.activityLogsService.create({
+        userId: user.userId,
+        businessId: businessId,
+        action: 'PASSWORD_SET',
+        details: JSON.stringify({
+          adminEmail: adminUser.email,
+          setBy: user.userId,
+        }),
+      });
+    } catch (error) {
+      console.error('Failed to log password set activity:', error);
+    }
+
+    return { email: adminUser.email };
+  }
+
+  /**
    * Get employees for a business by business ID
    * SUPER_ADMIN only - allows viewing employees of any business
    */

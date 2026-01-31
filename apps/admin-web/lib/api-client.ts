@@ -308,6 +308,19 @@ class ApiClient {
     });
   }
 
+  async setBusinessAdminPassword(
+    businessId: string,
+    newPassword: string,
+  ): Promise<{ email: string }> {
+    return this.request<{ email: string }>(
+      `/businesses/${businessId}/password`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ newPassword }),
+      },
+    );
+  }
+
   async deleteBusiness(id: string): Promise<void> {
     return this.request<void>(`/businesses/${id}`, {
       method: 'DELETE',

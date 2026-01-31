@@ -34,6 +34,7 @@ import {
   Power,
   PowerOff,
   Key,
+  Lock,
   Trash2,
   AlertTriangle,
   Package,
@@ -44,6 +45,7 @@ import { formatDateTime } from '../../../lib/date-utils';
 import { EmployeeListModal } from '../../../components/business/employee-list-modal';
 import { EditEmployeeModal } from '../../../components/business/edit-employee-modal';
 import { CredentialsModal } from '../../../components/business/credentials-modal';
+import { ChangeBusinessPasswordModal } from '../../../components/business/change-business-password-modal';
 import { AssignServiceModal } from '../../../components/business/assign-service-modal';
 import { ServiceSubscriptions } from '../../../components/business/service-subscriptions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs';
@@ -78,6 +80,7 @@ export default function BusinessDetailPage() {
   const [employeeModalOpen, setEmployeeModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<EmployeeDto | null>(null);
   const [assignServiceModalOpen, setAssignServiceModalOpen] = useState(false);
+  const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
   const [credentialsModal, setCredentialsModal] = useState<{
     isOpen: boolean;
     businessName: string;
@@ -391,6 +394,16 @@ export default function BusinessDetailPage() {
             >
               <Package className="h-4 w-4" />
               Assign Service
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setChangePasswordModalOpen(true)}
+              className="flex items-center gap-1"
+              title="Set a specific password for the business admin"
+            >
+              <Lock className="h-4 w-4" />
+              Change Password
             </Button>
             <Button
               variant="ghost"
@@ -765,6 +778,18 @@ export default function BusinessDetailPage() {
             setServiceSubscriptionsRefreshTrigger((prev) => prev + 1);
             loadServices();
           }}
+        />
+      )}
+
+      {/* Change password modal */}
+      {business && (
+        <ChangeBusinessPasswordModal
+          isOpen={changePasswordModalOpen}
+          onClose={() => setChangePasswordModalOpen(false)}
+          businessName={business.name}
+          businessId={businessId}
+          setError={setError}
+          setCredentialsModal={setCredentialsModal}
         />
       )}
 

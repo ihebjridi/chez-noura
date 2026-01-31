@@ -41,3 +41,10 @@ export interface UpdateBusinessDto {
   logoUrl?: string;
   status?: EntityStatus;
 }
+
+/**
+ * Set business admin password DTO (SUPER_ADMIN only)
+ */
+export interface SetBusinessPasswordDto {
+  newPassword: string;
+}
