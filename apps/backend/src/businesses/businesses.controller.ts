@@ -217,22 +217,58 @@ export class BusinessesController {
     return this.businessesService.deleteBusinessEmployee(id, employeeId, user);
   }
 
-  @Post(':id/generate-password')
+  @Get(':id/temporary-access')
   @Roles(UserRole.SUPER_ADMIN)
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Generate a new password for business admin' })
+  @ApiOperation({ summary: 'Get temporary access status for business admin' })
   @ApiParam({ name: 'id', description: 'Business ID' })
   @ApiResponse({
     status: 200,
-    description: 'New password generated successfully',
+    description: 'Temporary access status',
+  })
+  @ApiResponse({ status: 404, description: 'Business not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - SUPER_ADMIN only' })
+  async getTemporaryAccess(
+    @Param('id') id: string,
+  ): Promise<{ hasTemporaryPassword: boolean; expiresAt?: string }> {
+    return this.businessesService.getTemporaryAccessStatus(id);
+  }
+
+  @Post(':id/generate-password')
+  @Roles(UserRole.SUPER_ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Generate a temporary password for investigation (does not change real password)',
+  })
+  @ApiParam({ name: 'id', description: 'Business ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Temporary password generated; valid until expiresAt',
   })
   @ApiResponse({ status: 404, description: 'Business or admin user not found' })
   @ApiResponse({ status: 403, description: 'Forbidden - SUPER_ADMIN only' })
   async generatePassword(
     @Param('id') id: string,
     @CurrentUser() user: TokenPayload,
-  ): Promise<{ email: string; temporaryPassword: string }> {
+  ): Promise<{ email: string; temporaryPassword: string; expiresAt: string }> {
     return this.businessesService.generateNewPassword(id, user);
+  }
+
+  @Post(':id/clear-temporary-password')
+  @Roles(UserRole.SUPER_ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Clear temporary password; real password is unchanged' })
+  @ApiParam({ name: 'id', description: 'Business ID' })
+  @ApiResponse({
+    status: 204,
+    description: 'Temporary password cleared',
+  })
+  @ApiResponse({ status: 404, description: 'Business or admin user not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - SUPER_ADMIN only' })
+  async clearTemporaryPassword(
+    @Param('id') id: string,
+    @CurrentUser() user: TokenPayload,
+  ): Promise<void> {
+    return this.businessesService.clearTemporaryPassword(id, user);
   }
 
   @Patch(':id/password')

@@ -86,12 +86,18 @@ export default function BusinessDetailPage() {
     businessName: string;
     email: string;
     password: string;
+    isTemporary?: boolean;
+    expiresAt?: string;
   }>({
     isOpen: false,
     businessName: '',
     email: '',
     password: '',
   });
+  const [temporaryAccessStatus, setTemporaryAccessStatus] = useState<{
+    hasTemporaryPassword: boolean;
+    expiresAt?: string;
+  }>({ hasTemporaryPassword: false });
   const [serviceSubscriptionsRefreshTrigger, setServiceSubscriptionsRefreshTrigger] = useState(0);
 
   // Set breadcrumb label
@@ -124,6 +130,7 @@ export default function BusinessDetailPage() {
           loadEmployees(),
           loadServices(),
           loadActivityLogs(),
+          loadTemporaryAccessStatus(),
         ]);
       } catch (err: any) {
         if (!cancelled) setError(err.message || 'Failed to load business');
@@ -161,6 +168,19 @@ export default function BusinessDetailPage() {
       setError(err.message || 'Failed to load services');
     } finally {
       setLoadingServices(false);
+    }
+  };
+
+  const loadTemporaryAccessStatus = async () => {
+    if (!businessId) return;
+    try {
+      const data = await apiClient.getBusinessTemporaryAccessStatus(businessId);
+      setTemporaryAccessStatus({
+        hasTemporaryPassword: data.hasTemporaryPassword,
+        expiresAt: data.expiresAt,
+      });
+    } catch {
+      setTemporaryAccessStatus({ hasTemporaryPassword: false });
     }
   };
 
@@ -263,7 +283,7 @@ export default function BusinessDetailPage() {
     }
   };
 
-  const handleGeneratePassword = async () => {
+  const handleGenerateTemporaryAccess = async () => {
     if (!businessId || !business) return;
     try {
       setError('');
@@ -273,9 +293,23 @@ export default function BusinessDetailPage() {
         businessName: business.name,
         email: result.email,
         password: result.temporaryPassword,
+        isTemporary: true,
+        expiresAt: result.expiresAt,
       });
+      await loadTemporaryAccessStatus();
     } catch (err: any) {
-      setError(err.message || 'Failed to generate password');
+      setError(err.message || 'Failed to generate temporary access');
+    }
+  };
+
+  const handleClearTemporaryAccess = async () => {
+    if (!businessId || !business) return;
+    try {
+      setError('');
+      await apiClient.clearBusinessTemporaryPassword(businessId);
+      await loadTemporaryAccessStatus();
+    } catch (err: any) {
+      setError(err.message || 'Failed to clear temporary access');
     }
   };
 
@@ -377,6 +411,28 @@ export default function BusinessDetailPage() {
           </div>
         )}
 
+        {/* Temporary access banner */}
+        {temporaryAccessStatus.hasTemporaryPassword && (
+          <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 flex items-center justify-between flex-wrap gap-2">
+            <p className="text-sm text-amber-800">
+              <strong>Temporary access active.</strong> You can log in as this business with the generated password. The business admin&apos;s real password is unchanged.
+              {temporaryAccessStatus.expiresAt && (
+                <span className="ml-1">
+                  Expires {new Date(temporaryAccessStatus.expiresAt).toLocaleString()}.
+                </span>
+              )}
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClearTemporaryAccess}
+              className="text-amber-700 hover:bg-amber-100"
+            >
+              Clear temporary access
+            </Button>
+          </div>
+        )}
+
         {/* Quick Actions */}
         <div className="mb-6 bg-surface border border-surface-dark rounded-lg p-4">
           <div className="flex items-center gap-2 mb-3">
@@ -405,14 +461,27 @@ export default function BusinessDetailPage() {
               <Lock className="h-4 w-4" />
               Change Password
             </Button>
+            {temporaryAccessStatus.hasTemporaryPassword && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearTemporaryAccess}
+                className="flex items-center gap-1 text-amber-700 hover:text-amber-800 hover:bg-amber-50"
+                title="Remove temporary access; business admin's real password is unchanged"
+              >
+                <Lock className="h-4 w-4" />
+                Clear temporary access
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleGeneratePassword}
+              onClick={handleGenerateTemporaryAccess}
               className="flex items-center gap-1"
+              title="Generate a temporary password to log in as this business. Does not change the business admin's real password."
             >
               <Key className="h-4 w-4" />
-              Generate New Password
+              Generate temporary access
             </Button>
             <Button
               variant="danger"
@@ -802,6 +871,8 @@ export default function BusinessDetailPage() {
         businessName={credentialsModal.businessName}
         email={credentialsModal.email}
         password={credentialsModal.password}
+        isTemporary={credentialsModal.isTemporary}
+        expiresAt={credentialsModal.expiresAt}
       />
     </>
   );

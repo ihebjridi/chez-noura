@@ -495,13 +495,14 @@ export class BusinessesService {
   }
 
   /**
-   * Generate a new password for business admin
+   * Generate a temporary password for super admin to investigate the business account.
+   * Does NOT change the business admin's real password. Login accepts either the real
+   * password or this temporary one until it expires or is cleared.
    */
   async generateNewPassword(
     businessId: string,
     user: TokenPayload,
-  ): Promise<{ email: string; temporaryPassword: string }> {
-    // Find the business
+  ): Promise<{ email: string; temporaryPassword: string; expiresAt: string }> {
     const business = await this.prisma.business.findUnique({
       where: { id: businessId },
     });
@@ -510,7 +511,6 @@ export class BusinessesService {
       throw new NotFoundException(`Business with ID ${businessId} not found`);
     }
 
-    // Find the business admin user
     const adminUser = await this.prisma.user.findFirst({
       where: {
         businessId: businessId,
@@ -522,66 +522,110 @@ export class BusinessesService {
       throw new NotFoundException('Business admin user not found');
     }
 
-    // Generate new temporary password
     const temporaryPassword = this.generateTemporaryPassword();
-    const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+    const hashedTemp = await bcrypt.hash(temporaryPassword, 10);
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    // Update password in a transaction to ensure atomicity and immediate persistence
-    // The transaction ensures the password is committed to the database before proceeding
-    let updatedUser;
     try {
-      updatedUser = await this.prisma.$transaction(async (tx) => {
-        const user = await tx.user.update({
+      await this.prisma.$transaction(async (tx) => {
+        await tx.user.update({
           where: { id: adminUser.id },
-          data: { password: hashedPassword },
+          data: {
+            temporaryPasswordHash: hashedTemp,
+            temporaryPasswordExpiresAt: expiresAt,
+          },
         });
-
-        // Verify update succeeded - ensure we got a user object back
-        if (!user) {
-          throw new Error('Failed to update password: user not found after update');
-        }
-
-        return user;
       });
     } catch (error) {
-      // If database update fails, throw error immediately - don't proceed with logging/email
-      console.error('Failed to update password in database:', error);
+      console.error('Failed to set temporary password in database:', error);
       throw new BadRequestException(
-        'Failed to update password in database. Please try again.',
+        'Failed to set temporary password. Please try again.',
       );
     }
 
-    // Only proceed with non-critical operations after confirming password was saved
-    // Log password generation activity
     try {
       await this.activityLogsService.create({
         userId: user.userId,
         businessId: businessId,
-        action: 'PASSWORD_RESET',
+        action: 'TEMPORARY_PASSWORD_GENERATED',
         details: JSON.stringify({
           adminEmail: adminUser.email,
-          resetBy: user.userId,
+          generatedBy: user.userId,
+          expiresAt: expiresAt.toISOString(),
         }),
       });
     } catch (error) {
-      // Don't fail password reset if logging fails
-      console.error('Failed to log password reset activity:', error);
+      console.error('Failed to log temporary password activity:', error);
     }
 
-    // Send password reset email
-    try {
-      await this.mailingService.sendPasswordResetEmail(
-        adminUser.email,
-        temporaryPassword,
-      );
-    } catch (error) {
-      // Don't fail password reset if email fails
-      console.error('Failed to send password reset email:', error);
-    }
-
+    // Do NOT send email to the business - temp password is for super admin only
     return {
       email: adminUser.email,
       temporaryPassword,
+      expiresAt: expiresAt.toISOString(),
+    };
+  }
+
+  /**
+   * Clear the temporary password for a business admin. The real password is unchanged.
+   */
+  async clearTemporaryPassword(
+    businessId: string,
+    user: TokenPayload,
+  ): Promise<void> {
+    const adminUser = await this.prisma.user.findFirst({
+      where: {
+        businessId,
+        role: UserRole.BUSINESS_ADMIN,
+      },
+    });
+
+    if (!adminUser) {
+      throw new NotFoundException('Business admin user not found');
+    }
+
+    await this.prisma.user.update({
+      where: { id: adminUser.id },
+      data: {
+        temporaryPasswordHash: null,
+        temporaryPasswordExpiresAt: null,
+      },
+    });
+
+    try {
+      await this.activityLogsService.create({
+        userId: user.userId,
+        businessId,
+        action: 'TEMPORARY_PASSWORD_CLEARED',
+        details: JSON.stringify({ adminEmail: adminUser.email, clearedBy: user.userId }),
+      });
+    } catch (error) {
+      console.error('Failed to log clear temporary password activity:', error);
+    }
+  }
+
+  /**
+   * Get temporary access status for a business admin (SUPER_ADMIN only).
+   */
+  async getTemporaryAccessStatus(
+    businessId: string,
+  ): Promise<{ hasTemporaryPassword: boolean; expiresAt?: string }> {
+    const adminUser = await this.prisma.user.findFirst({
+      where: { businessId, role: UserRole.BUSINESS_ADMIN },
+    });
+
+    if (!adminUser) {
+      return { hasTemporaryPassword: false };
+    }
+
+    const hasTemp =
+      !!adminUser.temporaryPasswordHash &&
+      (!adminUser.temporaryPasswordExpiresAt ||
+        adminUser.temporaryPasswordExpiresAt > new Date());
+
+    return {
+      hasTemporaryPassword: hasTemp,
+      expiresAt: adminUser.temporaryPasswordExpiresAt?.toISOString(),
     };
   }
 

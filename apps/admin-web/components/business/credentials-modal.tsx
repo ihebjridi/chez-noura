@@ -10,6 +10,9 @@ interface CredentialsModalProps {
   businessName: string;
   email: string;
   password: string;
+  /** When true, shows that this is temporary access for investigation and does not change the real password */
+  isTemporary?: boolean;
+  expiresAt?: string;
 }
 
 export function CredentialsModal({
@@ -18,6 +21,8 @@ export function CredentialsModal({
   businessName,
   email,
   password,
+  isTemporary = false,
+  expiresAt,
 }: CredentialsModalProps) {
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [copiedPassword, setCopiedPassword] = useState(false);
@@ -68,9 +73,17 @@ export function CredentialsModal({
 
         {/* Content */}
         <div className="p-6 space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800">
-              <strong>Important:</strong> Save these credentials securely. They will be needed for the business admin to log in.
+          <div className={`rounded-lg p-4 border ${isTemporary ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'}`}>
+            <p className={`text-sm ${isTemporary ? 'text-amber-800' : 'text-blue-800'}`}>
+              {isTemporary ? (
+                <>
+                  <strong>Temporary access for investigation.</strong> This does not change the business admin&apos;s real password. Use these credentials to log in as the business; the business admin can still log in with their existing password. Valid until {expiresAt ? new Date(expiresAt).toLocaleString() : 'expiry'}.
+                </>
+              ) : (
+                <>
+                  <strong>Important:</strong> Save these credentials securely. They will be needed for the business admin to log in.
+                </>
+              )}
             </p>
           </div>
 
@@ -103,7 +116,7 @@ export function CredentialsModal({
           {/* Password Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Temporary Password
+              {isTemporary ? 'Temporary access password' : 'Password'}
             </label>
             <div className="flex items-center gap-2">
               <input

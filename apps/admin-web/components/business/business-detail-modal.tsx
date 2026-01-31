@@ -194,11 +194,11 @@ export function BusinessDetailModal({
                   onGeneratePassword();
                 }}
                 disabled={isLoading}
-                title="Generate New Password"
+                title="Generate a temporary password to log in as this business. Does not change the business admin's real password."
                 className="flex items-center gap-1"
               >
                 <Key className="h-4 w-4" />
-                New Password
+                Temporary access
               </Button>
               <Button
                 variant="danger"

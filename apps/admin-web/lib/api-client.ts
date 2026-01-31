@@ -299,11 +299,29 @@ class ApiClient {
   async generateBusinessAdminPassword(businessId: string): Promise<{
     email: string;
     temporaryPassword: string;
+    expiresAt: string;
   }> {
     return this.request<{
       email: string;
       temporaryPassword: string;
+      expiresAt: string;
     }>(`/businesses/${businessId}/generate-password`, {
+      method: 'POST',
+    });
+  }
+
+  async getBusinessTemporaryAccessStatus(businessId: string): Promise<{
+    hasTemporaryPassword: boolean;
+    expiresAt?: string;
+  }> {
+    return this.request<{
+      hasTemporaryPassword: boolean;
+      expiresAt?: string;
+    }>(`/businesses/${businessId}/temporary-access`);
+  }
+
+  async clearBusinessTemporaryPassword(businessId: string): Promise<void> {
+    return this.request<void>(`/businesses/${businessId}/clear-temporary-password`, {
       method: 'POST',
     });
   }

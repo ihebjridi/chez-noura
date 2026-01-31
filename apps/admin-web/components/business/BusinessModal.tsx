@@ -102,6 +102,8 @@ export function BusinessModal({
     businessName: string;
     email: string;
     password: string;
+    isTemporary?: boolean;
+    expiresAt?: string;
   }>({
     isOpen: false,
     businessName: '',
@@ -306,7 +308,7 @@ export function BusinessModal({
     }
   };
 
-  const handleGeneratePassword = async () => {
+  const handleGenerateTemporaryAccess = async () => {
     if (!businessId || !business) return;
     try {
       setError('');
@@ -316,9 +318,11 @@ export function BusinessModal({
         businessName: business.name,
         email: result.email,
         password: result.temporaryPassword,
+        isTemporary: true,
+        expiresAt: result.expiresAt,
       });
     } catch (err: any) {
-      setError(err.message || 'Failed to generate password');
+      setError(err.message || 'Failed to generate temporary access');
     }
   };
 
@@ -729,11 +733,12 @@ export function BusinessModal({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={handleGeneratePassword}
+                        onClick={handleGenerateTemporaryAccess}
                         className="flex items-center gap-1"
+                        title="Generate a temporary password to log in as this business. Does not change the business admin's real password."
                       >
                         <Key className="h-4 w-4" />
-                        Generate New Password
+                        Generate temporary access
                       </Button>
                       {onDelete && (
                         <Button
@@ -807,6 +812,8 @@ export function BusinessModal({
         businessName={credentialsModal.businessName}
         email={credentialsModal.email}
         password={credentialsModal.password}
+        isTemporary={credentialsModal.isTemporary}
+        expiresAt={credentialsModal.expiresAt}
       />
     </>
   );

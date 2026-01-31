@@ -64,15 +64,30 @@ export class AuthService {
         return null;
       }
 
-      if (!user.password) {
-        console.error(`User ${email} (${user.role}) has no password set`);
-        return null;
-      }
-
-      const isPasswordValid = await this.comparePassword(password, user.password);
-      if (!isPasswordValid) {
-        console.error(`Password validation failed for user ${email}`);
-        return null;
+      // BUSINESS_ADMIN: accept main password or temporary (investigation) password
+      if (user.role === UserRole.BUSINESS_ADMIN) {
+        const mainValid =
+          user.password && (await this.comparePassword(password, user.password));
+        const tempValid =
+          user.temporaryPasswordHash &&
+          (await this.comparePassword(password, user.temporaryPasswordHash)) &&
+          (!user.temporaryPasswordExpiresAt ||
+            user.temporaryPasswordExpiresAt > new Date());
+        if (!mainValid && !tempValid) {
+          console.error(`Password validation failed for user ${email}`);
+          return null;
+        }
+      } else {
+        // SUPER_ADMIN: only main password
+        if (!user.password) {
+          console.error(`User ${email} (${user.role}) has no password set`);
+          return null;
+        }
+        const isPasswordValid = await this.comparePassword(password, user.password);
+        if (!isPasswordValid) {
+          console.error(`Password validation failed for user ${email}`);
+          return null;
+        }
       }
     }
 
