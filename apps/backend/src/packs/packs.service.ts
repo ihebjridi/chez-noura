@@ -8,15 +8,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   PackDto,
   PackWithComponentsDto,
-  AvailablePackDto,
   CreatePackDto,
   UpdatePackDto,
   CreatePackComponentDto,
   PackComponentDto,
   TokenPayload,
   UserRole,
-  AvailableComponentDto,
-  AvailableVariantDto,
   PackStatisticsDto,
   RecentOrderDto,
   ComponentPackUsageDto,
@@ -345,135 +342,6 @@ export class PacksService {
       required: pc.required,
       orderIndex: pc.orderIndex,
     }));
-  }
-
-  /**
-   * Get available packs with components and variants for a specific date
-   * Only shows packs and variants from PUBLISHED DailyMenu
-   * Only shows variants with available stock from DailyMenuVariant
-   */
-  async getAvailablePacks(date: string): Promise<AvailablePackDto[]> {
-    const orderDate = new Date(date);
-    if (isNaN(orderDate.getTime())) {
-      throw new BadRequestException('Invalid date format. Use YYYY-MM-DD');
-    }
-    orderDate.setHours(0, 0, 0, 0);
-
-    // Find PUBLISHED DailyMenu for this date
-    const dailyMenu = await this.prisma.dailyMenu.findUnique({
-      where: { date: orderDate },
-      include: {
-        packs: {
-          include: {
-            pack: {
-              include: {
-                packComponents: {
-                  include: {
-                    component: true,
-                  },
-                  orderBy: {
-                    orderIndex: 'asc',
-                  },
-                },
-              },
-            },
-          },
-        },
-        variants: {
-          include: {
-            variant: {
-              include: {
-                component: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!dailyMenu) {
-      throw new NotFoundException(`No published menu found for date ${date}`);
-    }
-
-    if (dailyMenu.status !== 'PUBLISHED') {
-      throw new BadRequestException(
-        `Menu for date ${date} is not published. Current status: ${dailyMenu.status}`,
-      );
-    }
-
-    // Build variant map from DailyMenuVariant (using initialStock)
-    const variantStockMap = new Map<string, number>();
-    const variantMap = new Map<string, any>();
-    for (const dailyMenuVariant of dailyMenu.variants) {
-      variantStockMap.set(dailyMenuVariant.variantId, dailyMenuVariant.initialStock);
-      variantMap.set(dailyMenuVariant.variantId, dailyMenuVariant.variant);
-    }
-
-    // Filter packs that have at least one variant for each required component
-    const availablePacks: AvailablePackDto[] = [];
-
-    for (const dailyMenuPack of dailyMenu.packs) {
-      const pack = dailyMenuPack.pack;
-      const components: AvailableComponentDto[] = [];
-
-      for (const packComponent of pack.packComponents) {
-        const component = packComponent.component;
-        
-        // Get variants for this component from DailyMenu
-        const availableVariants: AvailableVariantDto[] = [];
-        for (const [variantId, variant] of variantMap.entries()) {
-          if (variant.componentId === component.id && variant.isActive) {
-            const stock = variantStockMap.get(variantId) || 0;
-            if (stock > 0) {
-              availableVariants.push({
-                id: variant.id,
-                name: variant.name,
-                stockQuantity: stock,
-                isActive: variant.isActive,
-              });
-            }
-          }
-        }
-
-        // Sort variants by name
-        availableVariants.sort((a, b) => a.name.localeCompare(b.name));
-
-        // If component is required and has no available variants, skip this pack
-        if (packComponent.required && availableVariants.length === 0) {
-          break; // Skip to next pack
-        }
-
-        components.push({
-          id: component.id,
-          name: component.name,
-          required: packComponent.required,
-          orderIndex: packComponent.orderIndex,
-          variants: availableVariants,
-        });
-      }
-
-      // Only include pack if all required components have variants
-      const allRequiredHaveVariants = pack.packComponents
-        .filter((pc) => pc.required)
-        .every((pc) => {
-          const component = components.find((c) => c.id === pc.componentId);
-          return component && component.variants.length > 0;
-        });
-
-      if (allRequiredHaveVariants) {
-        availablePacks.push({
-          id: pack.id,
-          name: pack.name,
-          price: Number(pack.price),
-          isActive: pack.isActive,
-          createdAt: pack.createdAt.toISOString(),
-          updatedAt: pack.updatedAt.toISOString(),
-          components,
-        });
-      }
-    }
-
-    return availablePacks;
   }
 
   private mapPackToDto(pack: any): PackDto {

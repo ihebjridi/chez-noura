@@ -31,7 +31,10 @@ export class OrdersController {
   @Roles(UserRole.EMPLOYEE)
   @BusinessScoped()
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 requests per minute
-  @ApiOperation({ summary: 'Create a new order (idempotent)' })
+  @ApiOperation({
+    summary: 'Create a new order (idempotent)',
+    description: 'Legacy: uses pack-level stock only. Prefer POST /employee/orders for service-aware ordering.',
+  })
   @ApiHeader({
     name: 'x-idempotency-key',
     required: false,

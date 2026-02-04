@@ -27,9 +27,10 @@ export class OrdersService {
   ) {}
 
   /**
-   * Create a new order
-   * Only EMPLOYEE can create orders
-   * Idempotent: prevents duplicate orders per employee per day
+   * Create a new order (legacy endpoint).
+   * Uses pack-level DailyMenuVariant only; no per-service stock.
+   * Primary employee flow: POST /employee/orders (EmployeeOrdersService) with dailyMenuId + selectedVariants.
+   * Only EMPLOYEE can create orders. Idempotent: prevents duplicate orders per employee per day.
    */
   async createOrder(
     createOrderDto: CreateOrderDto,

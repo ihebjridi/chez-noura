@@ -29,7 +29,7 @@ export class EmployeeMenuService {
     const [year, month, day] = date.split('-').map(Number);
     const dateObj = new Date(year, month - 1, day, 0, 0, 0, 0);
 
-    // Resolve businessId: use from token, or for employees load from Employee record (handles legacy users without User.businessId)
+    // Resolve businessId: use from token, or for employees load from Employee record (handles users without User.businessId)
     let businessId: string | undefined = user.businessId;
     if (!businessId && user.employeeId) {
       const employee = await this.prisma.employee.findUnique({
@@ -168,7 +168,7 @@ export class EmployeeMenuService {
     /**
      * Get variants for a component valid for a given pack.
      * Stock is per service: packs with a service use only that service's variants (and stock).
-     * Packs without a service (legacy) use pack-level only.
+     * Packs without a service use pack-level variants only.
      */
     const getVariantsForPackComponent = (
       packId: string,
@@ -271,7 +271,7 @@ export class EmployeeMenuService {
         }
         // Only show packs whose service is currently within its order window
         const serviceId = packToServiceMap.get(dailyMenuPack.pack.id);
-        if (!serviceId) return true; // pack not attached to a service: show (e.g. legacy)
+        if (!serviceId) return true; // pack not attached to a service: show
         return serviceIdsInWindow.has(serviceId);
       })
       .map((dailyMenuPack) => {

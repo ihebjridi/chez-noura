@@ -4,7 +4,6 @@ import {
   MealDto,
   CreateOrderDto,
   OrderDto,
-  AvailablePackDto,
   EmployeeMenuDto,
   CreateEmployeeOrderDto,
   BusinessDto,
@@ -131,20 +130,7 @@ class ApiClient {
     }
   }
 
-  // Pack endpoints
-  async getAvailablePacks(date: string): Promise<AvailablePackDto[]> {
-    try {
-      const packs = await this.request<AvailablePackDto[]>(`/packs/available?date=${date}`, {}, true);
-      return packs;
-    } catch (error: any) {
-      if (error.message === 'BACKEND_DEGRADED') {
-        throw new Error('Backend is unavailable. Please try again later.');
-      }
-      throw error;
-    }
-  }
-
-  // Order endpoints
+  // Order endpoints (legacy POST /orders; app uses createEmployeeOrder)
   async createOrder(data: CreateOrderDto, idempotencyKey?: string): Promise<OrderDto> {
     // Never use cache for write operations
     if (this.degradedMode) {

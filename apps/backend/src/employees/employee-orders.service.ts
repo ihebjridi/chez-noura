@@ -287,7 +287,7 @@ export class EmployeeOrdersService {
         }
       }
     } else {
-      // If pack doesn't belong to a service (legacy), check for any existing order (backward compatibility)
+      // If pack doesn't belong to a service, allow only one order per day for that employee
       const existingOrder = await this.prisma.order.findFirst({
         where: {
           employeeId: user.employeeId,
@@ -341,7 +341,7 @@ export class EmployeeOrdersService {
             }
           }
         } else {
-          // Legacy: check for any existing order if pack doesn't belong to a service
+          // Pack without service: check for any existing order (one order per day)
           const existingOrderInTx = await tx.order.findFirst({
             where: {
               employeeId: user.employeeId,

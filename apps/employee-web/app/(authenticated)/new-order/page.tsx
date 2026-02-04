@@ -85,7 +85,7 @@ function NewOrderContent() {
       // Filter packs: only show packs for services without orders
       const availablePacks = menuData.packs.filter((pack) => {
         if (!pack.serviceId) {
-          // Legacy pack: only show if no orders exist
+          // Pack without service: only show if no orders exist (one order per day)
           return orders.length === 0;
         }
         // Service pack: only show if service doesn't have an order
@@ -184,7 +184,7 @@ function NewOrderContent() {
         return;
       }
     } else if (existingOrders.length > 0) {
-      // Legacy pack without service - only allow one order per day
+      // Pack without service: only allow one order per day
       setError(t('common.messages.alreadyOrderedDate'));
       return;
     }
@@ -343,7 +343,7 @@ function NewOrderContent() {
             </div>
           );
         } else if (menu.cutoffTime && availableServiceIds.size === 0) {
-          // Legacy: show global cutoff if no service-specific windows
+          // Show global cutoff when no service-specific windows apply
           return (
             <div className="mb-4">
               <CutoffCountdown cutoffTime={menu.cutoffTime} />

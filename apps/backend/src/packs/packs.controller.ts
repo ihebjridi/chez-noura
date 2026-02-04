@@ -17,7 +17,6 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
-  ApiQuery,
 } from '@nestjs/swagger';
 import { PacksService } from './packs.service';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards';
@@ -25,7 +24,6 @@ import { Roles, CurrentUser } from '../auth/decorators';
 import {
   PackDto,
   PackWithComponentsDto,
-  AvailablePackDto,
   TokenPayload,
   UserRole,
   CreatePackComponentDto,
@@ -67,26 +65,6 @@ export class PacksController {
   })
   async findAll(@CurrentUser() user?: TokenPayload): Promise<PackDto[]> {
     return this.packsService.findAll(user);
-  }
-
-  @Get('available')
-  @Roles(UserRole.EMPLOYEE)
-  @ApiOperation({ summary: 'Get available packs with components and variants for a date' })
-  @ApiQuery({
-    name: 'date',
-    required: true,
-    description: 'Date to check availability (YYYY-MM-DD)',
-    example: '2024-01-15',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'List of available packs with stock information',
-  })
-  @ApiResponse({ status: 400, description: 'Invalid date format' })
-  async getAvailablePacks(
-    @Query('date') date: string,
-  ): Promise<AvailablePackDto[]> {
-    return this.packsService.getAvailablePacks(date);
   }
 
   @Get(':id')
