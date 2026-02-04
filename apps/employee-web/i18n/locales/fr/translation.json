@@ -203,6 +203,7 @@
   },
   "newOrder": {
     "title": "Nouvelle commande",
+    "orderingFor": "Commande pour",
     "loadingOrderDetails": "Chargement des détails de la commande...",
     "confirmYourOrder": "Confirmer votre commande",
     "backToMenu": "Retour au menu",

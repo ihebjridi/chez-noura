@@ -1,5 +1,6 @@
 'use client';
 
+/** Sidebar (desktop) / hamburger + bottom nav (mobile), and page transition wrapper for main content. */
 import { useState, ReactNode, Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
@@ -8,10 +9,10 @@ import { Logo } from '../logo';
 import { LanguageSwitcher } from '../language-switcher';
 import { useAuth } from '../../contexts/auth-context';
 import { BottomNavigation } from './BottomNavigation';
+import { PageTransitionWrapper } from './PageTransitionWrapper';
 import {
   Calendar,
   Plus,
-  CalendarDays,
   History,
   Menu,
   X,
@@ -125,23 +126,32 @@ function NavigationContent({ children }: ClientSidebarLayoutProps) {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile header */}
         <header className="lg:hidden bg-surface border-b border-surface-dark shadow-sm">
-          <div className="flex items-center justify-between h-16 px-4">
+          <div className="flex items-center justify-between h-16 px-4 gap-2">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-surface-light"
+              className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-surface-light min-h-[44px] min-w-[44px] flex items-center justify-center"
+              aria-label="Menu"
             >
               <Menu className="h-6 w-6" />
             </button>
             <Logo className="flex-1 justify-center" />
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <LanguageSwitcher />
+              <button
+                onClick={() => logout()}
+                className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-surface-light min-h-[44px] min-w-[44px] flex items-center justify-center"
+                aria-label={t('common.buttons.logout')}
+                title={t('common.buttons.logout')}
+              >
+                <LogOut className="h-5 w-5" />
+              </button>
             </div>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto pb-16 lg:pb-0">
-          {children}
+        <main className="flex-1 overflow-y-auto pb-16 lg:pb-0 flex flex-col min-h-0">
+          <PageTransitionWrapper>{children}</PageTransitionWrapper>
         </main>
       </div>
       

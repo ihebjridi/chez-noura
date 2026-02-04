@@ -8,6 +8,7 @@ import { OrderDto, OrderStatus } from '@contracts/core';
 import { Loading } from '../../../components/ui/loading';
 import { Error } from '../../../components/ui/error';
 import { Empty } from '../../../components/ui/empty';
+import { useToast } from '../../../components/notifications';
 import { CollapsibleSection } from '../../../components/layouts/CollapsibleSection';
 import { CheckCircle, Clock, X, Package, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getTodayISO, getTomorrowISO } from '../../../lib/date-utils';
@@ -18,17 +19,17 @@ function OrderHistoryContent() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { showToast } = useToast();
   const [orders, setOrders] = useState<OrderDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 5000);
+      showToast({ type: 'success', message: t('common.messages.orderPlacedSuccess') });
+      router.replace('/calendar', { scroll: false });
     }
     loadOrders();
   }, [searchParams]);
@@ -158,16 +159,6 @@ function OrderHistoryContent() {
         </p>
       </div>
 
-      {/* Success Message */}
-      {success && (
-        <div className="mb-4 p-4 bg-success-50 border border-success-300 text-success-700 rounded-lg">
-          <div className="flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 flex-shrink-0" />
-            <p className="text-sm font-semibold">{t('common.messages.orderPlacedSuccess')}</p>
-          </div>
-        </div>
-      )}
-
       {/* Orders List */}
       {orders.length === 0 ? (
         <div className="bg-white border-2 border-gray-200 rounded-2xl shadow-md p-8 w-full max-w-md mx-auto">
@@ -213,14 +204,20 @@ function OrderHistoryContent() {
                         key={order.id}
                         title={
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 w-full pr-2">
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
                               <Package className="w-4 h-4 text-primary-600 flex-shrink-0" />
-                              <span className="font-semibold text-sm sm:text-base truncate">
-                                {order.packName}
-                              </span>
-                              {order.serviceName && (
-                                <span className="px-2 py-0.5 text-xs font-medium bg-primary-100 text-primary-700 rounded flex-shrink-0">
-                                  {order.serviceName}
+                              {order.serviceName ? (
+                                <>
+                                  <span className="font-semibold text-sm sm:text-base truncate text-gray-900">
+                                    {order.serviceName}
+                                  </span>
+                                  <span className="text-sm text-gray-600 truncate">
+                                    {order.packName}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="font-semibold text-sm sm:text-base truncate text-gray-900">
+                                  {order.packName}
                                 </span>
                               )}
                             </div>

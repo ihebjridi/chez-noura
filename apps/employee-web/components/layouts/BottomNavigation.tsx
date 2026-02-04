@@ -25,8 +25,11 @@ export function BottomNavigation() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t-2 border-gray-200 lg:hidden">
-      <div className="grid grid-cols-4 h-16">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-surface-dark lg:hidden safe-area-pb"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0)' }}
+    >
+      <div className="grid grid-cols-4 h-16 min-h-[64px]">
         {navigation.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
@@ -35,28 +38,29 @@ export function BottomNavigation() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex flex-col items-center justify-center gap-1 transition-all duration-200',
-                active
-                  ? 'text-primary-600'
-                  : 'text-gray-500'
+                'flex flex-col items-center justify-center gap-0.5 min-h-[44px] min-w-0 touch-manipulation overflow-hidden px-1',
+                active ? 'text-primary-600' : 'text-gray-500'
               )}
             >
-              <div className={cn(
-                'relative flex items-center justify-center',
-                active && 'transform scale-110'
-              )}>
-                <Icon className={cn(
-                  'w-6 h-6 transition-all duration-200',
-                  active && 'text-primary-600'
-                )} />
-                {active && (
-                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-primary-600" />
+              <div
+                className={cn(
+                  'relative flex items-center justify-center w-10 h-8 flex-shrink-0 rounded-xl transition-all duration-200',
+                  active && 'bg-primary-100 scale-105'
                 )}
+              >
+                <Icon
+                  className={cn(
+                    'w-6 h-6 transition-all duration-200 flex-shrink-0',
+                    active && 'text-primary-600'
+                  )}
+                />
               </div>
-              <span className={cn(
-                'text-xs font-medium transition-all duration-200',
-                active ? 'text-primary-600' : 'text-gray-500'
-              )}>
+              <span
+                className={cn(
+                  'text-[10px] font-medium leading-tight truncate max-w-full text-center transition-all duration-200',
+                  active ? 'text-primary-600' : 'text-gray-500'
+                )}
+              >
                 {item.name}
               </span>
             </Link>

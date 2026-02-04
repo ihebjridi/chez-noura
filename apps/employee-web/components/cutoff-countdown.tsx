@@ -8,6 +8,8 @@ interface CutoffCountdownProps {
   cutoffTime: string; // ISO datetime string
   /** Optional label (e.g. service name) shown above the countdown */
   label?: string;
+  /** When true, no outer margin (for use inside a card) */
+  embedded?: boolean;
 }
 
 function TimeCard({ value, label, isUrgent }: { value: number; label: string; isUrgent: boolean }) {
@@ -44,7 +46,7 @@ function TimeCard({ value, label, isUrgent }: { value: number; label: string; is
   );
 }
 
-export function CutoffCountdown({ cutoffTime, label }: CutoffCountdownProps) {
+export function CutoffCountdown({ cutoffTime, label, embedded }: CutoffCountdownProps) {
   const { t } = useTranslation();
   const [timeRemaining, setTimeRemaining] = useState<{
     hours: number;
@@ -121,7 +123,7 @@ export function CutoffCountdown({ cutoffTime, label }: CutoffCountdownProps) {
 
   if (timeRemaining.isExpired) {
     return (
-      <div className="mx-4 mt-4 p-5 bg-gradient-to-br from-warning-50 to-warning-100 border-2 border-warning-300 rounded-xl shadow-lg">
+      <div className={`p-5 bg-gradient-to-br from-warning-50 to-warning-100 border-2 border-warning-300 rounded-xl shadow-lg ${embedded ? '' : 'mx-4 mt-4'}`}>
         <div className="flex items-center gap-3">
           <div className="p-2 bg-warning-500 rounded-lg">
             <AlertCircle className="w-5 h-5 text-white" />
@@ -145,7 +147,8 @@ export function CutoffCountdown({ cutoffTime, label }: CutoffCountdownProps) {
   return (
     <div
       className={`
-        mx-4 mt-4 p-5 sm:p-6 rounded-2xl
+        p-5 sm:p-6 rounded-2xl
+        ${embedded ? '' : 'mx-4 mt-4'}
         border-2 transition-all duration-300
         ${
           isVeryUrgent

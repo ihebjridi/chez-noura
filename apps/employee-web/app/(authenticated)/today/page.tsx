@@ -15,22 +15,16 @@ import { getLatestServiceCutoff } from '../../../lib/service-window-utils';
 export default function TodayPage() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [todayOrders, setTodayOrders] = useState<OrderDto[]>([]);
   const [menu, setMenu] = useState<EmployeeMenuDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
 
   const today = getTodayISO();
 
   useEffect(() => {
-    if (searchParams.get('success') === 'true') {
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 5000);
-    }
     loadData();
-  }, [searchParams]);
+  }, []);
 
   const loadData = async () => {
     try {
@@ -142,16 +136,6 @@ export default function TodayPage() {
         </p>
       </div>
 
-      {/* Success Message */}
-      {success && (
-        <div className="mb-4 p-4 bg-success-50 border border-success-300 text-success-700 rounded-lg">
-          <div className="flex items-center gap-2">
-            <CheckCircle className="w-5 h-5" />
-            <p className="text-sm font-semibold">{t('common.messages.orderPlacedSuccess')}</p>
-          </div>
-        </div>
-      )}
-
       {/* Today's Orders */}
       {todayOrders.length > 0 ? (
         <div className="space-y-4">
@@ -188,14 +172,20 @@ export default function TodayPage() {
               key={order.id}
               className="bg-white border-2 border-gray-200 rounded-2xl shadow-md p-5"
             >
-              <div className="flex items-center gap-2 mb-4">
-                <Package className="w-5 h-5 text-primary-600" />
-                <h3 className="font-semibold text-gray-900 text-lg">{order.packName}</h3>
-                {order.serviceName && (
-                  <span className="px-2 py-0.5 text-xs font-medium bg-primary-100 text-primary-700 rounded">
-                    {order.serviceName}
-                  </span>
-                )}
+              <div className="mb-4">
+                <div className="flex items-center gap-2">
+                  <Package className="w-5 h-5 text-primary-600 flex-shrink-0" />
+                  {order.serviceName ? (
+                    <>
+                      <h3 className="font-semibold text-gray-900 text-lg">{order.serviceName}</h3>
+                      <span className="px-2 py-0.5 text-sm font-medium text-gray-600 bg-gray-100 rounded">
+                        {order.packName}
+                      </span>
+                    </>
+                  ) : (
+                    <h3 className="font-semibold text-gray-900 text-lg">{order.packName}</h3>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2 mb-4">
