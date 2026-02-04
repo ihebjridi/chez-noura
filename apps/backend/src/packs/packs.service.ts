@@ -238,13 +238,20 @@ export class PacksService {
       throw new ForbiddenException('Only SUPER_ADMIN can remove components from packs');
     }
 
-    // Verify pack exists
+    // Verify pack exists and load component count
     const pack = await this.prisma.pack.findUnique({
       where: { id: packId },
+      include: { packComponents: true },
     });
 
     if (!pack) {
       throw new NotFoundException(`Pack with ID ${packId} not found`);
+    }
+
+    if (pack.packComponents.length <= 1) {
+      throw new BadRequestException(
+        'A pack must have at least one component. Cannot remove the last component.',
+      );
     }
 
     // Check if pack component exists

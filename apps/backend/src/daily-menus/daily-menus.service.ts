@@ -723,76 +723,130 @@ export class DailyMenusService {
 
       const warnings: string[] = [];
 
-      // Check guardrails
+      // Blocking hierarchy validation: daily menu must have at least one service
+      if (menu.services.length === 0) {
+        throw new BadRequestException(
+          'Daily menu must have at least one service before publishing.',
+        );
+      }
+
+      // Blocking: each service on the menu must have at least one pack on the menu
+      const menuPackIds = new Set(menu.packs.map((p) => p.packId));
+      for (const dailyMenuService of menu.services) {
+        const hasPackOnMenu = dailyMenuService.service.servicePacks.some((sp) =>
+          menuPackIds.has(sp.packId),
+        );
+        if (!hasPackOnMenu) {
+          throw new BadRequestException(
+            `Service "${dailyMenuService.service.name}" has no packs on this menu. Each service must have at least one pack.`,
+          );
+        }
+      }
+
+      // Pack -> service mapping (packs on the menu that belong to a service on the menu)
+      const packToServiceMap = new Map<string, string>();
+      for (const dailyMenuService of menu.services) {
+        for (const servicePack of dailyMenuService.service.servicePacks) {
+          packToServiceMap.set(servicePack.packId, dailyMenuService.serviceId);
+        }
+      }
+
+      // Blocking: each pack must have at least one component
       for (const dailyMenuPack of menu.packs) {
         const pack = dailyMenuPack.pack;
+        if (!pack.packComponents || pack.packComponents.length === 0) {
+          throw new BadRequestException(
+            `Pack "${pack.name}" has no components. Each pack must have at least one component.`,
+          );
+        }
+      }
 
-        // Check if pack has all required components
+      // Blocking: each component in each pack must have at least one variant with stock > 0
+      for (const dailyMenuPack of menu.packs) {
+        const pack = dailyMenuPack.pack;
+        const serviceId = packToServiceMap.get(pack.id);
+        const dailyMenuService = serviceId
+          ? menu.services.find((s) => s.serviceId === serviceId)
+          : undefined;
+
+        const variantCountByComponentWithStock = new Map<string, Set<string>>();
+        if (dailyMenuService) {
+          for (const v of dailyMenuService.variants) {
+            if (v.initialStock <= 0) continue;
+            const cid = v.variant.componentId;
+            if (!variantCountByComponentWithStock.has(cid)) {
+              variantCountByComponentWithStock.set(cid, new Set());
+            }
+            variantCountByComponentWithStock.get(cid)!.add(v.variantId);
+          }
+        } else {
+          for (const v of menu.variants) {
+            if (v.initialStock <= 0) continue;
+            const cid = v.variant.componentId;
+            if (!variantCountByComponentWithStock.has(cid)) {
+              variantCountByComponentWithStock.set(cid, new Set());
+            }
+            variantCountByComponentWithStock.get(cid)!.add(v.variantId);
+          }
+        }
+
+        for (const packComponent of pack.packComponents) {
+          const variantIds = variantCountByComponentWithStock.get(packComponent.componentId);
+          const variantCount = variantIds ? variantIds.size : 0;
+          if (variantCount === 0) {
+            throw new BadRequestException(
+              `Component "${packComponent.component.name}" in pack "${pack.name}" has no variants with available stock.`,
+            );
+          }
+        }
+      }
+
+      // Non-blocking guardrails: stock is per service — packs with service use only that service's variants; packs without use pack-level
+      for (const dailyMenuPack of menu.packs) {
+        const pack = dailyMenuPack.pack;
+        const serviceId = packToServiceMap.get(pack.id);
+        const dailyMenuService = serviceId
+          ? menu.services.find((s) => s.serviceId === serviceId)
+          : undefined;
+
+        const componentIds = new Set<string>();
+        const variantCountByComponent = new Map<string, Set<string>>();
+        if (dailyMenuService) {
+          for (const v of dailyMenuService.variants) {
+            componentIds.add(v.variant.componentId);
+            const cid = v.variant.componentId;
+            if (!variantCountByComponent.has(cid)) {
+              variantCountByComponent.set(cid, new Set());
+            }
+            variantCountByComponent.get(cid)!.add(v.variantId);
+          }
+        } else {
+          for (const v of menu.variants) {
+            componentIds.add(v.variant.componentId);
+            const cid = v.variant.componentId;
+            if (!variantCountByComponent.has(cid)) {
+              variantCountByComponent.set(cid, new Set());
+            }
+            variantCountByComponent.get(cid)!.add(v.variantId);
+          }
+        }
+
         const requiredComponents = pack.packComponents.filter((pc) => pc.required);
-        const menuVariantComponentIds = new Set(
-          menu.variants.map((v) => v.variant.componentId),
-        );
-
         for (const requiredComponent of requiredComponents) {
-          if (!menuVariantComponentIds.has(requiredComponent.componentId)) {
+          if (!componentIds.has(requiredComponent.componentId)) {
             warnings.push(
               `Pack "${pack.name}" is missing required component "${requiredComponent.component.name}"`,
             );
           }
         }
 
-        // Check if components have at least 2 variants
-        const componentVariantCounts = new Map<string, number>();
-        for (const variant of menu.variants) {
-          const count = componentVariantCounts.get(variant.variant.componentId) || 0;
-          componentVariantCounts.set(variant.variant.componentId, count + 1);
-        }
-
         for (const packComponent of pack.packComponents) {
-          const variantCount = componentVariantCounts.get(packComponent.componentId) || 0;
+          const variantIds = variantCountByComponent.get(packComponent.componentId);
+          const variantCount = variantIds ? variantIds.size : 0;
           if (variantCount === 1) {
             warnings.push(
               `Component "${packComponent.component.name}" in pack "${pack.name}" has only 1 variant available`,
             );
-          }
-        }
-      }
-
-      // Check service-level variants validation
-      for (const dailyMenuService of menu.services) {
-        const service = dailyMenuService.service;
-        const serviceVariantComponentIds = new Set(
-          dailyMenuService.variants.map((v) => v.variant.componentId),
-        );
-
-        // Check all packs in the service
-        for (const servicePack of service.servicePacks) {
-          const pack = servicePack.pack;
-
-          // Check if pack has all required components covered by service variants
-          const requiredComponents = pack.packComponents.filter((pc) => pc.required);
-          for (const requiredComponent of requiredComponents) {
-            if (!serviceVariantComponentIds.has(requiredComponent.componentId)) {
-              warnings.push(
-                `Service "${service.name}" - Pack "${pack.name}" is missing required component "${requiredComponent.component.name}" (no variant activated for this component in the service)`,
-              );
-            }
-          }
-
-          // Check if components have at least 2 variants
-          const componentVariantCounts = new Map<string, number>();
-          for (const variant of dailyMenuService.variants) {
-            const count = componentVariantCounts.get(variant.variant.componentId) || 0;
-            componentVariantCounts.set(variant.variant.componentId, count + 1);
-          }
-
-          for (const packComponent of pack.packComponents) {
-            const variantCount = componentVariantCounts.get(packComponent.componentId) || 0;
-            if (variantCount === 1) {
-              warnings.push(
-                `Service "${service.name}" - Component "${packComponent.component.name}" in pack "${pack.name}" has only 1 variant available`,
-              );
-            }
           }
         }
       }
@@ -978,7 +1032,12 @@ export class DailyMenusService {
     return this.mapToDto(updated);
   }
 
-  async delete(id: string): Promise<void> {
+  /**
+   * Delete a daily menu.
+   * @param id - Daily menu ID
+   * @param withOrders - If true (dev only), delete related orders first then the menu; allows any status. If false, only DRAFT menus can be deleted and orders are not touched.
+   */
+  async delete(id: string, withOrders = false): Promise<void> {
     const menu = await this.prisma.dailyMenu.findUnique({
       where: { id },
     });
@@ -987,15 +1046,33 @@ export class DailyMenusService {
       throw new NotFoundException(`Daily menu with ID ${id} not found`);
     }
 
-    // Only allow deletion of DRAFT menus
+    if (withOrders) {
+      // Dev only: delete all orders for this menu (OrderItem cascades from Order), then delete the menu
+      await this.prisma.$transaction(async (tx) => {
+        await tx.order.deleteMany({
+          where: { dailyMenuId: id },
+        });
+        await tx.dailyMenu.delete({
+          where: { id },
+        });
+      });
+      return;
+    }
+
+    // Normal delete: only DRAFT menus; remove any related orders first (e.g. after unpublish)
     if (menu.status !== 'DRAFT') {
       throw new BadRequestException(
         `Cannot delete menu with status ${menu.status}. Only DRAFT menus can be deleted.`,
       );
     }
 
-    await this.prisma.dailyMenu.delete({
-      where: { id },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.order.deleteMany({
+        where: { dailyMenuId: id },
+      });
+      await tx.dailyMenu.delete({
+        where: { id },
+      });
     });
   }
 

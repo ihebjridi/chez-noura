@@ -614,13 +614,13 @@ class ApiClient {
     });
   }
 
-  async deleteDailyMenu(id: string): Promise<void> {
+  async deleteDailyMenu(id: string, withOrders = false): Promise<void> {
     try {
-      await this.request<void>(`/daily-menus/${id}`, {
+      const url = withOrders ? `/daily-menus/${id}?withOrders=true` : `/daily-menus/${id}`;
+      await this.request<void>(url, {
         method: 'DELETE',
       });
     } catch (error: any) {
-      // Re-throw with a more user-friendly message if it's a 404
       if (error.message?.includes('not found')) {
         throw new Error('Daily menu not found or already deleted');
       }

@@ -4,6 +4,7 @@ import { DailyMenuWithDetailsDto, DailyMenuStatus, ServiceDto } from '@contracts
 import { InlineToolbar } from '../layouts/InlineToolbar';
 import { PublishConfirmModal } from '../../app/daily-menus/[id]/components/PublishConfirmModal';
 import { DeleteConfirmModal } from '../../app/daily-menus/[id]/components/DeleteConfirmModal';
+import { DeleteWithOrdersConfirmModal } from '../../app/daily-menus/[id]/components/DeleteWithOrdersConfirmModal';
 import { UnpublishConfirmModal } from '../../app/daily-menus/[id]/components/UnpublishConfirmModal';
 
 interface QuickActionsBarProps {
@@ -15,15 +16,19 @@ interface QuickActionsBarProps {
   onUnlock: () => void;
   onUnpublish: () => void;
   onDelete: () => void;
+  onDeleteWithOrders?: () => void;
   showPublishConfirm: boolean;
   showUnpublishConfirm: boolean;
   showDeleteConfirm: boolean;
+  showDeleteWithOrdersConfirm?: boolean;
   onPublishConfirm: () => void;
   onPublishCancel: () => void;
   onUnpublishConfirm: () => void;
   onUnpublishCancel: () => void;
   onDeleteConfirm: () => void;
   onDeleteCancel: () => void;
+  onDeleteWithOrdersConfirm?: () => void;
+  onDeleteWithOrdersCancel?: () => void;
 }
 
 export function QuickActionsBar({
@@ -35,15 +40,19 @@ export function QuickActionsBar({
   onUnlock,
   onUnpublish,
   onDelete,
+  onDeleteWithOrders,
   showPublishConfirm,
   showUnpublishConfirm,
   showDeleteConfirm,
+  showDeleteWithOrdersConfirm = false,
   onPublishConfirm,
   onPublishCancel,
   onUnpublishConfirm,
   onUnpublishCancel,
   onDeleteConfirm,
   onDeleteCancel,
+  onDeleteWithOrdersConfirm,
+  onDeleteWithOrdersCancel,
 }: QuickActionsBarProps) {
   if (!dailyMenu) {
     return null;
@@ -115,8 +124,14 @@ export function QuickActionsBar({
   }
   if (isPublished) {
     secondaryActions.push({
-      label: 'Unpublish (reset to draft)',
+      label: 'Unpublish (dev)',
       onClick: onUnpublish,
+    });
+  }
+  if ((isPublished || isLocked) && onDeleteWithOrders) {
+    secondaryActions.push({
+      label: 'Delete menu and orders (dev)',
+      onClick: onDeleteWithOrders,
     });
   }
 
@@ -166,6 +181,12 @@ export function QuickActionsBar({
         isOpen={showDeleteConfirm}
         onConfirm={onDeleteConfirm}
         onCancel={onDeleteCancel}
+      />
+
+      <DeleteWithOrdersConfirmModal
+        isOpen={showDeleteWithOrdersConfirm}
+        onConfirm={onDeleteWithOrdersConfirm ?? (() => {})}
+        onCancel={onDeleteWithOrdersCancel ?? (() => {})}
       />
     </>
   );

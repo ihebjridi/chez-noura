@@ -47,6 +47,7 @@ export default function MenusPage() {
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [showUnpublishConfirm, setShowUnpublishConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeleteWithOrdersConfirm, setShowDeleteWithOrdersConfirm] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['services']));
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -428,7 +429,7 @@ export default function MenusPage() {
     }
   };
 
-  // Delete handler
+  // Delete handler (draft only)
   const handleDelete = async () => {
     if (!dailyMenu) return;
 
@@ -437,11 +438,26 @@ export default function MenusPage() {
       await apiClient.deleteDailyMenu(dailyMenu.id);
       setShowDeleteConfirm(false);
       setSelectedMenuId(null);
-      // Reload menus for the current selected date (menu will be gone, so it will show "no menu")
       await loadDailyMenus(state.selectedDate);
     } catch (err: any) {
       setError(err.message || 'Failed to delete daily menu');
       setShowDeleteConfirm(false);
+    }
+  };
+
+  // Delete menu and all its orders (dev only)
+  const handleDeleteWithOrders = async () => {
+    if (!dailyMenu) return;
+
+    try {
+      setError('');
+      await apiClient.deleteDailyMenu(dailyMenu.id, true);
+      setShowDeleteWithOrdersConfirm(false);
+      setSelectedMenuId(null);
+      await loadDailyMenus(state.selectedDate);
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete daily menu and orders');
+      setShowDeleteWithOrdersConfirm(false);
     }
   };
 
@@ -477,15 +493,19 @@ export default function MenusPage() {
             onUnlock={handleUnlock}
             onUnpublish={() => setShowUnpublishConfirm(true)}
             onDelete={() => setShowDeleteConfirm(true)}
+            onDeleteWithOrders={() => setShowDeleteWithOrdersConfirm(true)}
             showPublishConfirm={showPublishConfirm}
             showUnpublishConfirm={showUnpublishConfirm}
             showDeleteConfirm={showDeleteConfirm}
+            showDeleteWithOrdersConfirm={showDeleteWithOrdersConfirm}
             onPublishConfirm={handlePublish}
             onPublishCancel={() => setShowPublishConfirm(false)}
             onUnpublishConfirm={handleUnpublish}
             onUnpublishCancel={() => setShowUnpublishConfirm(false)}
             onDeleteConfirm={handleDelete}
             onDeleteCancel={() => setShowDeleteConfirm(false)}
+            onDeleteWithOrdersConfirm={handleDeleteWithOrders}
+            onDeleteWithOrdersCancel={() => setShowDeleteWithOrdersConfirm(false)}
           />
         )}
       </StickyHeader>

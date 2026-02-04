@@ -286,14 +286,19 @@ export class DailyMenusController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Roles(UserRole.SUPER_ADMIN)
-  @ApiOperation({ summary: 'Delete a daily menu (DRAFT only)' })
+  @ApiOperation({ summary: 'Delete a daily menu (DRAFT only, or with orders when withOrders=true for dev)' })
+  @ApiQuery({ name: 'withOrders', required: false, description: 'If true, delete related orders then the menu (dev only); allows any status' })
   @ApiResponse({
     status: 204,
     description: 'Daily menu deleted successfully',
   })
   @ApiResponse({ status: 400, description: 'Bad request - Only DRAFT menus can be deleted' })
   @ApiResponse({ status: 404, description: 'Daily menu not found' })
-  async delete(@Param('id') id: string): Promise<void> {
-    return this.dailyMenusService.delete(id);
+  async delete(
+    @Param('id') id: string,
+    @Query('withOrders') withOrders?: string,
+  ): Promise<void> {
+    const deleteWithOrders = withOrders === 'true';
+    return this.dailyMenusService.delete(id, deleteWithOrders);
   }
 }

@@ -126,9 +126,9 @@ export function ServiceSelection({
                                   servicePacks={menuService.packs}
                                   serviceDetails={serviceDetails.get(service.id)}
                                   foodComponentVariants={foodComponentVariants}
-                                  selectedVariants={selectedVariants}
+                                  selectedVariants={new Set(menuService.variants.map((v) => v.variantId))}
                                   variantStocks={variantStocks}
-                                  existingVariantStocks={existingVariantStocks}
+                                  existingVariantStocks={new Map(menuService.variants.map((v) => [v.variantId, v.initialStock]))}
                                   updatingVariants={updatingVariants}
                                   isLocked={isLocked}
                                   onVariantToggle={(variantId, checked, componentId) =>

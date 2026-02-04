@@ -25,8 +25,9 @@ export class EmployeeMenuService {
    * The status field indicates if the menu is published and available for ordering
    */
   async getMenuByDate(date: string, user: TokenPayload): Promise<EmployeeMenuDto> {
-    const dateObj = new Date(date);
-    dateObj.setHours(0, 0, 0, 0);
+    // Parse date string (YYYY-MM-DD) as local date, same as daily menu create/findByDate
+    const [year, month, day] = date.split('-').map(Number);
+    const dateObj = new Date(year, month - 1, day, 0, 0, 0, 0);
 
     // Resolve businessId: use from token, or for employees load from Employee record (handles legacy users without User.businessId)
     let businessId: string | undefined = user.businessId;
@@ -106,7 +107,10 @@ export class EmployeeMenuService {
       throw new NotFoundException(`No menu found for date ${date}`);
     }
 
-    // Return menu even if not published - status field will indicate availability
+    // Only published menus are visible to employees (unpublished/draft menus return 404)
+    if (dailyMenu.status !== 'PUBLISHED') {
+      throw new NotFoundException(`No menu found for date ${date}`);
+    }
 
     // Build pack-to-service mapping
     const packToServiceMap = new Map<string, string>();
@@ -136,7 +140,6 @@ export class EmployeeMenuService {
     }
 
     // Service-level variants: serviceId -> (componentId -> variants)
-    // Each pack will only see variants from pack-level + its own service
     const serviceVariantsByServiceAndComponent = new Map<
       string,
       Map<string, AvailableVariantDto[]>
@@ -164,32 +167,19 @@ export class EmployeeMenuService {
 
     /**
      * Get variants for a component valid for a given pack.
-     * Valid = pack-level variants for that component OR variants from the pack's service.
-     * Merge by variant id and keep max stock (same variant can appear in both).
+     * Stock is per service: packs with a service use only that service's variants (and stock).
+     * Packs without a service (legacy) use pack-level only.
      */
     const getVariantsForPackComponent = (
       packId: string,
       componentId: string,
     ): AvailableVariantDto[] => {
-      const byId = new Map<string, AvailableVariantDto>();
-      const packLevel = packLevelVariantsByComponent.get(componentId) || [];
-      for (const v of packLevel) {
-        byId.set(v.id, { ...v });
-      }
       const serviceId = packToServiceMap.get(packId);
       if (serviceId) {
         const serviceByComponent = serviceVariantsByServiceAndComponent.get(serviceId);
-        const serviceVariants = serviceByComponent?.get(componentId) || [];
-        for (const v of serviceVariants) {
-          const existing = byId.get(v.id);
-          if (existing) {
-            existing.stockQuantity = Math.max(existing.stockQuantity, v.stockQuantity);
-          } else {
-            byId.set(v.id, { ...v });
-          }
-        }
+        return serviceByComponent?.get(componentId) || [];
       }
-      return Array.from(byId.values());
+      return packLevelVariantsByComponent.get(componentId) || [];
     };
 
     // Get activated packs for this business (considering effective dates for pack changes)

@@ -183,24 +183,20 @@ export class EmployeeOrdersService {
       }
     }
 
-    // Validate variants belong to DailyMenu and have stock
-    // Variants can be available either:
-    // 1. As pack-level variants (DailyMenuVariant)
-    // 2. As service-level variants (DailyMenuServiceVariant) for the pack's service
+    // Validate variants belong to DailyMenu and have stock.
+    // Stock is per service: pack with service -> only that service's variants; pack without service -> pack-level only.
+    const packServiceId = packToServiceMap.get(createOrderDto.packId);
     const dailyMenuVariantMap = new Map(
       dailyMenu.variants.map((dmv) => [dmv.variantId, dmv]),
     );
     const variantMap = new Map(
       dailyMenu.variants.map((dmv) => [dmv.variantId, dmv.variant]),
     );
-
-    // Build service-level variant map
     const serviceVariantMap = new Map<string, any>();
     for (const dailyMenuService of dailyMenu.services) {
       for (const serviceVariant of dailyMenuService.variants) {
         const key = `${dailyMenuService.serviceId}:${serviceVariant.variantId}`;
         serviceVariantMap.set(key, serviceVariant);
-        // Also add variant to variantMap if not already present
         if (!variantMap.has(serviceVariant.variantId)) {
           variantMap.set(serviceVariant.variantId, serviceVariant.variant);
         }
@@ -208,48 +204,20 @@ export class EmployeeOrdersService {
     }
 
     for (const selectedVariant of createOrderDto.selectedVariants) {
-      // Check if variant is available as pack-level variant
-      let dailyMenuVariant = dailyMenuVariantMap.get(selectedVariant.variantId);
-
-      // If not found as pack-level, check if it's available as service-level variant
-      // First try the service that the pack belongs to
-      if (!dailyMenuVariant) {
-        const serviceId = packToServiceMap.get(createOrderDto.packId);
-        if (serviceId) {
-          const serviceVariantKey = `${serviceId}:${selectedVariant.variantId}`;
-          const serviceVariant = serviceVariantMap.get(serviceVariantKey);
-          if (serviceVariant) {
-            // Create a compatible structure with variant included
-            dailyMenuVariant = {
-              id: serviceVariant.id,
-              variantId: serviceVariant.variantId,
-              initialStock: serviceVariant.initialStock,
-              variant: serviceVariant.variant,
-            } as any;
-          }
+      let dailyMenuVariant: any = null;
+      if (packServiceId) {
+        const serviceVariantKey = `${packServiceId}:${selectedVariant.variantId}`;
+        const serviceVariant = serviceVariantMap.get(serviceVariantKey);
+        if (serviceVariant) {
+          dailyMenuVariant = {
+            id: serviceVariant.id,
+            variantId: serviceVariant.variantId,
+            initialStock: serviceVariant.initialStock,
+            variant: serviceVariant.variant,
+          };
         }
-      }
-
-      // If still not found and pack doesn't have a service, check all services for this variant
-      // This handles legacy packs that might not be assigned to a service
-      if (!dailyMenuVariant) {
-        const packServiceId = packToServiceMap.get(createOrderDto.packId);
-        if (!packServiceId) {
-          // Pack doesn't belong to a service, check all services
-          for (const dailyMenuService of dailyMenu.services) {
-            const serviceVariantKey = `${dailyMenuService.serviceId}:${selectedVariant.variantId}`;
-            const serviceVariant = serviceVariantMap.get(serviceVariantKey);
-            if (serviceVariant) {
-              dailyMenuVariant = {
-                id: serviceVariant.id,
-                variantId: serviceVariant.variantId,
-                initialStock: serviceVariant.initialStock,
-                variant: serviceVariant.variant,
-              } as any;
-              break;
-            }
-          }
-        }
+      } else {
+        dailyMenuVariant = dailyMenuVariantMap.get(selectedVariant.variantId);
       }
 
       if (!dailyMenuVariant) {
@@ -263,14 +231,12 @@ export class EmployeeOrdersService {
         throw new BadRequestException(`Variant ${selectedVariant.variantId} not found`);
       }
 
-      // Validate variant belongs to the specified component
       if (variant.componentId !== selectedVariant.componentId) {
         throw new BadRequestException(
           `Variant "${variant.name}" does not belong to component ${selectedVariant.componentId}`,
         );
       }
 
-      // Validate stock > 0
       if (dailyMenuVariant.initialStock <= 0) {
         throw new BadRequestException(`Variant "${variant.name}" is out of stock`);
       }
@@ -405,66 +371,43 @@ export class EmployeeOrdersService {
           },
         });
 
-        // Get service ID for the pack
-        const serviceId = packToServiceMap.get(createOrderDto.packId);
-        let dailyMenuServiceVariantsInTx: any[] = [];
-        
-        if (serviceId) {
-          // Find the DailyMenuService for this service
-          const dailyMenuService = await tx.dailyMenuService.findFirst({
+        // Load service-level variants from ALL services on the menu (shared components may be in another service)
+        const allDailyMenuServices = await tx.dailyMenuService.findMany({
+          where: {
+            dailyMenuId: dailyMenu.id,
+          },
+        });
+
+        const dailyMenuServiceVariantsInTx: any[] = [];
+        for (const dms of allDailyMenuServices) {
+          const serviceVariants = await tx.dailyMenuServiceVariant.findMany({
             where: {
-              dailyMenuId: dailyMenu.id,
-              serviceId: serviceId,
+              dailyMenuServiceId: dms.id,
+              variantId: { in: variantIds },
+            },
+            include: {
+              variant: true,
             },
           });
+          dailyMenuServiceVariantsInTx.push(...serviceVariants);
+        }
 
-          if (dailyMenuService) {
-            dailyMenuServiceVariantsInTx = await tx.dailyMenuServiceVariant.findMany({
-              where: {
-                dailyMenuServiceId: dailyMenuService.id,
-                variantId: { in: variantIds },
-              },
-              include: {
-                variant: true,
-              },
-            });
+        // Stock is per service: pack with service -> decrement only that service's stock; pack without service -> pack-level only
+        const packServiceIdInTx = packToServiceMap.get(createOrderDto.packId);
+        const packDailyMenuServiceId = packServiceIdInTx
+          ? allDailyMenuServices.find((dms) => dms.serviceId === packServiceIdInTx)?.id
+          : undefined;
+
+        const variantStockMap = new Map<string, { type: 'pack' | 'service'; stock: any }>();
+        if (packDailyMenuServiceId) {
+          for (const smv of dailyMenuServiceVariantsInTx) {
+            if (smv.dailyMenuServiceId === packDailyMenuServiceId) {
+              variantStockMap.set(smv.variantId, { type: 'service', stock: smv });
+            }
           }
         } else {
-          // If pack doesn't have a service, check all services for variants
-          // This handles legacy packs that might not be assigned to a service
-          const allDailyMenuServices = await tx.dailyMenuService.findMany({
-            where: {
-              dailyMenuId: dailyMenu.id,
-            },
-          });
-
-          for (const dailyMenuService of allDailyMenuServices) {
-            const serviceVariants = await tx.dailyMenuServiceVariant.findMany({
-              where: {
-                dailyMenuServiceId: dailyMenuService.id,
-                variantId: { in: variantIds },
-              },
-              include: {
-                variant: true,
-              },
-            });
-            dailyMenuServiceVariantsInTx.push(...serviceVariants);
-          }
-        }
-
-        // Build a map of variantId -> stock source (pack-level or service-level)
-        // Pack-level variants take precedence if both exist
-        const variantStockMap = new Map<string, { type: 'pack' | 'service'; stock: any }>();
-        
-        // First add pack-level variants
-        for (const dmv of dailyMenuVariantsInTx) {
-          variantStockMap.set(dmv.variantId, { type: 'pack', stock: dmv });
-        }
-        
-        // Then add service-level variants only if pack-level doesn't exist
-        for (const smv of dailyMenuServiceVariantsInTx) {
-          if (!variantStockMap.has(smv.variantId)) {
-            variantStockMap.set(smv.variantId, { type: 'service', stock: smv });
+          for (const dmv of dailyMenuVariantsInTx) {
+            variantStockMap.set(dmv.variantId, { type: 'pack', stock: dmv });
           }
         }
 
